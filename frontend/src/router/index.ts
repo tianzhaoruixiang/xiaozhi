@@ -22,8 +22,21 @@ const router = createRouter({
       meta: { title: '小智 · 领导工作台' },
     },
     {
+      path: '/team',
+      name: 'team',
+      component: () => import('../xiaozhi/views/TeamWorkbench.vue'),
+      meta: { title: '小智 · 张处工作台' },
+    },
+    {
       path: '/command',
       name: 'command',
+      component: () => import('../xiaozhi/views/CommandWorkbench.vue'),
+      meta: { title: '小智 · 高总工作台' },
+    },
+    {
+      // 原「安保协同指挥」；个人工作台的「进入会议」按路由名跳转，路径改名不影响调用
+      path: '/meeting',
+      name: 'meeting',
       component: () => import('../App.vue'),
       meta: { title: '安保协同指挥' },
     },
@@ -46,7 +59,12 @@ const router = createRouter({
 
 router.afterEach((to) => {
   document.title = typeof to.meta.title === 'string' ? to.meta.title : '安保协同指挥'
-  const xiaozhiDesk = to.name === 'home' || to.name === 'leader' || to.name === 'personal'
+  const xiaozhiDesk =
+    to.name === 'home' ||
+    to.name === 'leader' ||
+    to.name === 'personal' ||
+    to.name === 'team' ||
+    to.name === 'command'
   document.documentElement.classList.toggle('xiaozhi-desk', xiaozhiDesk)
 })
 

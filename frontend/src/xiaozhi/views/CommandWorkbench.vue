@@ -1,88 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { usePersonalTasks } from '../data/personalTasks'
+import { ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { useGroupTasks } from '../data/groupTasks'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
-import WorkbenchBoards from '../components/WorkbenchBoards.vue'
-import type { WorkbenchPanel } from '../components/WorkbenchBoards.vue'
-import PersonalTaskWorkspace from './PersonalTaskWorkspace.vue'
+import CurrentGroupBoard from '../components/CurrentGroupBoard.vue'
 
-const { specialTasks } = usePersonalTasks()
-const route = useRoute()
+const { currentGroup } = useGroupTasks()
 const router = useRouter()
 
-const path = computed(() => route.path)
-const meetingReminderVisible = ref(false)
-let meetingReminderTimer: number | undefined
-
-onMounted(() => {
-  if (route.path === '/personal') {
-    meetingReminderTimer = window.setTimeout(() => {
-      meetingReminderVisible.value = true
-    }, 650)
-  }
-})
-
-onUnmounted(() => {
-  if (meetingReminderTimer) window.clearTimeout(meetingReminderTimer)
-})
-
-const isTaskPage = computed(
-  () => path.value === '/personal/task' || path.value.startsWith('/personal/task/'),
-)
-
-const query = computed(() => {
-  return typeof route.query.q === 'string' ? route.query.q : ''
-})
-
-const activeTaskId = computed(() => {
-  // 未指定任务时进入自由对话（由下方输入框内的任务按钮再选择）
-  return typeof route.query.id === 'string' ? route.query.id : ''
-})
-
-const navigate = (to: string) => {
-  void router.push(to)
-}
-
-const openTask = (id: string) => {
-  navigate(`/personal/task?id=${encodeURIComponent(id)}`)
-}
-
-const backToHome = () => {
-  navigate('/personal')
-}
-
-const onQueryConsumed = () => {
-  void router.replace('/personal/task')
-}
-
-const handoffId = computed(() =>
-  typeof route.query.handoffId === 'string' ? route.query.handoffId : 'SEC-20260921-001',
-)
-
-const enterMeeting = () => {
-  meetingReminderVisible.value = false
-  // 安保协同指挥已移至 /meeting（路由名沿用 meeting）
-  void router.push({ name: 'meeting', query: { handoffId: handoffId.value } })
-}
-
-/** 首页自由输入：直接进入交互框并开始执行 */
+/** 底部输入框：继续交给小智办理 */
 const homeDraft = ref('')
 const startFreeTask = () => {
   const text = homeDraft.value.trim()
   if (!text) return
   homeDraft.value = ''
-  navigate(`/personal/task?q=${encodeURIComponent(text)}`)
+  void router.push(`/personal/task?q=${encodeURIComponent(text)}`)
 }
-
-const panels = computed<WorkbenchPanel[]>(() => [
-  {
-    title: '专项任务',
-    subtitle: '项目制寻访与交付',
-    variant: 'focus',
-    items: specialTasks.value,
-  },
-])
 </script>
 
 <template>
@@ -98,71 +31,27 @@ const panels = computed<WorkbenchPanel[]>(() => [
       <div class="horizon" />
     </div>
 
-    <div class="shell" :class="{ wide: isTaskPage, task: isTaskPage }">
-      <WorkbenchHeader
-        v-if="!isTaskPage"
-        compact
-        brand="张磊，你好"
-        tagline="个人助手 · 协同工作台"
-      />
+    <div class="shell wide">
+      <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 当前组任务与成员进展">
+        <template #actions>
+          <RouterLink class="desk-link" to="/team">张处工作台</RouterLink>
+          <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
+        </template>
+      </WorkbenchHeader>
 
-      <PersonalTaskWorkspace
-        v-if="isTaskPage"
-        :task-id="activeTaskId"
-        :query="query"
-        @select-task="openTask"
-        @query-consumed="onQueryConsumed"
-        @back="backToHome"
-      />
+      <CurrentGroupBoard :group="currentGroup" />
 
-      <template v-else>
-        <WorkbenchBoards
-          :panels="panels"
-          :columns="1"
-          label="猎头个人工作台"
-          :clickable-variants="['focus']"
-          @select="openTask($event.item.id)"
+      <form class="home-dock" @submit.prevent="startFreeTask">
+        <textarea
+          :value="homeDraft"
+          rows="2"
+          placeholder="也可以直接问小智，例如：当前组哪些任务需要我协调资源…"
+          @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
+          @keydown.enter.exact.prevent="startFreeTask"
         />
-
-        <form class="home-dock" @submit.prevent="startFreeTask">
-          <textarea
-            :value="homeDraft"
-            rows="2"
-            placeholder="也可以直接告诉小智要办的事，例如：帮我梳理今天的人选跟进重点…"
-            @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
-            @keydown.enter.exact.prevent="startFreeTask"
-          />
-          <button type="submit" :disabled="!homeDraft.trim()">发送</button>
-        </form>
-      </template>
+        <button type="submit" :disabled="!homeDraft.trim()">发送</button>
+      </form>
     </div>
-
-    <el-dialog
-      v-model="meetingReminderVisible"
-      width="31rem"
-      class="meeting-reminder-dialog"
-      modal-class="meeting-reminder-overlay"
-      :show-close="false"
-      :close-on-click-modal="false"
-      align-center
-      append-to-body
-    >
-      <div class="meeting-reminder-card">
-        <div class="reminder-status"><i />会议提醒 · 即将开始</div>
-        <h2>大型会议保障动员会</h2>
-        <p>会议材料与参会信息已准备完毕，请按时进入会议。</p>
-        <dl>
-          <div><dt>时间</dt><dd>今天 10:00</dd></div>
-          <div><dt>地点</dt><dd>市局联合指挥中心</dd></div>
-          <div><dt>参会</dt><dd>12 人</dd></div>
-        </dl>
-        <div class="reminder-actions">
-          <button type="button" class="later-button" @click="meetingReminderVisible = false">稍后提醒</button>
-          <button type="button" class="meeting-button" @click="enterMeeting">进入会议 <span>→</span></button>
-        </div>
-      </div>
-    </el-dialog>
-
   </div>
 </template>
 

@@ -21,6 +21,16 @@ import { RouterLink } from 'vue-router'
           <strong>领导工作台</strong>
           <em>语音助手 · 今日政务 · 调度专家团</em>
         </RouterLink>
+        <RouterLink class="desk command" to="/command">
+          <span class="role">高总</span>
+          <strong>高总工作台</strong>
+          <em>专项任务 · 当前组任务与成员进度</em>
+        </RouterLink>
+        <RouterLink class="desk team" to="/team">
+          <span class="role">张处</span>
+          <strong>张处工作台</strong>
+          <em>专项任务 · 各组任务进展</em>
+        </RouterLink>
         <RouterLink class="desk personal" to="/personal">
           <span class="role">个人</span>
           <strong>个人工作台</strong>
@@ -148,6 +158,19 @@ h1 {
   border-color: rgba(46, 196, 214, 0.28);
 }
 
+/* 高总：统筹与督办，沿用领导台的深色系但偏钢蓝 */
+.desk.command {
+  background: linear-gradient(155deg, #102f45, #1a5c78);
+  color: #e7f0f6;
+  border-color: rgba(46, 196, 214, 0.28);
+}
+
+/* 张处：组织与执行，浅色卡 + 绿色调 */
+.desk.team {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.92), rgba(226, 242, 235, 0.86));
+  border-color: rgba(47, 125, 90, 0.22);
+}
+
 .desk.personal {
   background: linear-gradient(155deg, rgba(255, 255, 255, 0.92), rgba(231, 240, 246, 0.86));
 }
@@ -156,6 +179,16 @@ h1 {
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   opacity: 0.72;
+}
+
+.desk.command .role {
+  color: #9adce8;
+  opacity: 1;
+}
+
+.desk.team .role {
+  color: var(--color-success);
+  opacity: 1;
 }
 
 .desk strong {
