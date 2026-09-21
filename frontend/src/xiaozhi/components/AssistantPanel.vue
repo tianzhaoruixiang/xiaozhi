@@ -410,6 +410,8 @@ watch(
   height: 100dvh;
   z-index: 50;
   pointer-events: none;
+  /* 覆盖 .xiaozhi-scope 的底色，避免关闭时整页被雾色层挡住 */
+  background: transparent;
 }
 
 .layer.open {
