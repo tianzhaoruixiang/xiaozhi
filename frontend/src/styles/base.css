@@ -391,7 +391,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .live-indicator { color: var(--green); font-size: 0.75rem; }
 .live-indicator i { width: 0.4375rem; height: 0.4375rem; display: inline-block; margin-right: 0.4375rem; border-radius: 50%; background: var(--green); box-shadow: 0 0 0.5rem var(--green); animation: breathe 1.8s ease-in-out infinite; }
 .live-speaker { gap: 0.625rem; }
-.live-speaker-avatar { flex: 0 0 2.25rem; width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border: 1px solid var(--cyan); border-radius: 50%; background: var(--speaker-color); font-size: 0.8125rem; font-weight: 400; }
+.live-speaker-avatar { flex: 0 0 2.25rem; width: 2.25rem; height: 2.25rem; display: block; object-fit: cover; border: 1px solid var(--cyan); border-radius: 50%; }
 .live-speaker small,
 .live-speaker strong,
 .live-assistant-action small,
@@ -418,6 +418,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   gap: 0.75rem;
   padding: 0.75rem 1.125rem 0.625rem;
 }
+.meeting-sidebar { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
 .panel-frame {
   position: relative;
   min-height: 0;
@@ -453,12 +454,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .agenda-copy span { font-size: var(--type-caption); }
 .agenda-copy span .el-icon { margin-right: 0.1875rem; vertical-align: -0.125rem; }
 
-.participant-section { padding-bottom: 0.6875rem; }
-.participant-list { display: grid; gap: 0.125rem; }
+.participant-section { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); padding-bottom: 0.6875rem; overflow: hidden; }
+.participant-list { min-height: 0; display: grid; align-content: start; gap: 0.125rem; padding-right: 0.25rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(21, 139, 161, 0.35) transparent; }
 .participant-item { position: relative; display: flex; align-items: center; gap: 0.5625rem; padding: 0.375rem; border: 1px solid transparent; border-radius: 0.3125rem; }
 .participant-item.speaking { border-color: rgba(21, 139, 161, 0.32); background: linear-gradient(90deg, rgba(46, 196, 214, 0.13), transparent); }
-.avatar, .speech-avatar { display: grid; place-items: center; color: #ffffff; background: var(--avatar-color); border: 1px solid rgba(255, 255, 255, 0.55); }
-.avatar { position: relative; flex: 0 0 2.125rem; width: 2.125rem; height: 2.125rem; border-radius: 50%; font-size: 0.75rem; }
+.avatar, .speech-avatar { display: block; object-fit: cover; border: 1px solid rgba(255, 255, 255, 0.55); }
+.avatar { flex: 0 0 2.125rem; width: 2.125rem; height: 2.125rem; border-radius: 50%; }
+.avatar-wrap { position: relative; flex: 0 0 2.125rem; width: 2.125rem; height: 2.125rem; }
+.avatar-wrap .avatar { position: relative; border-radius: 50%; }
 .online-dot { position: absolute; right: -1px; bottom: 1px; width: 0.4375rem; height: 0.4375rem; border: 0.125rem solid #ffffff; border-radius: 50%; background: var(--green); }
 .participant-copy { min-width: 0; flex: 1; }
 .participant-copy strong, .participant-copy span { display: block; }
@@ -468,7 +471,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .mini-wave i { width: 0.125rem; height: 0.625rem; background: var(--cyan); animation: voice .7s ease-in-out infinite alternate; }
 .mini-wave i:nth-child(2) { animation-delay: -.2s; }.mini-wave i:nth-child(3) { animation-delay: -.45s;}.mini-wave i:nth-child(4) { animation-delay: -.1s;}
 
-.plan-card { position: absolute; right: 0.75rem; bottom: 0.75rem; left: 0.75rem; padding: 0.75rem; border: 1px solid rgba(20, 40, 58, 0.14); border-radius: 0.375rem; background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(233, 243, 249, 0.86)); box-shadow: 0 8px 22px rgba(6, 20, 31, 0.07); cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease; }
+.plan-card { position: relative; margin: 0 0.75rem 0.75rem; padding: 0.75rem; border: 1px solid rgba(20, 40, 58, 0.14); border-radius: 0.375rem; background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(233, 243, 249, 0.86)); box-shadow: 0 8px 22px rgba(6, 20, 31, 0.07); cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease; }
 .plan-card:hover { border-color: var(--line-strong); box-shadow: 0 0 1.125rem rgba(46, 196, 214, 0.28); }
 .plan-card:focus-visible { outline: 0.125rem solid var(--cyan); outline-offset: 0.125rem; }
 .plan-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
@@ -493,9 +496,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .transcript-stream { overflow: auto; padding: 0.3125rem 1.125rem 1.125rem; scrollbar-width: thin; scrollbar-color: rgba(90, 128, 148, 0.35) transparent; }
 .speech-entry { position: relative; display: grid; grid-template-columns: 2.25rem 1fr; gap: 0.6875rem; padding: 1rem 0.25rem; border-bottom: 1px solid rgba(20, 40, 58, 0.09); }
 .speech-entry.pending { margin: 0.3125rem -0.3125rem 0; padding-right: 0.5625rem; padding-left: 0.5625rem; border: 1px solid rgba(184, 122, 53, 0.35); border-radius: 0.375rem; background: linear-gradient(90deg, rgba(184, 122, 53, 0.08), transparent); }
-.speech-avatar { width: 2.5rem; height: 2.5rem; border-radius: 0.3125rem; font-weight: 400; font-size: 0.875rem; }
-.speech-avatar.active { position: relative; color: white; border-color: var(--cyan); box-shadow: 0 0 1.125rem rgba(46, 196, 214, 0.42); }
-.avatar-radar { position: absolute; inset: -0.25rem; border: 1px solid var(--cyan); border-radius: 0.5rem; animation: radar 1.5s ease-out infinite; }
+.speech-avatar { width: 2.5rem; height: 2.5rem; border-radius: 0.3125rem; }
+.speech-avatar.active { box-shadow: 0 0 1.125rem rgba(46, 196, 214, 0.42); border-color: var(--cyan); }
 .speech-body { min-width: 0; }
 .speech-meta { min-height: 1.375rem; display: flex; align-items: center; gap: 0.5rem; }
 .speech-meta strong { font-size: 0.875rem; }
@@ -1362,7 +1364,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 @keyframes breathe { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
 @keyframes voice { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
 @keyframes blink { 50% { opacity: 0; } }
-@keyframes radar { from { opacity: .8; transform: scale(.86); } to { opacity: 0; transform: scale(1.28); } }
 @keyframes orb { to { transform: rotate(360deg); } }
 @keyframes scanner { to { transform: rotate(360deg); } }
 

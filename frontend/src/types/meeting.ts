@@ -5,6 +5,7 @@ export interface Participant {
   role: string
   initial: string
   color: string
+  avatar: number
 }
 
 export interface TranscriptEntry {

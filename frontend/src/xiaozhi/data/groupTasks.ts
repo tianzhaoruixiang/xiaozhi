@@ -75,7 +75,7 @@ const initialGroups: TaskGroup[] = [
       { id: 'r3', name: '王强', role: '画像与评估', saturation: 1 },
       { id: 'r4', name: '陈晓', role: '面试协调', saturation: 1 },
       { id: 'r5', name: '刘洋', role: '行业调研', saturation: 2 },
-      { id: 'r6', name: '赵敏', role: '竞品对标', saturation: 1 },
+      { id: 'r6', name: '赵敏婕', role: '竞品对标', saturation: 1 },
     ],
     tasks: [
       {
@@ -108,7 +108,7 @@ const initialGroups: TaskGroup[] = [
           },
           {
             id: 'm6',
-            name: '赵敏',
+            name: '赵敏婕',
             role: '竞品对标',
             status: 'doing',
             progress: 38,

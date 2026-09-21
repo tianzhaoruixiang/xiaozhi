@@ -387,7 +387,7 @@ function resetFilters() {
   font-weight: 700;
   color: var(--text);
   letter-spacing: 0.04em;
-  text-shadow: 0 0 10px oklch(0.84 0.145 207 / .26);
+  text-shadow: 0 0 10px oklch(0.82 0.12 207 / .2);
 }
 
 .info {
