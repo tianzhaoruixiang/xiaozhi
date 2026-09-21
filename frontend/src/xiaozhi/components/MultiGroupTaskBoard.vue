@@ -52,6 +52,10 @@ const stats = computed(() => {
         <h2>专项任务</h2>
         <p>各工作组任务与成员进展</p>
       </div>
+      <RouterLink class="summary-btn" to="/command/task">
+        任务总结
+        <b aria-hidden="true">→</b>
+      </RouterLink>
       <dl class="stats">
         <div><dt>组</dt><dd>{{ stats.group }}</dd></div>
         <div><dt>任务</dt><dd>{{ stats.task }}</dd></div>
@@ -212,6 +216,34 @@ const stats = computed(() => {
   margin: 6px 0 0;
   font-size: 0.82rem;
   color: var(--color-ink-muted);
+}
+
+.summary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(46, 196, 214, 0.4);
+  background: rgba(46, 196, 214, 0.08);
+  color: var(--color-accent);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.summary-btn:hover {
+  background: rgba(46, 196, 214, 0.18);
+  border-color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.summary-btn b {
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .stats {

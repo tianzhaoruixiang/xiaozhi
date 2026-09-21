@@ -244,6 +244,13 @@
       width: 100%; display: grid; grid-template-columns: auto 1fr auto auto;
       gap: 8px; align-items: center; padding: 8px 10px; border: 0;
       background: transparent; cursor: pointer; text-align: left; color: inherit;
+      transition: background var(--dur-fast) var(--ease-soft);
+    }
+    .expert-top:hover {
+      background: rgba(46, 196, 214, 0.06);
+    }
+    .expert[data-status='done'] .expert-top:hover {
+      background: rgba(26, 122, 92, 0.06);
     }
     .step-no {
       width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%;
@@ -732,36 +739,34 @@
 
     // ===================== 多专家协同：角色定义 =====================
     const EXPERTS = {
-      chief:  { name: '工作总结专家', mark: '总结', color: '#b87a35' },
-      writer: { name: '报告写作专家', mark: '写作', color: '#1a7a92' },
-      m1: { name: '会议保障组组长', mark: '会务', color: '#1f8ea8' },
-      m2: { name: '现场部署组组长', mark: '部署', color: '#2f7d5a' },
-      m3: { name: '财务预算组组长', mark: '财务', color: '#a8873f' },
-      m4: { name: '技术保障组组长', mark: '技术', color: '#7c5bad' },
+      collector: { name: '材料收集专家', mark: '收集', color: '#1f8ea8' },
+      compiler: { name: '材料整编专家', mark: '整编', color: '#b87a35' },
+      g1: { name: '人员审核组组长', mark: '审核', color: '#54d6ff' },
+      g2: { name: '舆情监测组组长', mark: '舆情', color: '#6e8cff' },
+      g3: { name: '现场安保组组长', mark: '安保', color: '#45e0b4' },
+      g4: { name: '场馆检查组组组长', mark: '场馆', color: '#efc24f' },
+      g5: { name: '重点监测组组长', mark: '监测', color: '#e78962' },
+      g6: { name: '情况通报组组长', mark: '通报', color: '#a985ff' },
     };
-    const LEADER_ORDER = ['m1', 'm2', 'm3', 'm4'];
-    const LEADER_OF_ICON = { doc: 'm1', law: 'm1', shield: 'm2', economy: 'm3', tech: 'm4', data: 'm4' };
-    const leaderOf = m => LEADER_OF_ICON[m.icon] || 'm1';
+    const LEADER_ORDER = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'];
+    const LEADER_OF_ICON = { doc: 'g1', law: 'g1', shield: 'g3', economy: 'g4', tech: 'g5', data: 'g2' };
+    const leaderOf = m => LEADER_OF_ICON[m.icon] || 'g1';
     const materialsOf = key => materials.filter(m => leaderOf(m) === key);
 
     // ===================== 多专家协同过程卡（中间生成内容 · 对话内展示） =====================
     const STEP_DEFS = [
-      { exp: 'chief',  name: '工作总结专家 · 统筹调度', title: '调度各组组长推送材料 · 汇总匹配', desc: '向各组组长发出材料推送指令，对回收材料进行主题匹配与去重。' },
-      { exp: 'm1', name: '会议保障组组长 · 材料推送', title: '会议纪要 / 评审记录 / 经验案例', desc: '推送本组过程材料：动员会纪要、评审记录、往届经验等。' },
-      { exp: 'm2', name: '现场部署组组长 · 材料推送', title: '部署方案 / 岗位与巡查安排', desc: '推送本组过程材料：现场安保部署方案等。' },
-      { exp: 'm3', name: '财务预算组组长 · 材料推送', title: '预算明细 / 经费使用', desc: '推送本组过程材料：安保预算明细表等。' },
-      { exp: 'm4', name: '技术保障组组长 · 材料推送', title: '智能识别 / 数据分析', desc: '推送本组过程材料：系统测试报告、舆情数据分析等。' },
-      { exp: 'writer', name: '报告写作专家 · 提纲生成', title: '章节结构 · 要点编排', desc: '基于各组推送的素材归纳报告章节结构与各级要点。' },
-      { exp: 'writer', name: '报告写作专家 · 报告撰写', title: '公文语体 · 逐段撰写', desc: '按提纲逐段撰写正文，撰写过程实时同步到右侧预览。' },
-      { exp: 'chief', name: '工作总结专家 · 数据校核', title: '逐条核对 · 数据对账', desc: '对正文中的数据引用逐条核对来源台账。' },
-      { exp: 'writer', name: '报告写作专家 · 终稿预览', title: '公文版式 · 随时导出', desc: '按公文版式合成终稿，可预览正文或导出 PDF。' },
+      { exp: 'collector', name: '材料收集专家 · 各组材料收集', title: '人员审核 / 舆情监测 / 现场安保 / 场馆检查 / 重点监测 / 情况通报', desc: '依次从六个作战组收集本次任务的过程材料，汇总去重后移交整编。' },
+      { exp: 'compiler', name: '材料整编专家 · 素材分类', title: '主题归集 · 维度划分', desc: '将收集的素材按主题维度分类归集，形成写作材料框架。' },
+      { exp: 'compiler', name: '材料整编专家 · 提纲生成', title: '章节结构 · 要点编排', desc: '基于分类素材归纳报告章节结构与各级要点。' },
+      { exp: 'compiler', name: '材料整编专家 · 正文生成', title: '公文语体 · 逐段撰写', desc: '按提纲逐段撰写正文，撰写过程实时同步到右侧预览。' },
+      { exp: 'compiler', name: '材料整编专家 · 内容审核', title: '逐条核对 · 数据对账', desc: '对正文中的数据引用逐条核对来源台账，确保与素材一致。' },
     ];
     const statusText = { queued: '待命', running: '执行中', done: '已完成' };
     let proc = null;
 
     function createProcess() {
       const bubble = xzSay('');
-      bubble.querySelector('.plain').innerHTML = '收到指示。本次报告由<span class="hl">工作总结专家</span>统筹：调度各组组长推送总结材料，再交<span class="hl">报告写作专家</span>提纲拟稿与撰写，协同过程如下：';
+      bubble.querySelector('.plain').innerHTML = '收到指示。本次报告由<span class="hl">材料收集专家</span>从各组收集过程素材，再交<span class="hl">材料整编专家</span>完成素材分类、提纲生成、正文撰写与内容审核，协同过程如下：';
       const root = document.createElement('div');
       root.className = 'process';
       root.dataset.open = '1';
@@ -779,7 +784,7 @@
         li.className = 'expert';
         li.dataset.status = 'queued';
         li.innerHTML = `
-          <button type="button" class="expert-top">
+          <button type="button" class="expert-top" title="点击展开/收起详细内容">
             <span class="exp-avatar" style="background:${EXPERTS[d.exp].color}">${EXPERTS[d.exp].mark}</span>
             <span class="meta"><strong>${d.name}</strong><em>${d.title}</em></span>
             <span class="badge">${statusText.queued}</span>
@@ -788,9 +793,11 @@
           <div class="expert-detail" hidden><p class="objective">${d.desc}</p></div>`;
         const detail = li.querySelector('.expert-detail');
         const chevron = li.querySelector('.exp-chevron');
-        li.querySelector('.expert-top').addEventListener('click', () => {
+        const topBtn = li.querySelector('.expert-top');
+        topBtn.addEventListener('click', () => {
           detail.hidden = !detail.hidden;
           chevron.textContent = detail.hidden ? '▸' : '▾';
+          topBtn.title = detail.hidden ? '点击展开详细内容' : '点击收起详细内容';
         });
         list.appendChild(li);
         return { li, detail, chevron, badge: li.querySelector('.badge') };
@@ -830,6 +837,12 @@
         s.detail.hidden = false;
         s.chevron.textContent = '▾';
         s.li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      if (status === 'done') {
+        // 任务完成后自动收起该专家的工作内容
+        s.detail.hidden = true;
+        s.chevron.textContent = '▸';
+        s.li.querySelector('.expert-top').title = '点击展开详细内容';
       }
       const doneCount = proc.steps.filter(x => x.li.dataset.status === 'done').length;
       proc.countEl.textContent = `${doneCount}/${STEP_DEFS.length}`;
@@ -897,26 +910,23 @@
       docBody.scrollTop = 0;
     }
     // ===================== 协同阶段动画（中间产物在对话内过程卡中展示） =====================
-    async function animateStage0Dispatch() {
-      // 工作总结专家统筹调度 → 各组组长逐一推送材料 → 汇总匹配
-      setPhase('工作总结专家 · 调度中');
+    async function animateStage0Collect() {
+      // 材料收集专家：依次从各组收集过程材料
+      setPhase('材料收集专家 · 各组收集');
       setStepStatus(0, 'running');
-      const chiefDetail = proc.steps[0].detail;
-      const dispatch = document.createElement('p');
-      dispatch.className = 'dispatch-note';
-      dispatch.innerHTML = `▸ 已向 <strong>${LEADER_ORDER.length}</strong> 位组组长发出指令：请推送本组 2026 年度总结材料`;
-      chiefDetail.appendChild(dispatch);
-      expertSay('chief', `本次总结报告由我统筹。已向<span class="hl">会议保障、现场部署、财务预算、技术保障</span>四个组组长发出材料推送指令。`);
-      await sleep(600);
+      const detail = proc.steps[0].detail;
+      expertSay('collector', `本次总结材料由我负责收集。将依次从<span class="hl">人员审核、舆情监测、现场安保、场馆检查、重点监测、情况通报</span>六个作战组回收过程材料，收齐后移交材料整编专家。`);
+      await sleep(750);
 
       let received = 0;
-      for (let li = 0; li < LEADER_ORDER.length; li++) {
-        const key = LEADER_ORDER[li];
-        const stepIdx = 1 + li;
+      for (const key of LEADER_ORDER) {
         const mats = materialsOf(key);
-        setPhase(`${EXPERTS[key].name} · 推送材料`);
-        setStepStatus(stepIdx, 'running');
-        const detail = proc.steps[stepIdx].detail;
+        const gNote = document.createElement('p');
+        gNote.className = 'dispatch-note';
+        gNote.innerHTML = `▸ 正在收取 <strong>${EXPERTS[key].name}</strong> 的材料…`;
+        detail.appendChild(gNote);
+        scrollChat();
+        await sleep(420);
         const list = document.createElement('div');
         list.className = 'mat-list';
         detail.appendChild(list);
@@ -931,34 +941,65 @@
             <span class="mat-check">${ICONS.check}</span>`;
           list.appendChild(row);
           row.classList.add('show');
-          await sleep(190);
+          await sleep(250);
           row.classList.add('matched');
           received++;
           $('statMat').textContent = String(received);
-          await sleep(100);
+          await sleep(130);
         }
-        if (!mats.length) list.innerHTML = '<p class="dim-line">本组暂无待推送材料</p>';
-        setStepStatus(stepIdx, 'done');
-        expertSay(key, `我们组推送的 <strong>${mats.length}</strong> 份材料已提交工作总结专家：${mats.map(m => m.name).slice(0, 2).join('、')}${mats.length > 2 ? ' 等' : ''}。`);
-        await sleep(320);
+        if (!mats.length) list.innerHTML = '<p class="dim-line">该组暂无待收材料</p>';
+        gNote.innerHTML = `▸ <strong>${EXPERTS[key].name}</strong> · 已收讫 <strong>${mats.length}</strong> 份`;
+        scrollChat();
+        await sleep(360);
       }
 
-      setPhase('工作总结专家 · 汇总匹配');
-      await sleep(400);
       const dim = document.createElement('p');
       dim.className = 'dim-line';
-      dim.innerHTML = `材料齐备：共收到 <strong>${received}</strong> 份 · 来自 <strong>${LEADER_ORDER.length}</strong> 个组 · 归入 <strong>${matchCards.length}</strong> 个主题维度（${matchCards.map(c => c.title).join('、')}）`;
-      chiefDetail.appendChild(dim);
-      await sleep(400);
+      dim.innerHTML = `收集完成：共 <strong>${received}</strong> 份 · 覆盖 <strong>${LEADER_ORDER.length}</strong> 个组，已移交材料整编专家。`;
+      detail.appendChild(dim);
+      await sleep(600);
       setStepStatus(0, 'done');
     }
 
-    async function animateStage1Outline() {
-      setPhase('报告写作专家 · 提纲生成');
-      setStepStatus(5, 'running');
-      expertSay('writer', '各组材料已收到。我先梳理报告提纲：按「工作概述 → 重点任务回顾 → 经验与不足 → 下一步计划」组织章节。');
-      await sleep(500);
-      const detail = proc.steps[5].detail;
+    async function animateStage1Classify() {
+      // 材料整编专家①：素材分类
+      setPhase('材料整编专家 · 素材分类');
+      setStepStatus(1, 'running');
+      expertSay('compiler', '材料已接收。我先进行素材分类，再依次进行提纲生成、正文撰写与内容审核。');
+      await sleep(680);
+      const detail = proc.steps[1].detail;
+      const list = document.createElement('div');
+      list.className = 'mat-list';
+      detail.appendChild(list);
+      for (const c of matchCards) {
+        const row = document.createElement('div');
+        row.className = 'mat-row';
+        row.innerHTML = `
+          <span class="mat-ico" style="color:#b87a35">${ICONS.doc}</span>
+          <span class="mat-name">${c.title}</span>
+          <span class="mat-meta">${c.desc}</span>
+          <span class="mat-check">${ICONS.check}</span>`;
+        list.appendChild(row);
+        row.classList.add('show');
+        await sleep(390);
+        row.classList.add('matched');
+        await sleep(130);
+      }
+      const dim = document.createElement('p');
+      dim.className = 'dim-line';
+      dim.innerHTML = `分类完成：归入 <strong>${matchCards.length}</strong> 个主题维度（${matchCards.map(c => c.title).join('、')}）`;
+      detail.appendChild(dim);
+      await sleep(520);
+      setStepStatus(1, 'done');
+    }
+
+    async function animateStage2Outline() {
+      // 材料整编专家②：提纲生成
+      setPhase('材料整编专家 · 提纲生成');
+      setStepStatus(2, 'running');
+      expertSay('compiler', '素材分类完成。现在基于分类素材生成报告提纲。');
+      await sleep(750);
+      const detail = proc.steps[2].detail;
       const tree = document.createElement('div');
       tree.className = 'ol-tree';
       tree.innerHTML = outlineData.map(o => `
@@ -968,16 +1009,17 @@
         n.classList.add('show');
         const tag = n.querySelector('.ol-tag');
         if (tag) tag.classList.add('show');
-        await sleep(85);
+        await sleep(130);
       }
-      await sleep(300);
-      setStepStatus(5, 'done');
+      await sleep(450);
+      setStepStatus(2, 'done');
     }
 
-    async function animateStage2Draft() {
-      setPhase('报告写作专家 · 报告撰写');
-      setStepStatus(6, 'running');
-      const detail = proc.steps[6].detail;
+    async function animateStage3Draft() {
+      // 材料整编专家③：正文生成
+      setPhase('材料整编专家 · 正文生成');
+      setStepStatus(3, 'running');
+      const detail = proc.steps[3].detail;
       const note = document.createElement('p');
       note.className = 'typing-note';
       note.innerHTML = '正在右侧预览区逐段撰写正文… <span class="cnt">0</span> 字<span class="cursor"></span>';
@@ -987,12 +1029,12 @@
       const cursor = document.createElement('span');
       cursor.className = 'typing-cursor';
       let totalChars = 0;
-      const CHAR_INTERVAL = 16;
+      const CHAR_INTERVAL = 24;
       for (const para of draftParagraphs) {
         const h = document.createElement('h4');
         h.textContent = para.heading;
         typed.appendChild(h);
-        await sleep(110);
+        await sleep(160);
         const p = document.createElement('p');
         typed.appendChild(p);
         p.appendChild(cursor);
@@ -1011,19 +1053,20 @@
           if (ci % 4 === 0) await sleep(CHAR_INTERVAL * 4);
         }
         cursor.remove();
-        await sleep(240);
+        await sleep(360);
       }
-      note.innerHTML = `初稿完成 · 共 <span class="cnt">${totalChars}</span> 字，提交工作总结专家校核…`;
-      setStepStatus(6, 'done');
+      note.innerHTML = `初稿完成 · 共 <span class="cnt">${totalChars}</span> 字，进入内容审核…`;
+      setStepStatus(3, 'done');
       return totalChars;
     }
 
-    async function animateStage3Verify() {
-      setPhase('工作总结专家 · 数据校核');
-      setStepStatus(7, 'running');
-      expertSay('chief', '写作专家已交稿。我对正文中的数据引用逐条对账来源台账，确保与各组推送材料一致。');
-      await sleep(400);
-      const detail = proc.steps[7].detail;
+    async function animateStage4Verify() {
+      // 材料整编专家④：内容审核
+      setPhase('材料整编专家 · 内容审核');
+      setStepStatus(4, 'running');
+      expertSay('compiler', '初稿已完成。现在对正文中的数据引用逐条对账来源台账，确保与各组材料一致。');
+      await sleep(600);
+      const detail = proc.steps[4].detail;
       const list = document.createElement('div');
       list.className = 'vf-list';
       list.innerHTML = verifyItems.map(v => `
@@ -1036,16 +1079,45 @@
       const rows = list.querySelectorAll('.vf-row');
       for (const el of rows) {
         el.classList.add('show');
-        await sleep(200);
+        await sleep(300);
         el.classList.add('pass');
         el.querySelector('.vf-status').textContent = '✓ 通过';
-        await sleep(70);
+        await sleep(100);
       }
-      await sleep(200);
-      setStepStatus(7, 'done');
+      await sleep(300);
+      setStepStatus(4, 'done');
     }
 
     // ===================== 完整生成流程 =====================
+    // 生成内容沉淀到本地活动对应的档案盒（localStorage，供档案馆读取）
+    const ARCHIVE_KEY = 'xz-generated-archives';
+    const stripTags = s => String(s || '').replace(/<[^>]*>/g, '');
+    function splitLines(text) {
+      const plain = stripTags(text);
+      const sents = plain.match(/[^。；！？]+[。；！？]?/g) || [plain];
+      const lines = [];
+      for (let i = 0; i < sents.length; i += 2) lines.push(sents.slice(i, i + 2).join(''));
+      return lines;
+    }
+    function saveToArchive() {
+      try {
+        const m = metaData;
+        const rec = {
+          title: m.title || '总结报告',
+          bookName: '大型集会安保总结（AI）',
+          date: (m.signatureDate || '').replace(/[年月]/g, '-').replace(/日/g, '') || new Date().toISOString().slice(0, 10),
+          category: '活动安保类',
+          words: m.totalWords || '',
+          pages: finalParagraphs.map(p => ({ title: stripTags(p.heading), lines: splitLines(p.body) })),
+          savedAt: Date.now(),
+        };
+        const list = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]').filter(r => r.title !== rec.title);
+        list.push(rec);
+        localStorage.setItem(ARCHIVE_KEY, JSON.stringify(list.slice(-6)));
+        return true;
+      } catch (e) { return false; }
+    }
+
     function makeArchiveLink() {
       const a = document.createElement('a');
       a.className = 'archive-link';
@@ -1061,34 +1133,36 @@
       let totalChars = 0;
       try {
         createProcess();
-        await sleep(400);
-        await animateStage0Dispatch();
-        await animateStage1Outline();
-        totalChars = await animateStage2Draft();
-        await animateStage3Verify();
-        setPhase('报告写作专家 · 终稿预览');
-        setStepStatus(8, 'running');
+        await sleep(300);
+        await animateStage0Collect();
+        await animateStage1Classify();
+        await animateStage2Outline();
+        totalChars = await animateStage3Draft();
+        await animateStage4Verify();
+        // 全部专家任务完成（过程卡自动收起）→ 展示生成成果
+        setPhase('成果生成');
         await sleep(300);
         renderFinalDoc();
         const m = metaData;
         $('statWords').textContent = m.totalWords || String(totalChars);
-        docHint.textContent = `${m.docNumber || ''} · 全文 ${m.totalWords || totalChars} 字 · ${verifyItems.length} 项校核通过`;
+        docHint.textContent = `${m.docNumber || ''} · 全文 ${m.totalWords || totalChars} 字 · ${verifyItems.length} 项审核通过`;
         $('btnExportPdf2').disabled = false;
         $('btnRegen').disabled = false;
-        setStepStatus(8, 'done');
-        finishProcessCard(`${m.title || '总结报告'} · ${materials.length} 份素材（${LEADER_ORDER.length} 个组推送）· ${outlineData.filter(o => o.level === 1).length} 个章节 · ${verifyItems.length} 项数据校核全部通过`);
+        // 生成内容存入本地活动对应的档案盒
+        const archived = saveToArchive();
+        finishProcessCard(`${m.title || '总结报告'} · ${materials.length} 份素材（${LEADER_ORDER.length} 个组）· ${outlineData.filter(o => o.level === 1).length} 个章节 · ${verifyItems.length} 项内容审核全部通过${archived ? ' · 已存入档案盒' : ''}`);
         state.done = true;
-        headStatus.textContent = '总结报告已生成并沉淀至档案馆，右侧可预览正文或导出 PDF。';
+        headStatus.textContent = '总结报告已生成并存入档案馆对应档案盒，右侧可预览正文或导出 PDF。';
         await sleep(320);
         const card = xzSay(
-          `领导，本次<span class="hl">总结报告</span>已由多专家协同完成：工作总结专家统筹 <span class="hl">${LEADER_ORDER.length}</span> 个组共 <span class="hl">${materials.length}</span> 份材料，报告写作专家撰写全稿，${verifyItems.length} 处数据引用校核通过，正文已在右侧展示。`,
+          `领导，本次<span class="hl">总结报告</span>已生成：材料收集专家从 <span class="hl">${LEADER_ORDER.length}</span> 个组收集 <span class="hl">${materials.length}</span> 份素材，材料整编专家完成素材分类、提纲生成、正文撰写与内容审核，${verifyItems.length} 处数据引用全部通过，正文已在右侧展示。`,
         );
         const rc = document.createElement('div');
         rc.className = 'report-card';
         rc.innerHTML = `
           <div class="rc-head"><strong>生成成果</strong><em>协同完成</em></div>
           <div class="rc-title">${m.title || '总结报告'}</div>
-          <div class="rc-meta">工作总结专家 统筹 · 报告写作专家 撰写 · ${materials.length} 份素材 / ${LEADER_ORDER.length} 个组 · 全文 ${m.totalWords || totalChars} 字 · ${verifyItems.length} 项校核通过</div>
+          <div class="rc-meta">材料收集专家 收集 · 材料整编专家 整编 · ${materials.length} 份素材 / ${LEADER_ORDER.length} 个组 · 全文 ${m.totalWords || totalChars} 字 · ${verifyItems.length} 项审核通过</div>
           <div class="rc-actions">
             <button type="button" data-act="view">查看正文</button>
             <button type="button" class="gold" data-act="pdf">导出 PDF</button>
@@ -1099,7 +1173,7 @@
         scrollChat();
         // 正文沉淀至档案馆，提供跳转
         await sleep(280);
-        const ab = xzSay(`本次生成的<span class="hl">《${m.title || '总结报告'}》</span>已自动沉淀至「档案馆」，与历史归档材料统一管理，可随时回溯与再次导出。`);
+        const ab = xzSay(`《${m.title || '总结报告'}》已存入档案馆「活动安保类」的<span class="hl">大型集会安保总结（AI）</span>档案盒，与历史归档材料统一管理，可随时回溯与再次导出。`);
         ab.querySelector('.plain').appendChild(makeArchiveLink());
         scrollChat();
       } catch (err) {
@@ -1154,7 +1228,6 @@
         return;
       }
       if (/(生成|总结|报告)/.test(text)) {
-        await xzThinkThen('收到指示。工作总结专家将统筹调度各组组长推送材料，报告写作专家负责撰写，协同过程在对话中展开，正文实时同步到右侧预览。', 800);
         await runFullFlow();
         return;
       }
@@ -1186,8 +1259,8 @@
       await xzThinkThen('这个问题小智先记下了。当前工作台专注总结报告生成——点击下方指令即可一键开始。', 600);
     }
 
-    // ===================== PDF 导出（浏览器打印 → 另存为 PDF） =====================
-    function exportPdfViaPrint() {
+    // ===================== PDF 导出（支持选择路径） =====================
+    async function exportPdfViaPrint() {
       const m = metaData;
       const bodyHTML = `
         <div style="font-family:'华文中宋',SimSun,serif;font-size:26pt;color:#e00000;letter-spacing:0.15em;font-weight:bold;text-align:center;margin-bottom:0.3cm;">${m.orgName||''}</div>
@@ -1200,6 +1273,70 @@
         <p style="text-indent:2em;line-height:28pt;margin-top:0.5cm;">特此报告。</p>
         <div style="text-align:right;margin-top:1cm;font-size:16pt;line-height:28pt;"><p style="margin:0;text-indent:0;">${m.signatureOrg||''}</p><p style="margin:0;text-indent:0;">${m.signatureDate||''}</p></div>
         <div style="margin-top:1cm;border-top:1px solid #000;padding-top:0.1cm;font-size:10pt;color:#333;display:flex;justify-content:space-between;"><span>${m.footerLeft||''}</span><span>${m.footerRight||''}</span></div>`;
+
+      // 尝试使用 File System Access API 让用户选择路径
+      if ('showSaveFilePicker' in window) {
+        try {
+          // 动态加载 jsPDF
+          if (!window.jspdf) {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+
+          // 创建临时容器渲染 HTML
+          const container = document.createElement('div');
+          container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;';
+          container.innerHTML = `<div style="padding:3.7cm 2.6cm 3.5cm 2.8cm;font-family:'仿宋',FangSong,'仿宋_GB2312',serif;font-size:16pt;line-height:28pt;color:#000;">${bodyHTML}</div>`;
+          document.body.appendChild(container);
+
+          // 生成 PDF
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+          
+          // 使用 html 方法转换
+          await pdf.html(container.firstChild, {
+            callback: function(doc) {
+              document.body.removeChild(container);
+            },
+            x: 0,
+            y: 0,
+            width: 158, // A4 width minus margins
+            windowWidth: 210
+          });
+
+          // 让用户选择保存路径
+          const handle = await window.showSaveFilePicker({
+            suggestedName: `${m.title || '文档'}.pdf`,
+            types: [{
+              description: 'PDF 文件',
+              accept: { 'application/pdf': ['.pdf'] }
+            }]
+          });
+
+          // 写入文件
+          const writable = await handle.createWritable();
+          const blob = pdf.output('blob');
+          await writable.write(blob);
+          await writable.close();
+
+          xzThinkThen(`已保存到 <span class="hl">${handle.name}</span>`, 400);
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            // 用户取消选择，不执行任何操作
+            return;
+          }
+          console.warn('File System Access API 失败，回退到打印对话框:', err);
+          // 继续执行下面的打印对话框逻辑
+        }
+      }
+
+      // 回退方案：使用浏览器打印对话框（也支持选择路径）
       const printWin = window.open('', '_blank', 'width=800,height=900');
       if (!printWin) { alert('请允许弹出窗口以导出 PDF'); return; }
       printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${m.title||'文档'}</title>
@@ -1211,7 +1348,11 @@
         </style></head><body>${bodyHTML}</body></html>`);
       printWin.document.close();
       printWin.onload = () => {
-        setTimeout(() => { printWin.focus(); printWin.print(); printWin.close(); }, 500);
+        setTimeout(() => { 
+          printWin.focus(); 
+          printWin.print(); 
+          printWin.close(); 
+        }, 500);
       };
     }
 
@@ -1240,10 +1381,6 @@
       renderShortcuts();
       await loadData();
       sysSay('已进入工作台「总结材料生成」。确认指令后点击发送，小智即刻开始执行。');
-      await sleep(500);
-      xzSay('领导好，我是小智。本次专项任务已经完成，相关过程素材（会议纪要、部署方案、评审与数据报告等）均已归档。');
-      await sleep(900);
-      xzSay('如需形成正式总结材料，点击下方指令，或直接对我说「生成总结报告」。<span class="hl">工作总结专家</span>将统筹调度各组组长推送总结材料，<span class="hl">报告写作专家</span>负责提纲与撰写，经数据校核后生成终稿，进入正文生成后会自动展开右侧预览区。');
       // 工作台首页输入的对话通过 ?q= 透传进来，自动作为首条指令执行
       const qParam = new URLSearchParams(location.search).get('q');
       if (qParam) { await sleep(600); handleSend(qParam); };

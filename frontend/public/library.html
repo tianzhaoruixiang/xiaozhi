@@ -227,6 +227,16 @@
     .pg-dots i{width:7px;height:7px;border-radius:50%;background:rgba(136,153,170,.35);cursor:pointer;transition:all .25s}
     .pg-dots i.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan);transform:scale(1.25)}
 
+    /* AI生成内容 · 单页滚动视图 */
+    .scroll-view{flex:1;width:100%;overflow-y:auto;overflow-x:hidden;padding:1.5rem 2rem 2rem;display:flex;flex-direction:column;gap:1.2rem;scrollbar-width:thin;scrollbar-color:rgba(77,217,232,.4) transparent}
+    .scroll-view::-webkit-scrollbar{width:8px}
+    .scroll-view::-webkit-scrollbar-track{background:transparent}
+    .scroll-view::-webkit-scrollbar-thumb{background:rgba(77,217,232,.4);border-radius:4px}
+    .scroll-view::-webkit-scrollbar-thumb:hover{background:rgba(77,217,232,.7)}
+    .scroll-sheet{width:min(720px,90%);margin:0 auto;background:linear-gradient(172deg,#fefcf7,#f5efe2);border-radius:4px;padding:2rem 2.2rem 2.5rem 3.2rem;color:#2c2418;box-shadow:0 8px 28px rgba(0,0,0,.35);border:1px solid rgba(0,0,0,.07);position:relative;font-size:.92rem;line-height:2}
+    .scroll-sheet::before{content:'';position:absolute;top:0;left:50px;width:1px;height:100%;background:rgba(200,60,60,.18)}
+    .scroll-sheet::after{content:'';position:absolute;bottom:0;right:0;border-width:0 18px 18px 0;border-style:solid;border-color:transparent #dcd2ba #dcd2ba transparent}
+
     /* ============ 浮动机器人问答助手 ============ */
     .robot-fab{position:fixed;right:1.5rem;bottom:3.6rem;width:64px;height:64px;border-radius:50%;z-index:60;cursor:pointer;background:radial-gradient(circle at 35% 30%,#2b4a6e,#122036);border:2px solid rgba(77,217,232,.55);box-shadow:0 0 22px rgba(77,217,232,.35),inset 0 0 14px rgba(77,217,232,.15);animation:bob 3s ease-in-out infinite;transition:opacity .3s}
     .robot-fab:hover{box-shadow:0 0 34px rgba(77,217,232,.6)}
@@ -522,47 +532,88 @@
       const folder=box.folders[folderIdx];
       const total=folder.pages.length;
       const pages=Math.ceil(total/3);
+      const isGenerated=folder.generated===true;
       // 与书架上被点击的书本保持同一颜色
       const fc=FOLDER_COLORS[(catIdx*3+folderIdx)%FOLDER_COLORS.length];
       const col={c:fc,hi:adjustColor(fc,22),lo:adjustColor(fc,-25)};
-      views.pages.innerHTML=`
-        <div class="takeout" id="takeout">
-          <div class="to-box" id="toBox" style="--fc:${col.c};--fc-hi:${col.hi};--fc-lo:${col.lo}">
-            <div class="to-inner"><div class="to-pages"></div></div>
-            <div class="to-cover"><div class="to-spine"></div><div class="to-label">${folder.name}<small>${folder.date} · 共 ${total} 页</small></div></div>
+      
+      if(isGenerated){
+        // AI生成内容：单页滚动视图
+        views.pages.innerHTML=`
+          <div class="takeout" id="takeout">
+            <div class="to-box" id="toBox" style="--fc:${col.c};--fc-hi:${col.hi};--fc-lo:${col.lo}">
+              <div class="to-inner"><div class="to-pages"></div></div>
+              <div class="to-cover"><div class="to-spine"></div><div class="to-label">${folder.name}<small>${folder.date} · 共 ${total} 页</small></div></div>
+            </div>
           </div>
-        </div>
-        <div class="pg-main" id="pgMain">
-          <div class="pg-bar">
-            <div class="pg-title" style="color:${box.color}">${folder.name}<small>${box.name} · ${folder.date} · 共 ${total} 页</small></div>
-            <button class="back-btn" onclick="navTo(0)">← 返回档案架</button>
+          <div class="pg-main" id="pgMain">
+            <div class="pg-bar">
+              <div class="pg-title" style="color:${box.color}">${folder.name}<small>${box.name} · ${folder.date} · AI生成 · 共 ${total} 页</small></div>
+              <button class="back-btn" onclick="navTo(0)">← 返回档案架</button>
+            </div>
+            <div class="scroll-view" id="scrollView">
+              ${folder.pages.map((p,pi)=>`
+                <div class="scroll-sheet">
+                  <div class="page-holes"><i></i><i></i><i></i></div>
+                  <div class="page-stamp">归 档</div>
+                  <div class="page-title">${p.title}</div>
+                  ${p.lines.map(l=>`<div class="page-line">${l}</div>`).join('')}
+                  <div class="page-no">第 ${pi+1} 页 · 共 ${total} 页</div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        views.pages._folder=folder;
+        views.pages._ready=false;
+        showView(2);
+        if(rec)recordHist();
+        const to=document.getElementById('takeout'), tob=document.getElementById('toBox'), main=document.getElementById('pgMain');
+        setTimeout(()=>tob.classList.add('opened'),380);
+        setTimeout(()=>{
+          to.classList.add('out');
+          main.style.opacity=1;
+          views.pages._ready=true;
+        },950);
+        setTimeout(()=>to.remove(),1500);
+      } else {
+        // 普通内容：分页视图
+        views.pages.innerHTML=`
+          <div class="takeout" id="takeout">
+            <div class="to-box" id="toBox" style="--fc:${col.c};--fc-hi:${col.hi};--fc-lo:${col.lo}">
+              <div class="to-inner"><div class="to-pages"></div></div>
+              <div class="to-cover"><div class="to-spine"></div><div class="to-label">${folder.name}<small>${folder.date} · 共 ${total} 页</small></div></div>
+            </div>
           </div>
-          <div class="spread-wrap">
-            <button class="pg-btn" id="pvPrev" title="上一页"><span class="pg-arr">&#8249;</span>上一页</button>
-            <div class="spread" id="spread"></div>
-            <button class="pg-btn" id="pvNext" title="下一页">下一页<span class="pg-arr">&#8250;</span></button>
-          </div>
-          <div class="pager">
-            <div class="pg-dots" id="pgDots">${Array.from({length:pages},(_,k)=>`<i data-k="${k}" onclick="flipTo(${k})"></i>`).join('')}</div>
-            <div class="pg-ind" id="pgInd"></div>
-          </div>
-        </div>`;
-      views.pages._folder=folder;
-      views.pages._ready=false;
-      document.getElementById('pvPrev').onclick=()=>flipTo(pageIdx-1);
-      document.getElementById('pvNext').onclick=()=>flipTo(pageIdx+1);
-      showView(2);
-      if(rec)recordHist();
-      // 直接展示正面(0.3s) → 翻书式开盖(0.5s) → 盒体退场、档案页铺平
-      const to=document.getElementById('takeout'), tob=document.getElementById('toBox'), main=document.getElementById('pgMain');
-      setTimeout(()=>tob.classList.add('opened'),380);
-      setTimeout(()=>{
-        to.classList.add('out');
-        main.style.opacity=1;
-        renderSpread(0);
-        views.pages._ready=true;
-      },950);
-      setTimeout(()=>to.remove(),1500);
+          <div class="pg-main" id="pgMain">
+            <div class="pg-bar">
+              <div class="pg-title" style="color:${box.color}">${folder.name}<small>${box.name} · ${folder.date} · 共 ${total} 页</small></div>
+              <button class="back-btn" onclick="navTo(0)">← 返回档案架</button>
+            </div>
+            <div class="spread-wrap">
+              <button class="pg-btn" id="pvPrev" title="上一页"><span class="pg-arr">&#8249;</span>上一页</button>
+              <div class="spread" id="spread"></div>
+              <button class="pg-btn" id="pvNext" title="下一页">下一页<span class="pg-arr">&#8250;</span></button>
+            </div>
+            <div class="pager">
+              <div class="pg-dots" id="pgDots">${Array.from({length:pages},(_,k)=>`<i data-k="${k}" onclick="flipTo(${k})"></i>`).join('')}</div>
+              <div class="pg-ind" id="pgInd"></div>
+            </div>
+          </div>`;
+        views.pages._folder=folder;
+        views.pages._ready=false;
+        document.getElementById('pvPrev').onclick=()=>flipTo(pageIdx-1);
+        document.getElementById('pvNext').onclick=()=>flipTo(pageIdx+1);
+        showView(2);
+        if(rec)recordHist();
+        const to=document.getElementById('takeout'), tob=document.getElementById('toBox'), main=document.getElementById('pgMain');
+        setTimeout(()=>tob.classList.add('opened'),380);
+        setTimeout(()=>{
+          to.classList.add('out');
+          main.style.opacity=1;
+          renderSpread(0);
+          views.pages._ready=true;
+        },950);
+        setTimeout(()=>to.remove(),1500);
+      }
     }
 
     /* ===== 第二层：俯视箱内 · 文件盒侧面书脊 ===== */
@@ -795,6 +846,25 @@
     inp.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
     function sendMsg(){const q=inp.value.trim();if(!q)return;inp.value='';ask(q)}
     document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>useQuick(+b.dataset.k)));
+
+    /* ===== 读取写作工作台生成的成果，存入对应类别的档案盒 ===== */
+    (function loadGenerated(){
+      try{
+        const list=JSON.parse(localStorage.getItem('xz-generated-archives')||'[]');
+        list.forEach(rec=>{
+          const cat=DATA.find(c=>c.name===rec.category)||DATA[0];
+          const folder={
+            name:rec.bookName||rec.title,
+            date:rec.date||new Date(rec.savedAt||Date.now()).toISOString().slice(0,10),
+            info:`AI生成 · ${rec.words?rec.words+'字 · ':''}${rec.pages.length} 页`,
+            pages:rec.pages,
+            generated:true
+          };
+          const idx=cat.folders.findIndex(f=>f.name===folder.name);
+          if(idx>=0) cat.folders[idx]=folder; else cat.folders.push(folder);
+        });
+      }catch(e){}
+    })();
 
     renderShelf();
     showView(0);
