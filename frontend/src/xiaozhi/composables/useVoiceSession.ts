@@ -3,7 +3,7 @@ import { useSpeechReport } from './useSpeechReport'
 import { useVoiceWake } from './useVoiceWake'
 
 /** 唤醒应答语，参考「小爱同学」：喊一声就回「我在」 */
-export const WAKE_ACK_PHRASE = '我在，请讲。'
+export const WAKE_ACK_PHRASE = '我在。'
 
 /** 唤醒应答 / 汇报播报结束后的静默期，挡掉尾音回采 */
 const ECHO_GUARD_MS = 800
@@ -26,7 +26,7 @@ type VoiceSessionOptions = {
  * 待机 → 唤醒词 → 听指令 → 自动发送 → 播报完成后回到待机。
  *
  * 默认不开麦、不处于听指令状态。用户点头像后麦克风才进入唤醒词检测；
- * 只有「你好智枢」才唤醒并播报「我在，请讲」，收完这一段即休眠，
+ * 只有「你好智枢」才唤醒并播报「我在」，收完这一段即休眠，
  * 下一轮必须重新喊唤醒词。
  */
 export function useVoiceSession(options: VoiceSessionOptions) {

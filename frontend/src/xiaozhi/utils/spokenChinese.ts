@@ -72,12 +72,17 @@ function decimalSpoken(num: string): string {
   return `${toChineseInteger(Number(a))}点${toChineseDigits(b)}`
 }
 
+const CLOCK_SEP = '[:：∶︰]'
+
 export function arabicToSpoken(input: string): string {
   if (!input) return input
-  let t = input
+  let t = input.replace(/[\u200b\u200c\u200d\ufeff]/g, '')
 
   t = t.replace(
-    /(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T](\d{1,2})[:：](\d{2})(?:[:：]\d{2})?)?/g,
+    new RegExp(
+      `(\\d{4})[-/.](\\d{1,2})[-/.](\\d{1,2})(?:[ T](\\d{1,2})${CLOCK_SEP}(\\d{2})(?:${CLOCK_SEP}\\d{2})?)?`,
+      'g',
+    ),
     (_m, y, mo, d, hh?: string, mm?: string) => {
       const date = spokenDateParts(Number(y), Number(mo), Number(d))
       if (hh == null) return date
@@ -85,9 +90,14 @@ export function arabicToSpoken(input: string): string {
     },
   )
 
-  t = t.replace(/(\d{1,2})[:：](\d{2})(?:[:：]\d{2})?/g, (_m, hh, mm) =>
+  t = t.replace(new RegExp(`(\\d{1,2})\\s*${CLOCK_SEP}\\s*(\\d{2})(?:${CLOCK_SEP}\\d{2})?`, 'g'), (_m, hh, mm) =>
     spokenClock(Number(hh), Number(mm)),
   )
+
+  t = t.replace(/(\d{1,2})\s*时\s*(\d{1,2})\s*分?/g, (_m, hh, mm) =>
+    spokenClock(Number(hh), Number(mm)),
+  )
+  t = t.replace(/(\d{1,2})\s*时(?!间)/g, (_m, hh) => `${hourSpoken(Number(hh))}点`)
 
   t = t.replace(/(\d{1,2})\s*点\s*(\d{1,2})\s*分?/g, (_m, hh, mm) =>
     spokenClock(Number(hh), Number(mm)),
@@ -106,6 +116,7 @@ export function arabicToSpoken(input: string): string {
   t = t.replace(/(\d+)\.(\d+)/g, (_m, a, b) => `${toChineseInteger(Number(a))}点${toChineseDigits(b)}`)
   t = t.replace(/(\d{3,})/g, (m) => toChineseDigits(m))
   t = t.replace(/\d+/g, (m) => toChineseInteger(Number(m)))
+  t = t.replace(/整\s*[-~～—–至到]+\s*/g, '整至')
 
   return t
 }

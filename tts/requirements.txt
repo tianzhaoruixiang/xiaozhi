@@ -5,3 +5,5 @@ sherpa-onnx==1.12.40
 pydantic==2.11.4
 python-multipart==0.0.20
 soundfile==0.13.1
+edge-tts==7.2.8
+aiohttp==3.11.18

@@ -1,4 +1,4 @@
-"""本地 sherpa-onnx TTS：默认 Kokoro int8（中英），CPU 友好。"""
+"""本地 sherpa-onnx TTS：默认 MeloTTS 中文女声（VITS），Kokoro 作备选。"""
 
 from __future__ import annotations
 
@@ -11,22 +11,19 @@ import sherpa_onnx
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _MODELS = _REPO_ROOT / "data" / "models"
-DEFAULT_TTS_NAME = "kokoro-int8-multi-lang-v1_1"
-ENGINE_ID = "kokoro-int8-multi-lang-v1_1"
-DEFAULT_VOICE = os.environ.get("TTS_VOICE_PROMPT", "zf_001").strip() or "zf_001"
+DEFAULT_TTS_NAME = "vits-melo-tts-zh_en"
+ENGINE_ID = "vits-melo-tts-zh_en"
+DEFAULT_VOICE = os.environ.get("TTS_VOICE_PROMPT", "zh-female").strip() or "zh-female"
 NUM_THREADS = int(os.environ.get("TTS_NUM_THREADS", "4"))
 PROVIDER = os.environ.get("TTS_PROVIDER", os.environ.get("ASR_PROVIDER", "cpu")).strip() or "cpu"
-# Kokoro v1.1：3 = zf_001（中文女声）；0 = 英文
-DEFAULT_SID = int(os.environ.get("TTS_SPEAKER_ID", "3"))
+# MeloTTS zh_en：1 = 中文女声；0 = 英文
+DEFAULT_SID = int(os.environ.get("TTS_SPEAKER_ID", "1"))
 
 _VOICE_SID = {
-    "zh": 3,
-    "cn": 3,
-    "zf_xiaoxiao": 3,
-    "zf_xiaoyi": 3,
-    "zf_xiaobei": 3,
-    "zf_xiaoni": 3,
-    "zf_001": 3,
+    "zh": 1,
+    "cn": 1,
+    "zh-female": 1,
+    "melo": 1,
     "en": 0,
 }
 
@@ -74,7 +71,12 @@ def _find_tts_root() -> Path:
     candidates: list[Path] = []
     if raw:
         candidates.append(Path(raw))
-    preferred = ("kokoro-int8-multi-lang-v1_1", "kokoro-multi-lang-v1_1", "kokoro-multi-lang-v1_0")
+    preferred = (
+        "vits-melo-tts-zh_en",
+        "kokoro-int8-multi-lang-v1_1",
+        "kokoro-multi-lang-v1_1",
+        "kokoro-multi-lang-v1_0",
+    )
     for base in (_MODELS, Path("/data/models")):
         for name in preferred:
             candidates.append(base / name)
@@ -250,6 +252,8 @@ def _resolve_sid(
     sid = int(speaker_id)
     if _backend == "kokoro" and sid in (0, 1):
         return 0 if sid == 0 else DEFAULT_SID
+    if _backend == "vits" and sid > 1:
+        return DEFAULT_SID
     return sid
 
 

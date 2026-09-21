@@ -16,7 +16,7 @@ const props = withDefaults(
     voiceSupported: boolean
     voiceListening: boolean
     voiceAwaiting?: boolean
-    /** 正在播报唤醒应答「我在，请讲」 */
+    /** 正在播报唤醒应答「我在」 */
     voiceAckPlaying?: boolean
     voiceCapturing?: boolean
     voiceRecognizing?: boolean
@@ -187,7 +187,7 @@ watch(
                 </template>
                 <template v-else-if="streaming">{{ chatOnly ? '正在办理…' : '多智能体协作进行中' }}</template>
                 <template v-else-if="voiceAckPlaying">
-                  <span class="listen-live">智枢应答「我在，请讲」…</span>
+                  <span class="listen-live">智枢应答「我在」…</span>
                   <span class="voice-tag">已唤醒</span>
                 </template>
                 <template v-else-if="voiceAwaiting">

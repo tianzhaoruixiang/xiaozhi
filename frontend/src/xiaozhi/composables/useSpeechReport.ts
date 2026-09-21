@@ -27,7 +27,7 @@ function splitSpeakUnits(text: string): string[] {
 }
 
 /**
- * 本地 vLLM-Omni TTS（Qwen3-TTS CustomVoice，女声 vivian / yuxiaoyun_v3.1）。
+ * 微软神经女声（edge-tts / Xiaoxiao）。
  * 分句流水线：首句合成完即播，边播边预取下一句，缩短「写完 → 开声」等待。
  */
 export function useSpeechReport() {

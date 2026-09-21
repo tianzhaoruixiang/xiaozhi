@@ -929,7 +929,7 @@ ${briefUserTail}`,
   }
 
   oral = cleanOralText(oral.replace(/[#*`]/g, '').replace(/\n+/g, ' ').trim())
-  if (briefReply && oral.length > 160) {
+  if (briefReply && oral.length > 160 && !oral.startsWith('会议已通知到相关人员')) {
     oral = oral.slice(0, 120).replace(/[，,。.\s]+$/, '') + '。请您指示。'
   }
   onEvent({

@@ -57,9 +57,10 @@ ttsRoute.post('/speak', async (c) => {
       rate,
     })
     const { model } = getQwenTtsConfig()
+    const isMp3 = buf[0] === 0xff || buf.toString('ascii', 0, 3) === 'ID3'
     return c.newResponse(buf, {
       headers: {
-        'Content-Type': 'audio/wav',
+        'Content-Type': isMp3 ? 'audio/mpeg' : 'audio/wav',
         'Cache-Control': 'no-store',
         'X-TTS-Engine': model,
       },

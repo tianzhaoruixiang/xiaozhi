@@ -71,13 +71,18 @@ function spokenDateParts(y?: number, mo?: number, d?: number): string {
 /**
  * 把文本里的时间、日期和阿拉伯数字改成可朗读的汉字。
  */
+const CLOCK_SEP = '[:：∶︰]'
+
 export function arabicToSpoken(input: string): string {
   if (!input) return input
-  let t = input
+  let t = input.replace(/[\u200b\u200c\u200d\ufeff]/g, '')
 
   // 2026-09-22 14:30 / 2026/9/22 14:30:00
   t = t.replace(
-    /(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T](\d{1,2})[:：](\d{2})(?:[:：]\d{2})?)?/g,
+    new RegExp(
+      `(\\d{4})[-/.](\\d{1,2})[-/.](\\d{1,2})(?:[ T](\\d{1,2})${CLOCK_SEP}(\\d{2})(?:${CLOCK_SEP}\\d{2})?)?`,
+      'g',
+    ),
     (_m, y, mo, d, hh?: string, mm?: string) => {
       const date = spokenDateParts(Number(y), Number(mo), Number(d))
       if (hh == null) return date
@@ -85,10 +90,16 @@ export function arabicToSpoken(input: string): string {
     },
   )
 
-  // 14:30、9：05
-  t = t.replace(/(\d{1,2})[:：](\d{2})(?:[:：]\d{2})?/g, (_m, hh, mm) =>
+  // 14:00、9：05、14∶00 — 禁止口述里出现冒号时间
+  t = t.replace(new RegExp(`(\\d{1,2})\\s*${CLOCK_SEP}\\s*(\\d{2})(?:${CLOCK_SEP}\\d{2})?`, 'g'), (_m, hh, mm) =>
     spokenClock(Number(hh), Number(mm)),
   )
+
+  // 14时00分 / 14时
+  t = t.replace(/(\d{1,2})\s*时\s*(\d{1,2})\s*分?/g, (_m, hh, mm) =>
+    spokenClock(Number(hh), Number(mm)),
+  )
+  t = t.replace(/(\d{1,2})\s*时(?!间)/g, (_m, hh) => `${hourSpoken(Number(hh))}点`)
 
   // 14点30分 / 9点05分 / 2点
   t = t.replace(/(\d{1,2})\s*点\s*(\d{1,2})\s*分?/g, (_m, hh, mm) =>
@@ -121,6 +132,7 @@ export function arabicToSpoken(input: string): string {
   // 其余 1–2 位整数
   t = t.replace(/\d+/g, (m) => toChineseInteger(Number(m)))
 
+  t = t.replace(/整\s*[-~～—–至到]+\s*/g, '整至')
   return t
 }
 

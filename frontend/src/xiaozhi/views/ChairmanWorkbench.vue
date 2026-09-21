@@ -90,7 +90,7 @@ const orchestration = () => ({
 
 /**
  * 语音链路：默认不听指令。点头像后进入唤醒词待机，说「你好智枢」才醒
- * → 播报「我在，请讲」→ 听本轮这一整段 → 办完后休眠，下一轮须重新唤醒。
+ * → 播报「我在」→ 听本轮这一整段 → 办完后休眠，下一轮须重新唤醒。
  */
 const {
   supported: voiceSupported,
@@ -310,7 +310,6 @@ const onModeChange = (mode: string) => {
       <span class="pulse" aria-hidden="true" />
       <template v-if="voiceAckPlaying">
         <strong>我在</strong>
-        <span>请讲，说完停一下我就开始办</span>
       </template>
       <template v-else>
         <strong>{{ voiceCapturing ? '正在聆听…' : '智枢已唤醒' }}</strong>

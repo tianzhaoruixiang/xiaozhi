@@ -38,13 +38,13 @@ $VenvPy = Join-Path $Venv "Scripts\python.exe"
 & $VenvPy -m pip install -U pip wheel
 & $VenvPy -m pip install -r (Join-Path $Root "requirements.txt")
 
-$env:TTS_MODEL_DIR = Join-Path $Repo "data\models\kokoro-int8-multi-lang-v1_1"
+$env:TTS_MODEL_DIR = Join-Path $Repo "data\models\vits-melo-tts-zh_en"
 $env:ASR_MODEL_DIR = Join-Path $Repo "data\models\sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17"
 if (-not $env:ASR_NUM_THREADS) { $env:ASR_NUM_THREADS = "6" }
 if (-not $env:TTS_NUM_THREADS) { $env:TTS_NUM_THREADS = "4" }
 if (-not $env:ASR_PROVIDER) { $env:ASR_PROVIDER = "cpu" }
 if (-not $env:TTS_PROVIDER) { $env:TTS_PROVIDER = "cpu" }
-if (-not $env:TTS_SPEAKER_ID) { $env:TTS_SPEAKER_ID = "3" }
+if (-not $env:TTS_SPEAKER_ID) { $env:TTS_SPEAKER_ID = "1" }
 $env:PYTHONPATH = $Root
 
 Write-Host "Downloading TTS / ASR models if missing ..."
@@ -55,5 +55,5 @@ if (Get-Command bash -ErrorAction SilentlyContinue) {
 }
 
 Set-Location $Root
-Write-Host "Starting TTS/ASR http://127.0.0.1:8090 (kokoro-int8-multi-lang-v1_1)"
+Write-Host "Starting TTS/ASR http://127.0.0.1:8090 (vits-melo-tts-zh_en)"
 & $VenvPy -m uvicorn server:APP --host 0.0.0.0 --port 8090 --workers 1
