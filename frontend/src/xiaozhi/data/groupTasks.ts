@@ -339,7 +339,7 @@ export function useGroupTasks() {
 
   /**
    * 把某个任务分配给成员：写入负责人、补一条成员记录，并让该成员饱和度 +1。
-   * 重复分配给同一个人不会重复计数。
+   * 分配后任务即进入「进行中」。重复分配给同一个人不会重复计数。
    */
   const assignTask = (
     groupId: string,
@@ -354,16 +354,17 @@ export function useGroupTasks() {
     const alreadyOwned = task.owner === memberName
     task.owner = memberName
     if (options?.due) task.due = options.due
-    if (task.status === 'unassigned') task.status = 'todo'
+    // 分配即开工：待分配 → 进行中
+    if (task.status === 'unassigned') task.status = 'doing'
 
     if (!task.members.some((m) => m.name === memberName)) {
       task.members.push({
         id: `${task.id}-${memberName}`,
         name: memberName,
         role: options?.role || '负责人',
-        status: 'todo',
+        status: 'doing',
         progress: 0,
-        note: options?.note || '已分配，待启动',
+        note: options?.note || '已分配，开始推进',
       })
     }
 

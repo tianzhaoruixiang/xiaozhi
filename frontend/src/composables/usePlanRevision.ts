@@ -34,12 +34,10 @@ export function usePlanRevision() {
   const pendingCount = computed(() => changes.value.filter((change) => change.status === 'pending').length)
   const acceptedCount = computed(() => changes.value.filter((change) => change.status === 'accepted').length)
   const keptCount = computed(() => changes.value.filter((change) => change.status === 'kept').length)
-  const conflictCount = computed(() => changes.value.filter((change) => change.status === 'conflict').length)
   const resolvedCount = computed(() => acceptedCount.value + keptCount.value)
   const progress = computed(() => Math.round((resolvedCount.value / changes.value.length) * 100))
-  const canSubmit = computed(() => pendingCount.value === 0 && conflictCount.value === 0)
+  const canSubmit = computed(() => pendingCount.value === 0)
   const currentTask = computed(() => revisionAssistantTasks[activeTaskIndex.value])
-  const conflictChange = computed(() => changes.value.find((change) => change.status === 'conflict') ?? null)
 
   const taskTimer = window.setInterval(() => {
     activeTaskIndex.value = (activeTaskIndex.value + 1) % revisionAssistantTasks.length
@@ -66,47 +64,24 @@ export function usePlanRevision() {
     addActivity('会议决议已转入统稿', `已承接方案 ${sourceVersion.value} 和会议采纳记录，目标版本为 ${revisionVersion.value}`, 'running')
   }
 
-  const updateStatus = (id: string, status: RevisionStatus) => {
-    const change = changes.value.find((item) => item.id === id)
-    if (!change) return
-    change.status = status
-  }
-
   const acceptChange = (id: string) => {
     const change = changes.value.find((item) => item.id === id)
     if (!change) return
-    updateStatus(id, 'accepted')
+    change.status = 'accepted'
     addActivity('决议表述已确认', `${change.section}“${change.title}”已写入会议定稿 ${revisionVersion.value}`)
   }
 
   const keepOriginal = (id: string) => {
     const change = changes.value.find((item) => item.id === id)
     if (!change) return
-    updateStatus(id, 'kept')
+    change.status = 'kept'
     addActivity('决议本次不纳入', `${change.section}已记录会议裁决结果`, 'info')
-  }
-
-  const resolveConflict = (id: string) => {
-    const change = changes.value.find((item) => item.id === id)
-    if (!change) return
-    updateStatus(id, 'accepted')
-    change.revised = '以主会场建筑外沿为基准设置 150 米外围安保缓冲区；东侧城市主干道在早高峰时段采用 100 米弹性边界，并增设一处前置识别岗。'
-    change.reason = '采用分时弹性边界，兼顾外围风险识别距离与东侧道路通行需求。'
-    addActivity('规则冲突已处理', '已采用“分时弹性边界”方案，并同步更新现场部署要求')
-  }
-
-  const acceptLowRisk = () => {
-    const targets = changes.value.filter((change) => change.status === 'pending' && change.risk !== 'high')
-    targets.forEach((change) => { change.status = 'accepted' })
-    if (targets.length > 0) addActivity('批量确认决议表述', `已确认 ${targets.length} 项统稿内容，处理结果已留痕`)
-    return targets.length
   }
 
   const statusLabel: Record<RevisionStatus, string> = {
     pending: '待确认表述',
     accepted: '已写入统稿',
     kept: '本次不纳入',
-    conflict: '冲突待裁决',
   }
 
   const sendCommand = (command: string) => {
@@ -134,7 +109,7 @@ export function usePlanRevision() {
             original: clause.text,
             revised: `${clause.text.replace(/。$/, '')}；结合会话指令补充：${text.replace(clauseNo, '').trim()}。`,
             reason: `来自会议现场补充指令：“${text}”，已定位至对应条文并登记为统稿补充事项。`,
-            speaker: '张卫明',
+            speaker: '王卫明',
             department: '市局指挥中心',
             time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }),
             references: ['会议现场补充指令', `安保方案版本 ${sourceVersion.value}`],
@@ -153,11 +128,9 @@ export function usePlanRevision() {
     }
 
     if (text.includes('汇总')) {
-      assistantReply.value = `当前版本 ${revisionVersion.value}，共 ${changes.value.length} 项修订：已采纳 ${acceptedCount.value} 项、待审阅 ${pendingCount.value} 项、冲突 ${conflictCount.value} 项，处理进度 ${progress.value}%。`
+      assistantReply.value = `当前版本 ${revisionVersion.value}，共 ${changes.value.length} 项修订：已写入 ${acceptedCount.value} 项、待确认 ${pendingCount.value} 项，处理进度 ${progress.value}%。`
     } else if (text.includes('冲突')) {
-      assistantReply.value = conflictChange.value
-        ? `存在 1 项规则冲突：${conflictChange.value.section}“${conflictChange.value.title}”，建议采用分时弹性边界处理。`
-        : '当前没有规则冲突，全部条文与引用依据核对一致。'
+      assistantReply.value = '已完成冲突与缺项检查：全部条文与引用依据核对一致，未发现规则冲突和责任缺项。'
     } else {
       assistantReply.value = '指令已收到，会议助手正在结合会议决议、条文内容和支撑依据进行处理。'
     }
@@ -176,20 +149,16 @@ export function usePlanRevision() {
     assistantReply,
     sourceVersion,
     currentTask,
-    conflictChange,
     revisionVersion,
     pendingCount,
     acceptedCount,
     keptCount,
-    conflictCount,
     resolvedCount,
     progress,
     canSubmit,
     startConsolidation,
     acceptChange,
     keepOriginal,
-    resolveConflict,
-    acceptLowRisk,
     sendCommand,
   }
 }

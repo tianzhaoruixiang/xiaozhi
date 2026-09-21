@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, CircleCheck, Warning } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, CircleCheck } from '@element-plus/icons-vue'
 
 defineProps<{
   version: string
   acceptedCount: number
   pendingCount: number
-  conflictCount: number
   canSubmit: boolean
 }>()
 
@@ -19,9 +18,7 @@ defineEmits<{ back: []; next: [] }>()
     <div class="revision-status-summary" aria-live="polite">
       <span><el-icon><CircleCheck /></el-icon>已写入 {{ acceptedCount }} 项</span>
       <i />
-      <span :class="{ warning: pendingCount > 0 }">待审阅 {{ pendingCount }} 项</span>
-      <i />
-      <span :class="{ danger: conflictCount > 0 }"><el-icon><Warning /></el-icon>冲突 {{ conflictCount }} 项</span>
+      <span :class="{ warning: pendingCount > 0 }">待确认 {{ pendingCount }} 项</span>
       <i />
       <span class="save-state"><b />统稿结果已自动保存</span>
     </div>

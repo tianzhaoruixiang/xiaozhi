@@ -1,26 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { CircleCheck, Files, MagicStick, Promotion, WarningFilled } from '@element-plus/icons-vue'
+import { CircleCheck, Files, MagicStick, Promotion } from '@element-plus/icons-vue'
 import AIAssistantAvatar from '../AIAssistantAvatar.vue'
 import type {
   RevisionActivity,
   RevisionAssistantTask,
-  RevisionChange,
   RevisionSource,
 } from '../../types/revision'
 
 defineProps<{
   currentTask: RevisionAssistantTask
-  conflictChange: RevisionChange | null
   activities: RevisionActivity[]
   sources: RevisionSource[]
-  pendingCount: number
   assistantReply: string
 }>()
 
 const emit = defineEmits<{
-  resolve: [id: string]
-  'accept-low-risk': []
   command: [text: string]
 }>()
 
@@ -37,7 +32,7 @@ const send = (preset?: string) => {
 <template>
   <aside class="panel-frame revision-assistant" aria-labelledby="revision-assistant-title">
     <header class="revision-assistant-header">
-      <AIAssistantAvatar label="统稿会议助手机器人头像" />
+      <AIAssistantAvatar label="统稿会议助手书记员头像" />
       <div>
         <h2 id="revision-assistant-title">会议助手</h2>
         <p>仅处理会议已形成的决议</p>
@@ -56,23 +51,9 @@ const send = (preset?: string) => {
       <p>{{ currentTask.detail }}</p>
       <div class="assistant-workflow" aria-label="助手工作步骤">
         <span class="done"><i>✓</i>决议归章</span>
-        <span class="active"><i />冲突与缺项</span>
-        <span><i />生成定稿</span>
+        <span class="done"><i>✓</i>冲突与缺项</span>
+        <span class="active"><i />生成定稿</span>
       </div>
-    </section>
-
-    <section v-if="conflictChange" class="conflict-panel">
-      <header>
-        <span><el-icon><WarningFilled /></el-icon>发现规则冲突</span>
-        <b>需人工确认</b>
-      </header>
-      <h3>{{ conflictChange.title }}</h3>
-      <p>150 米固定缓冲区与东侧道路早高峰通行要求存在冲突。</p>
-      <div class="conflict-proposal">
-        <strong>建议处理方式</strong>
-        <span>采用分时弹性边界，并在东侧增加前置识别岗。</span>
-      </div>
-      <button type="button" @click="$emit('resolve', conflictChange.id)">采用建议并更新条文</button>
     </section>
 
     <section class="revision-source-section">
@@ -115,12 +96,5 @@ const send = (preset?: string) => {
         <button aria-label="发送指令" @click="send()"><el-icon><Promotion /></el-icon></button>
       </div>
     </section>
-
-    <footer class="revision-assistant-footer">
-      <p>可批量确认 {{ pendingCount }} 项无冲突决议表述</p>
-      <button type="button" :disabled="pendingCount === 0" @click="$emit('accept-low-risk')">
-        <el-icon><CircleCheck /></el-icon>批量确认决议表述
-      </button>
-    </footer>
   </aside>
 </template>

@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, CircleCheck, Warning } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, CircleCheck } from '@element-plus/icons-vue'
 
 defineProps<{
   signedCount: number
   pendingCount: number
-  objectionCount: number
   canComplete: boolean
 }>()
 
@@ -17,7 +16,6 @@ defineEmits<{ back: []; next: [] }>()
     <div class="revision-status-summary" aria-live="polite">
       <span><el-icon><CircleCheck /></el-icon>已会签 {{ signedCount }} 个</span><i />
       <span :class="{ warning: pendingCount > 0 }">待会签 {{ pendingCount }} 个</span><i />
-      <span :class="{ danger: objectionCount > 0 }"><el-icon><Warning /></el-icon>意见 {{ objectionCount }} 条</span><i />
       <span class="save-state"><b />会签状态已同步</span>
     </div>
     <button type="button" class="next-button" :class="{ ready: canComplete }" @click="$emit('next')">

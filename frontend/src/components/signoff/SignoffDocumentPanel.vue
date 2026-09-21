@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { CircleCheck, DocumentChecked, Lock, Stamp, WarningFilled } from '@element-plus/icons-vue'
-import type { SignoffClause, SignoffDepartment, SignoffOpinion } from '../../types/signoff'
+import { CircleCheck, DocumentChecked, Lock, Stamp } from '@element-plus/icons-vue'
+import type { SignoffClause, SignoffDepartment } from '../../types/signoff'
 
 defineProps<{
   version: string
   sourceChangeCount: number
   department?: SignoffDepartment
-  opinion: SignoffOpinion | null
   clauses: SignoffClause[]
 }>()
 
 defineEmits<{
-  resolve: [opinionId: string]
   sign: [departmentId: string]
 }>()
 
-const statusText = { signed: '已完成会签', pending: '等待确认', objection: '存在补充意见' }
+const statusText = { signed: '已完成会签', pending: '等待确认' }
 </script>
 
 <template>
@@ -44,15 +42,7 @@ const statusText = { signed: '已完成会签', pending: '等待确认', objecti
           <span>顺序</span><strong>第 {{ department.order }} 位</strong>
         </div>
 
-        <div v-if="opinion && opinion.status === 'open'" class="signoff-opinion">
-          <div class="opinion-title"><el-icon><WarningFilled /></el-icon><strong>会签补充意见</strong><span>{{ opinion.author }} · {{ opinion.department }} · {{ opinion.time }}</span></div>
-          <p class="opinion-source">关联条款：{{ opinion.section }}</p>
-          <blockquote>{{ opinion.content }}</blockquote>
-          <div class="opinion-proposal"><span>建议补充</span><p>{{ opinion.proposal }}</p></div>
-          <button type="button" @click="$emit('resolve', opinion.id)">确认补充并更新定稿条文</button>
-        </div>
-
-        <div v-else-if="department.status === 'signed'" class="signed-result">
+        <div v-if="department.status === 'signed'" class="signed-result">
           <span class="digital-seal"><el-icon><Stamp /></el-icon></span>
           <div><strong>会签意见：同意</strong><p>{{ department.signer }} 已于 {{ department.signedAt }} 完成电子签章</p></div>
           <code>{{ department.sealCode }}</code>
@@ -60,7 +50,7 @@ const statusText = { signed: '已完成会签', pending: '等待确认', objecti
 
         <div v-else class="pending-review">
           <el-icon><DocumentChecked /></el-icon>
-          <div><strong>{{ opinion?.status === 'resolved' ? '补充意见已写入定稿' : '未发现待处理异议' }}</strong><p>请会签人核对最终条文和本单位责任后确认。</p></div>
+          <div><strong>未发现待处理异议</strong><p>请会签人核对最终条文和本单位责任后确认。</p></div>
           <button type="button" @click="$emit('sign', department.id)"><el-icon><CircleCheck /></el-icon>确认并完成会签</button>
         </div>
       </section>

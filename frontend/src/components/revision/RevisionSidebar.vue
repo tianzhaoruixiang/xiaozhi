@@ -19,7 +19,6 @@ const statsFor = (chapterId: string) => {
   return {
     total: items.length,
     resolved: items.filter((change) => change.status === 'accepted' || change.status === 'kept').length,
-    conflict: items.some((change) => change.status === 'conflict'),
   }
 }
 
@@ -57,7 +56,7 @@ const updatedChapterCount = computed(() => new Set(props.changes.map((change) =>
           <strong>{{ chapter.title }}</strong>
           <small>{{ chapter.description }}</small>
         </span>
-        <span class="chapter-count" :class="{ warning: statsFor(chapter.id).conflict }">
+        <span class="chapter-count">
           {{ statsFor(chapter.id).resolved }}/{{ statsFor(chapter.id).total }}
         </span>
       </button>

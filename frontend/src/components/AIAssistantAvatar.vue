@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import assistantAvatar from '../assets/ai-security-assistant.png'
+import secretaryGif from '../assets/avatars/meeting_secretary_avatar_stable_square_256.gif'
 
 withDefaults(defineProps<{
   label?: string
 }>(), {
-  label: '会议助手机器人头像',
+  label: '会议助手书记员头像',
 })
 </script>
 
 <template>
   <span class="ai-avatar" role="img" :aria-label="label">
-    <img :src="assistantAvatar" alt="" />
-    <i class="ai-avatar-status" aria-hidden="true" />
+    <img class="ai-avatar-image" :src="secretaryGif" :alt="label" draggable="false" />
   </span>
 </template>

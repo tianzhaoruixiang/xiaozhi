@@ -3,8 +3,7 @@ import { ArrowRight, CircleCheck, Document } from '@element-plus/icons-vue'
 
 defineProps<{
   planVersion: string
-  acceptedCount: number
-  pendingCount: number
+  registeredCount: number
 }>()
 
 defineEmits<{ next: [] }>()
@@ -15,9 +14,9 @@ defineEmits<{ next: [] }>()
     <div class="status-left">
       <span><el-icon><Document /></el-icon>安保方案 {{ planVersion }}</span>
       <i />
-      <span><el-icon><CircleCheck /></el-icon>已采纳 {{ acceptedCount }} 条</span>
+      <span><el-icon><CircleCheck /></el-icon>已登记建议 {{ registeredCount }} 条</span>
       <i />
-      <span class="pending-text">待确认 {{ pendingCount }} 条</span>
+      <span class="pending-text">统稿确认阶段统一审定</span>
     </div>
     <div class="save-state"><span />会议内容、方案与纪要已自动保存</div>
     <button class="next-button" @click="$emit('next')">完成意见征集，进入统稿确认<el-icon><ArrowRight /></el-icon></button>

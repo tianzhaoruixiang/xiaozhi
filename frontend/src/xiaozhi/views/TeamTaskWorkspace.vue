@@ -8,7 +8,8 @@ import PersonalCollabProcess from '../components/PersonalCollabProcess.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { messages, streaming, error, send } = useAssistantChat()
+/** 任务执行页直接进入执行，不需要领导台的语音开场白 */
+const { messages, streaming, error, send } = useAssistantChat({ welcome: false })
 const { currentGroup, assignTask } = useGroupTasks()
 
 const TEAM_PATH = '/team'
@@ -199,10 +200,6 @@ const backToTeam = () => {
             </span>
             <span>{{ targetTask?.title }} · 负责人 {{ targetTask?.owner || '待分配' }}</span>
           </div>
-
-          <button type="button" class="primary" @click="backToTeam">
-            回到王处的个人工作台 <span aria-hidden="true">→</span>
-          </button>
         </footer>
       </section>
     </div>
@@ -531,35 +528,5 @@ const backToTeam = () => {
   border-color: rgba(47, 125, 90, 0.3);
   background: rgba(47, 125, 90, 0.1);
   color: var(--color-success);
-}
-
-.primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 20px;
-  border: 0;
-  border-radius: 12px;
-  background: linear-gradient(160deg, #1f8ea8, #176f84);
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 10px 22px rgba(23, 111, 132, 0.24);
-  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
-}
-
-.primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 26px rgba(23, 111, 132, 0.3);
-}
-
-.primary span {
-  font-family: var(--font-mono);
-  font-size: 1rem;
-}
-
-@media (max-width: 640px) {
-  .dock { flex-direction: column; align-items: stretch; }
 }
 </style>

@@ -6,7 +6,7 @@ withDefaults(defineProps<{
   currentStep?: number
   statusLabel?: string
   clockLabel?: string
-  statusTone?: 'live' | 'revision'
+  statusTone?: 'live' | 'revision' | 'wait'
   meetingTitle?: string
   meetingTime?: string
   location?: string

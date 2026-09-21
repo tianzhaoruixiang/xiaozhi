@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { Bell, ChatLineRound, DocumentAdd, FolderOpened, Promotion, UserFilled } from '@element-plus/icons-vue'
-import AIAssistantAvatar from '../AIAssistantAvatar.vue'
+import robotAvatar from '../../assets/ai-security-assistant.png'
 import type { ChatMessage, OperationGroup, OperationTask } from '../../types/operations'
 
 const props = defineProps<{
@@ -61,7 +61,10 @@ watch(() => props.messages.length, async () => {
         class="operation-message"
         :class="[`kind-${message.kind}`, { assistant: message.isAssistant }]"
       >
-        <AIAssistantAvatar v-if="message.isAssistant" class="message-avatar robot" label="作战助手机器人头像" />
+        <span v-if="message.isAssistant" class="message-avatar robot" role="img" aria-label="作战助手机器人头像">
+          <img :src="robotAvatar" alt="" />
+          <i class="ai-avatar-status" aria-hidden="true" />
+        </span>
         <span v-else class="message-avatar">{{ message.avatar }}</span>
         <div class="message-body">
           <header><strong>{{ message.sender }}</strong><span>{{ message.role }}</span><time>{{ message.time }}</time></header>

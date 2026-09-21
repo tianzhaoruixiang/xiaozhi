@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useGroupTasks } from '../data/groupTasks'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
 import MultiGroupTaskBoard from '../components/MultiGroupTaskBoard.vue'
+import ApprovedSubmissionsPanel from '../components/ApprovedSubmissionsPanel.vue'
 import MeetingReminderDialog from '../components/MeetingReminderDialog.vue'
 
 const { groups } = useGroupTasks()
@@ -70,6 +71,11 @@ const startFreeTask = () => {
       <template v-else>
         <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 各工作组任务与成员进展">
           <template #actions>
+            <RouterLink class="library-link" to="/library">
+              <span class="library-mark" aria-hidden="true" />
+              档案馆
+              <b aria-hidden="true">→</b>
+            </RouterLink>
             <RouterLink class="screen-link" :to="SCREEN_PATH">
               <span class="screen-mark" aria-hidden="true" />
               大屏看板
@@ -77,6 +83,9 @@ const startFreeTask = () => {
             </RouterLink>
           </template>
         </WorkbenchHeader>
+
+        <!-- 王处审核通过的成果会自动提交到本台 -->
+        <ApprovedSubmissionsPanel />
 
         <MultiGroupTaskBoard :groups="groups" />
 
@@ -229,20 +238,18 @@ const startFreeTask = () => {
   height: 100%;
   max-height: 100vh;
   min-height: 0;
-  padding: 16px clamp(16px, 2.5vw, 28px) 16px;
+  padding: 0;
   box-sizing: border-box;
 }
 
-/* 总结材料生成页：充满任务壳体的内嵌页面 */
+/* 总结材料生成页：充满任务壳体的内嵌页面（无装饰边框，与 /personal/task 视觉一致） */
 .task-frame {
   display: block;
   flex: 1;
   min-height: 0;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 22px;
-  background: #e9eef3;
-  box-shadow: var(--shadow-soft);
+  border: 0;
+  background: transparent;
 }
 
 /* 四块内容下方的输入框 */
@@ -332,6 +339,56 @@ const startFreeTask = () => {
 .group-entry small { color: rgba(255, 255, 255, 0.64); font-size: 0.68rem; }
 .group-entry strong { font-size: 0.92rem; letter-spacing: 0.04em; }
 .group-entry b { margin-left: auto; font-size: 1.2rem; font-weight: 500; }
+/* 页头右上角：跳转档案馆 */
+.library-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px 9px 14px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, #b87a35, #8f5e28);
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(143, 94, 40, 0.24);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.library-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(143, 94, 40, 0.32);
+}
+
+/* 档案馆图标（书本） */
+.library-mark {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 1px 3px 3px 1px;
+  opacity: 0.92;
+}
+
+.library-mark::after {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  width: 2px;
+  height: calc(100% - 2px);
+  background: currentColor;
+  content: '';
+  opacity: 0.6;
+}
+
+.library-link b {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
 /* 页头右上角：跳转指挥态势大屏 */
 .screen-link {
   display: inline-flex;

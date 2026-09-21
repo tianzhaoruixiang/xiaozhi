@@ -17,14 +17,12 @@ defineEmits<{
   'update:viewMode': [mode: RevisionViewMode]
   accept: [id: string]
   keep: [id: string]
-  resolve: [id: string]
 }>()
 
 const statusText = {
   pending: '待确认表述',
   accepted: '已写入统稿',
   kept: '本次不纳入',
-  conflict: '冲突待裁决',
 }
 
 const riskText = {
@@ -115,16 +113,12 @@ const docChapters = computed(() => props.chapters.map((chapter) => ({
                 <span><el-icon><Document /></el-icon>领导确认纳入 · {{ row.change.references.length }} 项支撑依据</span>
                 <span>责任单位：{{ row.change.owner }}</span>
               </footer>
-              <div v-if="row.change.status === 'pending' || row.change.status === 'conflict'" class="doc-note-actions">
+              <div v-if="row.change.status === 'pending'" class="doc-note-actions">
                 <button type="button" class="note-keep" @click="$emit('keep', row.change.id)">
                   <el-icon><RefreshLeft /></el-icon>本次不纳入
                 </button>
-                <button
-                  type="button"
-                  class="note-accept"
-                  @click="row.change.status === 'conflict' ? $emit('resolve', row.change.id) : $emit('accept', row.change.id)"
-                >
-                  <el-icon><Check /></el-icon>{{ row.change.status === 'conflict' ? '确认裁决并写入' : '确认表述并写入定稿' }}
+                <button type="button" class="note-accept" @click="$emit('accept', row.change.id)">
+                  <el-icon><Check /></el-icon>确认表述并写入定稿
                 </button>
               </div>
               <span v-else class="doc-note-resolved"><el-icon><Check /></el-icon>处理结果已留痕</span>

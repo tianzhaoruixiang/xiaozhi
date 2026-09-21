@@ -66,6 +66,8 @@ hrbpRoute.post('/report', async (c) => {
     title?: string
     markdown?: string
     html?: string
+    /** 前端生成的 .docx 包（base64），优先归档 */
+    docxBase64?: string
     taskId?: string
     fileName?: string
     kind?: string
@@ -95,13 +97,21 @@ hrbpRoute.post('/report', async (c) => {
     .slice(0, 48)
   const dir = reportDir()
 
-  // 交付物为 Word 文档；未提供 HTML 时回退为 Markdown 存档
+  // 交付物优先归档为真正的 .docx（前端生成后 base64 上传）；
+  // 其次退回 Word-HTML(.doc)，最后退回 Markdown
+  const docxBase64 = body.docxBase64?.trim()
   const html = body.html?.trim()
-  const ext = html ? 'doc' : 'md'
+  const ext = docxBase64 ? 'docx' : html ? 'doc' : 'md'
   const fileName = `${stampText}_${safeBase || 'report'}.${ext}`
   const filePath = join(dir, fileName)
 
-  if (html) {
+  if (docxBase64) {
+    try {
+      writeFileSync(filePath, Buffer.from(docxBase64, 'base64'))
+    } catch {
+      return c.json({ error: 'docx 内容无效，归档失败' }, 400)
+    }
+  } else if (html) {
     writeFileSync(filePath, wordDocument(title, html, stamp), 'utf8')
   } else {
     const header = [
@@ -127,6 +137,6 @@ hrbpRoute.post('/report', async (c) => {
     format: ext,
     reportedTo: 'HRBP',
     reportedAt: stamp.toISOString(),
-    message: html ? 'Word 交付物已确认并上报 HRBP' : '方案已上报 HRBP',
+    message: ext === 'md' ? '方案已上报 HRBP' : 'Word 交付物已确认并上报 HRBP',
   })
 })

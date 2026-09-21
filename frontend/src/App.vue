@@ -16,6 +16,7 @@ import TaskDistributionView from './views/TaskDistributionView.vue'
 import DistributionStatusBar from './components/distribution/DistributionStatusBar.vue'
 import DistributionCompletionDialog from './components/distribution/DistributionCompletionDialog.vue'
 import { useMeetingSimulation } from './composables/useMeetingSimulation'
+import { revisionSpeech, signoffSpeech } from './mock/meeting'
 import { usePlanRevision } from './composables/usePlanRevision'
 import { usePlanSignoff } from './composables/usePlanSignoff'
 import { useTaskDistribution } from './composables/useTaskDistribution'
@@ -41,49 +42,61 @@ onMounted(async () => {
   if (handoff.value) await updateMeetingHandoff(handoffId.value, { status: 'meeting' })
 })
 
-const stageMeta = computed(() => ({
-  1: { status: '会议进行中 · 意见征集中', clock: '会议时长', liveStage: '意见征集中', pending: '待领导确认' },
-  2: { status: '会议进行中 · 统稿确认中', clock: '会议时长', liveStage: '统稿确认中', pending: '统稿补充事项' },
-  3: { status: '会议进行中 · 联合会签中', clock: '会议时长', liveStage: '联合会签中', pending: '会签补充意见' },
-  4: { status: '会议进行中 · 任务部署中', clock: '会议时长', liveStage: '任务部署中', pending: '任务调整事项' },
-}[currentStep.value] ?? { status: '会议进行中', clock: '会议时长', liveStage: '会议进行中', pending: '待处理事项' }))
+const stageMeta = computed(() => {
+  if (!meeting.isRunning) {
+    return {
+      status: `等待签到 · ${meeting.signedCount}/${meeting.totalCount}`,
+      clock: '会议尚未开始',
+      liveStage: '等待签到',
+      pending: '等待签到',
+      tone: 'wait' as const,
+    }
+  }
+  return ({
+    1: { status: '会议进行中 · 意见征集中', clock: '会议时长', liveStage: '意见征集中', pending: '待统稿建议', tone: 'live' as const },
+    2: { status: '会议进行中 · 统稿确认中', clock: '会议时长', liveStage: '统稿确认中', pending: '统稿补充事项', tone: 'revision' as const },
+    3: { status: '会议进行中 · 联合会签中', clock: '会议时长', liveStage: '联合会签中', pending: '待签章单位', tone: 'revision' as const },
+    4: { status: '会议进行中 · 任务部署中', clock: '会议时长', liveStage: '任务部署中', pending: '任务调整事项', tone: 'live' as const },
+  }[currentStep.value] ?? { status: '会议进行中', clock: '会议时长', liveStage: '会议进行中', pending: '待处理事项', tone: 'live' as const })
+})
+
+const lastSpeech = computed(() => {
+  const list = meeting.transcripts.filter((t) => t.speakerId !== 'assistant')
+  const last = list.at(-1)
+  if (!last) return ''
+  const name = meeting.participants.find((p) => p.id === last.speakerId)?.name ?? ''
+  return `${name}：${last.content}`
+})
 
 const enterRevision = () => {
   revision.startConsolidation(meeting.planVersion)
   currentStep.value = 2
-  ElMessage.success('意见征集已完成，会议进入方案统稿确认')
+  meeting.startStageSpeech(revisionSpeech)
+  ElMessage.success(`意见征集已完成，${meeting.registeredSuggestions.length} 条登记建议转入统稿确认`)
 }
 
 const backToMeeting = () => {
   currentStep.value = 1
+  meeting.stopStageSpeech()
   meeting.isRunning = true
   ElMessage.info('已返回会议讨论，统稿内容保持保存')
 }
 
-const acceptLowRisk = () => {
-  const count = revision.acceptLowRisk()
-  if (count > 0) ElMessage.success(`已确认 ${count} 项会议决议表述`)
-  else ElMessage.info('当前没有可批量确认的统稿事项')
-}
-
 const submitRevision = () => {
   if (!revision.canSubmit) {
-    ElMessage.warning(`仍有 ${revision.pendingCount} 项表述待确认、${revision.conflictCount} 项冲突待裁决`)
+    ElMessage.warning(`仍有 ${revision.pendingCount} 项统稿补充事项待确认`)
     return
   }
   signoff.prepare(revision.revisionVersion, revision.changes)
   currentStep.value = 3
+  meeting.startStageSpeech(signoffSpeech)
   ElMessage.success(`会议定稿 ${revision.revisionVersion} 已生成，正在发起联合会签`)
 }
 
 const backToRevision = () => {
   currentStep.value = 2
+  meeting.stopStageSpeech()
   ElMessage.info('已返回统稿确认，会签状态保持保存')
-}
-
-const resolveSignoffOpinion = (opinionId: string) => {
-  signoff.resolveOpinion(opinionId)
-  ElMessage.success('补充意见已写入定稿条文，等待责任单位确认')
 }
 
 const signCurrentDepartment = (departmentId: string) => {
@@ -101,12 +114,13 @@ const completeAllSignoff = () => {
 
 const enterDistribution = () => {
   if (!signoff.canComplete) {
-    ElMessage.warning(`仍有 ${signoff.pendingCount} 个单位待会签、${signoff.objectionCount} 条意见待处理`)
+    ElMessage.warning(`仍有 ${signoff.pendingCount} 个单位待会签`)
     return
   }
   signoff.completeSignoff()
   distribution.prepare(signoff.version, signoff.recordId, signoff.clauses)
   currentStep.value = 4
+  meeting.stopStageSpeech()
   ElMessage.success(`会签记录 ${signoff.recordId} 已生成，会议进入任务部署`)
 }
 
@@ -176,11 +190,11 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
 <template>
   <div class="app-shell meeting-shell" :class="{ 'has-live-strip': currentStep > 1 }">
     <MeetingHeader
-      :elapsed="meeting.elapsed"
+      :elapsed="meeting.isRunning ? meeting.elapsed : '00:00:00'"
       :current-step="currentStep"
       :status-label="stageMeta.status"
       :clock-label="stageMeta.clock"
-      status-tone="live"
+      :status-tone="meeting.isRunning ? 'live' : 'wait'"
       :meeting-title="handoff?.title"
       :meeting-time="handoff?.startTime"
       :location="handoff?.location"
@@ -191,10 +205,11 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       v-if="currentStep > 1"
       :speaker="meeting.activeSpeaker"
       :live-draft="meeting.liveDraft"
+      :last-speech="lastSpeech"
       :assistant-task="meeting.currentTask.title"
       :stage-label="stageMeta.liveStage"
       :pending-label="stageMeta.pending"
-      :pending-count="meeting.pendingSuggestion ? 1 : 0"
+      :pending-count="meeting.registeredSuggestions.length"
       :is-running="meeting.isRunning"
     />
 
@@ -203,6 +218,8 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
         :participants="meeting.participants"
         :active-speaker-id="meeting.activeSpeaker.id"
         :plan-version="meeting.planVersion"
+        :is-running="meeting.isRunning"
+        :phase="meeting.phase"
       />
 
       <TranscriptPanel
@@ -211,18 +228,19 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
         :active-speaker="meeting.activeSpeaker"
         :live-draft="meeting.liveDraft"
         :is-running="meeting.isRunning"
+        :me-signed="!!meeting.me?.signedIn"
+        :meeting-done="meeting.meetingDone"
         @toggle-running="meeting.isRunning = !meeting.isRunning"
+        @sign-in="meeting.signIn"
       />
 
       <AssistantPanel
         :participants="meeting.participants"
         :current-task="meeting.currentTask"
         :activities="meeting.activities"
-        :pending-suggestion="meeting.pendingSuggestion"
+        :registered-suggestions="meeting.registeredSuggestions"
         :assistant-reply="meeting.assistantReply"
         :pulse="meeting.pulse"
-        @accept="meeting.acceptSuggestion"
-        @defer="meeting.deferSuggestion"
         @command="meeting.sendCommand"
       />
     </main>
@@ -236,10 +254,8 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :selected-chapter-id="revision.selectedChapterId"
       :view-mode="revision.viewMode"
       :current-task="revision.currentTask"
-      :conflict-change="revision.conflictChange"
       :activities="revision.activities"
       :sources="revision.sources"
-      :pending-count="revision.pendingCount"
       :progress="revision.progress"
       :source-version="revision.sourceVersion"
       :target-version="revision.revisionVersion"
@@ -248,8 +264,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       @update:view-mode="revision.viewMode = $event"
       @accept="revision.acceptChange"
       @keep="revision.keepOriginal"
-      @resolve="revision.resolveConflict"
-      @accept-low-risk="acceptLowRisk"
       @command="revision.sendCommand"
     />
 
@@ -261,7 +275,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :departments="signoff.departments"
       :selected-department-id="signoff.selectedDepartmentId"
       :selected-department="signoff.selectedDepartment"
-      :selected-opinion="signoff.selectedOpinion"
       :activities="signoff.activities"
       :current-task="signoff.currentTask"
       :materials="signoff.materials"
@@ -270,7 +283,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :signed-count="signoff.signedCount"
       :progress="signoff.progress"
       @select="signoff.selectedDepartmentId = $event"
-      @resolve="resolveSignoffOpinion"
       @sign="signCurrentDepartment"
       @remind="remindDepartment"
       @select-material="signoff.selectMaterial"
@@ -302,8 +314,7 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
     <BottomStatusBar
       v-if="currentStep === 1"
       :plan-version="meeting.planVersion"
-      :accepted-count="meeting.acceptedCount"
-      :pending-count="meeting.pendingSuggestion ? 1 : 0"
+      :registered-count="meeting.registeredSuggestions.length"
       @next="enterRevision"
     />
 
@@ -312,7 +323,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :version="revision.revisionVersion"
       :accepted-count="revision.acceptedCount"
       :pending-count="revision.pendingCount"
-      :conflict-count="revision.conflictCount"
       :can-submit="revision.canSubmit"
       @back="backToMeeting"
       @next="submitRevision"
@@ -322,7 +332,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       v-else-if="currentStep === 3"
       :signed-count="signoff.signedCount"
       :pending-count="signoff.pendingCount"
-      :objection-count="signoff.objectionCount"
       :can-complete="signoff.canComplete"
       @back="backToRevision"
       @next="enterDistribution"
