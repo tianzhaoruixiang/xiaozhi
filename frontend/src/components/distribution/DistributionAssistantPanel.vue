@@ -16,11 +16,10 @@ const props = defineProps<{
   group?: DistributionGroup
   groupTasks: DistributionTask[]
   pendingCount: number
-  pendingMemberCount: number
   dispatched: boolean
 }>()
 
-defineEmits<{ 'confirm-group': [groupId: string]; 'confirm-all': []; 'pull-members': [groupId: string] }>()
+defineEmits<{ 'confirm-group': [groupId: string]; 'confirm-all': [] }>()
 
 const materialStatusText = { ready: '待发送', sent: '已送达', read: '已查阅' }
 const pendingInGroup = () => props.groupTasks.filter((task) => task.status === 'pending').length
@@ -44,10 +43,8 @@ const pendingInGroup = () => props.groupTasks.filter((task) => task.status === '
       <header><span><el-icon><CircleCheck /></el-icon>{{ group?.name }}完整性</span><b>{{ groupTasks.length - pendingInGroup() }}/{{ groupTasks.length }}</b></header>
       <div class="readiness-line"><span :style="{ width: `${groupTasks.length ? ((groupTasks.length - pendingInGroup()) / groupTasks.length) * 100 : 0}%` }" /></div>
       <p v-if="pendingInGroup()">还有 {{ pendingInGroup() }} 项任务需要确认，确认后可随整批任务下发。</p>
-      <p v-else-if="group && !group.membersPulled">组长尚未拉入执行成员，成员到位后本组任务方可下发。</p>
-      <p v-else>负责人、时限、协作单位和交付物均已完整。</p>
+      <p v-else>负责人、时限、协作单位和交付物均已完整；执行成员由组长进入工作组后自行组建。</p>
       <button v-if="group && pendingInGroup()" type="button" @click="$emit('confirm-group', group.id)">确认当前组全部任务</button>
-      <button v-else-if="group && !group.membersPulled" type="button" @click="$emit('pull-members', group.id)">拉入本组执行成员</button>
     </section>
 
     <section class="distribution-materials">
@@ -65,7 +62,7 @@ const pendingInGroup = () => props.groupTasks.filter((task) => task.status === '
     </section>
 
     <footer class="distribution-assistant-actions">
-      <p v-if="!dispatched">全局还有 {{ pendingCount }} 项任务待确认<template v-if="pendingMemberCount > 0">，{{ pendingMemberCount }} 个组待拉成员</template></p>
+      <p v-if="!dispatched">全局还有 {{ pendingCount }} 项任务待确认</p>
       <p v-else>所有任务与材料均已完成下发</p>
       <button type="button" :disabled="pendingCount === 0 || dispatched" @click="$emit('confirm-all')">智能补全并确认剩余任务</button>
     </footer>

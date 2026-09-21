@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { signoffActivities, signoffAssistantTasks, signoffDepartments, signoffOpinions } from '../mock/signoff'
+import { signoffActivities, signoffAssistantTasks, signoffDepartments, signoffMaterials, signoffOpinions } from '../mock/signoff'
 import type { RevisionChange } from '../types/revision'
 import type { SignoffClause, SignoffStatus } from '../types/signoff'
 
@@ -14,6 +14,8 @@ export function usePlanSignoff() {
   const activeTaskIndex = ref(0)
   const completedAt = ref('')
   const recordId = ref('')
+  const materials = ref(structuredClone(signoffMaterials))
+  const selectedMaterialId = ref(signoffMaterials[0]?.id ?? '')
 
   const selectedDepartment = computed(() => departments.value.find((department) => department.id === selectedDepartmentId.value) ?? departments.value[0])
   const selectedOpinion = computed(() => opinions.value.find((opinion) => opinion.departmentId === selectedDepartmentId.value) ?? null)
@@ -23,6 +25,7 @@ export function usePlanSignoff() {
   const progress = computed(() => Math.round((signedCount.value / departments.value.length) * 100))
   const canComplete = computed(() => signedCount.value === departments.value.length && objectionCount.value === 0)
   const currentTask = computed(() => signoffAssistantTasks[activeTaskIndex.value] ?? signoffAssistantTasks[0]!)
+  const selectedMaterial = computed(() => materials.value.find((material) => material.id === selectedMaterialId.value) ?? materials.value[0])
 
   const taskTimer = window.setInterval(() => {
     activeTaskIndex.value = (activeTaskIndex.value + 1) % signoffAssistantTasks.length
@@ -56,6 +59,20 @@ export function usePlanSignoff() {
       decisionTime: change.time,
       decision: 'accepted' as const,
     }))
+    const finalPlan = materials.value.find((material) => material.id === 'final-plan')
+    if (finalPlan) {
+      finalPlan.meta = `版本 ${planVersion}`
+      if (resolvedChanges.length > 0) {
+        finalPlan.sections = [{
+          title: '本版关键条文',
+          items: resolvedChanges.map((change) => `${change.section} ${change.title}：${change.revised}`),
+        }]
+      }
+    }
+  }
+
+  const selectMaterial = (materialId: string) => {
+    if (materials.value.some((material) => material.id === materialId)) selectedMaterialId.value = materialId
   }
 
   const updateDepartmentStatus = (id: string, status: SignoffStatus) => {
@@ -131,7 +148,11 @@ export function usePlanSignoff() {
     canComplete,
     completedAt,
     recordId,
+    materials,
+    selectedMaterialId,
+    selectedMaterial,
     prepare,
+    selectMaterial,
     resolveOpinion,
     signDepartment,
     sendReminder,

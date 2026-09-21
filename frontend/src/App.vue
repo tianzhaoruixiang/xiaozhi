@@ -127,19 +127,9 @@ const confirmAllDistributionTasks = () => {
   else ElMessage.info('所有任务均已完成确认')
 }
 
-const pullDistributionMembers = (groupId: string) => {
-  if (distribution.pullMembers(groupId)) {
-    const group = distribution.groups.find((item) => item.id === groupId)
-    ElMessage.success(`${group?.name ?? '本组'} ${group?.memberCount ?? ''} 名执行成员已拉入到位`)
-  }
-}
-
 const finishMeetingAndEnterOperations = async () => {
   if (!distribution.dispatched && !distribution.canDispatch) {
-    const parts: string[] = []
-    if (distribution.pendingCount > 0) parts.push(`${distribution.pendingCount} 项任务待确认`)
-    if (distribution.pendingMemberGroups.length > 0) parts.push(`${distribution.pendingMemberGroups.map((group) => group.name).join('、')}执行成员待拉入`)
-    ElMessage.warning(`暂时无法下发：${parts.join('，')}`)
+    ElMessage.warning(`暂时无法下发：${distribution.pendingCount} 项任务待确认`)
     return
   }
   if (!distribution.dispatched) distribution.dispatchAll()
@@ -250,12 +240,16 @@ const finishMeetingAndEnterOperations = async () => {
       :selected-opinion="signoff.selectedOpinion"
       :activities="signoff.activities"
       :current-task="signoff.currentTask"
+      :materials="signoff.materials"
+      :selected-material-id="signoff.selectedMaterialId"
+      :selected-material="signoff.selectedMaterial"
       :signed-count="signoff.signedCount"
       :progress="signoff.progress"
       @select="signoff.selectedDepartmentId = $event"
       @resolve="resolveSignoffOpinion"
       @sign="signCurrentDepartment"
       @remind="remindDepartment"
+      @select-material="signoff.selectMaterial"
       @complete-all="completeAllSignoff"
     />
 
@@ -273,14 +267,12 @@ const finishMeetingAndEnterOperations = async () => {
       :activities="distribution.activities"
       :materials="distribution.materials"
       :pending-count="distribution.pendingCount"
-      :pending-member-count="distribution.pendingMemberGroups.length"
       :progress="distribution.progress"
       :dispatched="distribution.dispatched"
       @select="distribution.selectedGroupId = $event"
       @confirm="confirmDistributionTask"
       @confirm-group="confirmDistributionGroup"
       @confirm-all="confirmAllDistributionTasks"
-      @pull-members="pullDistributionMembers"
     />
 
     <BottomStatusBar
@@ -317,7 +309,6 @@ const finishMeetingAndEnterOperations = async () => {
       :confirmed-count="distribution.confirmedCount"
       :pending-count="distribution.pendingCount"
       :total-count="distribution.tasks.length"
-      :pending-member-count="distribution.pendingMemberGroups.length"
       :can-dispatch="distribution.canDispatch"
       :dispatched="distribution.dispatched"
       @back="backToSignoff"

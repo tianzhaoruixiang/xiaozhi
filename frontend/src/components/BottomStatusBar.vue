@@ -19,7 +19,7 @@ defineEmits<{ next: [] }>()
       <i />
       <span class="pending-text">待确认 {{ pendingCount }} 条</span>
     </div>
-    <div class="save-state"><span />会议内容与方案已自动保存</div>
+    <div class="save-state"><span />会议内容、方案与纪要已自动保存</div>
     <button class="next-button" @click="$emit('next')">完成意见征集，进入统稿确认<el-icon><ArrowRight /></el-icon></button>
   </footer>
 </template>

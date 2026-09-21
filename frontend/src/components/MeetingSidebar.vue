@@ -68,21 +68,21 @@ const agenda = [
       class="plan-card"
       role="button"
       tabindex="0"
-      aria-label="查看当前版本方案内容"
+      aria-label="查看当前版本方案与会议纪要"
       @click="planVisible = true"
       @keydown.enter.prevent="planVisible = true"
       @keydown.space.prevent="planVisible = true"
     >
       <div class="plan-head">
         <span class="plan-label">当前方案版本</span>
-        <span class="plan-hint">查看方案<el-icon><ArrowRight /></el-icon></span>
+        <span class="plan-hint">方案与纪要<el-icon><ArrowRight /></el-icon></span>
       </div>
       <div class="plan-version">{{ planVersion }}</div>
       <div class="plan-meta"><span>自动保存</span><span>刚刚更新</span></div>
       <div class="plan-progress"><i /></div>
     </section>
 
-    <el-dialog v-model="planVisible" :title="`${planVersion} · 大型会议保障动员会`" width="42.5rem" class="security-dialog plan-dialog">
+    <el-dialog v-model="planVisible" :title="`${planVersion} · 会议方案与纪要`" width="42.5rem" class="security-dialog plan-dialog">
       <div class="plan-summary">
         <span>拟稿单位：{{ planDocument.draftUnit }}</span>
         <span>更新时间：{{ planDocument.updatedAt }}</span>
@@ -120,6 +120,46 @@ const agenda = [
                 <li v-for="task in group.tasks" :key="task">{{ task }}</li>
               </ul>
             </article>
+          </section>
+        </el-tab-pane>
+
+        <el-tab-pane label="会议纪要" name="minutes">
+          <section class="meeting-minutes">
+            <header class="minutes-head">
+              <div>
+                <small>会议纪要</small>
+                <h4>{{ planDocument.minutes.title }}</h4>
+              </div>
+              <span>{{ planDocument.minutes.status }}</span>
+            </header>
+
+            <div class="minutes-meta">
+              <span>记录：{{ planDocument.minutes.recorder }}</span>
+              <span>更新时间：{{ planDocument.updatedAt }}</span>
+            </div>
+
+            <section class="minutes-section">
+              <h4>会议概述</h4>
+              <p>{{ planDocument.minutes.summary }}</p>
+            </section>
+
+            <section class="minutes-section">
+              <h4>议定事项</h4>
+              <ol class="minutes-decisions">
+                <li v-for="item in planDocument.minutes.decisions" :key="item">{{ item }}</li>
+              </ol>
+            </section>
+
+            <section class="minutes-section">
+              <h4>后续任务</h4>
+              <div class="minutes-actions">
+                <article v-for="item in planDocument.minutes.actions" :key="item.id">
+                  <strong>{{ item.content }}</strong>
+                  <span>{{ item.owner }}</span>
+                  <time>{{ item.deadline }}</time>
+                </article>
+              </div>
+            </section>
           </section>
         </el-tab-pane>
       </el-tabs>

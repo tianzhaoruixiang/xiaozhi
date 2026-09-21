@@ -64,10 +64,27 @@ export interface WorkGroup {
   tasks: string[]
 }
 
+export interface MeetingMinuteAction {
+  id: string
+  content: string
+  owner: string
+  deadline: string
+}
+
+export interface MeetingMinutes {
+  title: string
+  recorder: string
+  status: string
+  summary: string
+  decisions: string[]
+  actions: MeetingMinuteAction[]
+}
+
 export interface PlanDocument {
   draftUnit: string
   updatedAt: string
   changes: string[]
   chapters: PlanChapter[]
   groups: WorkGroup[]
+  minutes: MeetingMinutes
 }

@@ -24,7 +24,6 @@ defineProps<{
   activities: DistributionActivity[]
   materials: DistributionMaterial[]
   pendingCount: number
-  pendingMemberCount: number
   progress: number
   dispatched: boolean
 }>()
@@ -34,7 +33,6 @@ defineEmits<{
   confirm: [taskId: string]
   'confirm-group': [groupId: string]
   'confirm-all': []
-  'pull-members': [groupId: string]
 }>()
 </script>
 
@@ -54,7 +52,6 @@ defineEmits<{
       :plan-version="planVersion"
       :signoff-record-id="signoffRecordId"
       @confirm="$emit('confirm', $event)"
-      @pull-members="$emit('pull-members', $event)"
     />
     <DistributionAssistantPanel
       :current-task="currentTask"
@@ -63,11 +60,9 @@ defineEmits<{
       :group="selectedGroup"
       :group-tasks="tasks"
       :pending-count="pendingCount"
-      :pending-member-count="pendingMemberCount"
       :dispatched="dispatched"
       @confirm-group="$emit('confirm-group', $event)"
       @confirm-all="$emit('confirm-all')"
-      @pull-members="$emit('pull-members', $event)"
     />
   </main>
 </template>

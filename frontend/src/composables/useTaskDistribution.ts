@@ -26,16 +26,7 @@ export function useTaskDistribution() {
   const confirmedCount = computed(() => tasks.value.filter((task) => task.status === 'confirmed' || task.status === 'sent').length)
   const pendingCount = computed(() => tasks.value.filter((task) => task.status === 'pending').length)
   const sentCount = computed(() => tasks.value.filter((task) => task.status === 'sent').length)
-  const pendingMemberGroups = computed(() => groups.value.filter((group) => !group.membersPulled))
-  const canDispatch = computed(() => pendingCount.value === 0 && pendingMemberGroups.value.length === 0 && !dispatched.value)
-
-  const pullMembers = (groupId: string) => {
-    const group = groups.value.find((item) => item.id === groupId)
-    if (!group || group.membersPulled) return false
-    group.membersPulled = true
-    addActivity('组长拉入执行成员', `${group.name} ${group.memberCount} 名执行人员已到位，均由组长从责任单位与协作力量中拉入`)
-    return true
-  }
+  const canDispatch = computed(() => pendingCount.value === 0 && !dispatched.value)
   const progress = computed(() => Math.round((confirmedCount.value / tasks.value.length) * 100))
   const currentTask = computed(() => distributionAssistantTasks[activeTaskIndex.value] ?? distributionAssistantTasks[0]!)
 
@@ -104,7 +95,7 @@ export function useTaskDistribution() {
     tasks.value.forEach((task) => { task.status = 'sent' })
     materials.value.forEach((material, index) => { material.status = index === 0 ? 'read' : 'sent' })
     dispatched.value = true
-    addActivity('任务与材料已下发', '6 个作战组、91 名执行人员已收到任务清单和关联材料')
+    addActivity('任务与材料已下发', '6 个工作组组长已收到任务清单和关联材料，执行成员由组长在组内组建')
     return true
   }
 
@@ -124,8 +115,6 @@ export function useTaskDistribution() {
     pendingCount,
     sentCount,
     canDispatch,
-    pendingMemberGroups,
-    pullMembers,
     progress,
     dispatched,
     prepare,

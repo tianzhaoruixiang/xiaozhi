@@ -2,8 +2,10 @@ import type {
   SignoffActivity,
   SignoffAssistantTask,
   SignoffDepartment,
+  SignoffMaterial,
   SignoffOpinion,
 } from '../types/signoff'
+import { planDocument } from './meeting'
 
 export const signoffDepartments: SignoffDepartment[] = [
   { id: 'command', name: '市局指挥中心', signer: '张伟', role: '指挥长', order: 1, status: 'signed', signedAt: '11:48', sealCode: 'QZ-2401' },
@@ -40,4 +42,59 @@ export const signoffAssistantTasks: SignoffAssistantTask[] = [
   { title: '正在检查签署完整性', detail: '核验签署人员、单位权限和电子签章记录' },
   { title: '正在检测意见冲突', detail: '比对交通保障要求与现场安保边界条件' },
   { title: '正在生成定稿记录', detail: '整理版本摘要、签署时间和审计编号' },
+]
+
+export const signoffMaterials: SignoffMaterial[] = [
+  {
+    id: 'final-plan',
+    title: '大型会议保障安保方案',
+    kind: '会议定稿',
+    meta: '版本 1.4',
+    status: '会签依据',
+    sections: [
+      {
+        title: '本版关键条文',
+        items: planDocument.changes,
+      },
+    ],
+  },
+  {
+    id: 'meeting-minutes',
+    title: planDocument.minutes.title,
+    kind: '会议纪要',
+    meta: '2026-09-20 10:29',
+    status: '会议生成',
+    sections: [
+      {
+        title: '会议概述',
+        items: [planDocument.minutes.summary],
+      },
+      {
+        title: '议定事项',
+        items: planDocument.minutes.decisions,
+      },
+      {
+        title: '责任任务',
+        items: planDocument.minutes.actions.map((action) => `${action.owner}：${action.content}（${action.deadline}）`),
+      },
+    ],
+  },
+  {
+    id: 'accepted-decisions',
+    title: '领导采纳意见清单',
+    kind: '决策记录',
+    meta: '8 条已采纳',
+    status: '已归档',
+    sections: [
+      {
+        title: '采纳意见摘要',
+        items: [
+          '增设跨组联络专席，重大情况同步会商。',
+          '境外人员审核节点前移至会前 72 小时。',
+          '主入口高峰时段开放全部安检通道并保留疏散通道。',
+          '弱电机房和临时搭建区域纳入会前专项检查。',
+        ],
+      },
+    ],
+  },
 ]

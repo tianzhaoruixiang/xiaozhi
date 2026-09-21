@@ -49,3 +49,17 @@ export interface SignoffAssistantTask {
   title: string
   detail: string
 }
+
+export interface SignoffMaterialSection {
+  title: string
+  items: string[]
+}
+
+export interface SignoffMaterial {
+  id: string
+  title: string
+  kind: string
+  meta: string
+  status: string
+  sections: SignoffMaterialSection[]
+}

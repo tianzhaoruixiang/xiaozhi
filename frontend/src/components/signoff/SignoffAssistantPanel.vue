@@ -1,22 +1,35 @@
 <script setup lang="ts">
-import { Bell, CircleCheck, MagicStick, WarningFilled } from '@element-plus/icons-vue'
+import { nextTick, ref } from 'vue'
+import { ArrowRight, Bell, CircleCheck, Document, FolderOpened, MagicStick, WarningFilled } from '@element-plus/icons-vue'
 import AIAssistantAvatar from '../AIAssistantAvatar.vue'
-import type { SignoffActivity, SignoffAssistantTask, SignoffDepartment, SignoffOpinion } from '../../types/signoff'
+import type { SignoffActivity, SignoffAssistantTask, SignoffDepartment, SignoffMaterial, SignoffOpinion } from '../../types/signoff'
 
 defineProps<{
   currentTask: SignoffAssistantTask
   activities: SignoffActivity[]
   opinion: SignoffOpinion | null
   department?: SignoffDepartment
+  materials: SignoffMaterial[]
+  selectedMaterialId: string
+  selectedMaterial?: SignoffMaterial
   signedCount: number
   totalCount: number
   progress: number
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   remind: [departmentId: string]
+  'select-material': [materialId: string]
   'complete-all': []
 }>()
+
+const materialDrawerVisible = ref(false)
+
+const openMaterial = async (materialId: string) => {
+  emit('select-material', materialId)
+  await nextTick()
+  materialDrawerVisible.value = true
+}
 </script>
 
 <template>
@@ -26,6 +39,61 @@ defineEmits<{
       <div><h2 id="signoff-assistant-title">会议助手</h2><p>持续跟踪审阅状态</p></div>
       <span class="assistant-online"><i />运行中</span>
     </header>
+
+    <section class="signoff-materials" aria-labelledby="signoff-materials-title">
+      <div class="right-section-title">
+        <span id="signoff-materials-title"><el-icon><FolderOpened /></el-icon>会议材料</span>
+        <small>{{ materials.length }} 份 · 会签查阅</small>
+      </div>
+
+      <div class="signoff-material-list">
+        <button
+          v-for="material in materials"
+          :key="material.id"
+          type="button"
+          :class="{ active: selectedMaterialId === material.id }"
+          aria-haspopup="dialog"
+          @click="openMaterial(material.id)"
+        >
+          <span class="signoff-material-icon"><el-icon><Document /></el-icon></span>
+          <span class="signoff-material-copy">
+            <strong>{{ material.title }}</strong>
+            <small>{{ material.kind }} · {{ material.meta }}</small>
+          </span>
+          <span class="signoff-material-status">{{ material.status }}</span>
+          <el-icon class="signoff-material-arrow"><ArrowRight /></el-icon>
+        </button>
+      </div>
+    </section>
+
+    <el-drawer
+      v-model="materialDrawerVisible"
+      direction="rtl"
+      size="34rem"
+      append-to-body
+      class="signoff-material-drawer"
+      modal-class="signoff-material-drawer-overlay"
+    >
+      <template #header>
+        <div v-if="selectedMaterial" class="drawer-material-head">
+          <span><el-icon><FolderOpened /></el-icon>会议材料查阅</span>
+          <h2>{{ selectedMaterial.title }}</h2>
+          <p>{{ selectedMaterial.kind }} · {{ selectedMaterial.meta }} · {{ selectedMaterial.status }}</p>
+        </div>
+      </template>
+
+      <article v-if="selectedMaterial" class="drawer-material-content">
+        <div class="drawer-material-notice">
+          <el-icon><Document /></el-icon>
+          <span>会签查阅副本</span>
+          <small>内容与会议定稿同步</small>
+        </div>
+        <section v-for="section in selectedMaterial.sections" :key="section.title">
+          <h3>{{ section.title }}</h3>
+          <ul><li v-for="item in section.items" :key="item">{{ item }}</li></ul>
+        </section>
+      </article>
+    </el-drawer>
 
     <section class="signoff-current-task" aria-live="polite">
       <div><span class="panel-icon"><el-icon><MagicStick /></el-icon></span><div><small>当前工作</small><strong>{{ currentTask.title }}</strong></div></div>

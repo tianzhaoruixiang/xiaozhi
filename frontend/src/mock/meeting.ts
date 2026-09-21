@@ -89,6 +89,7 @@ export const scriptLines: ScriptLine[] = [
 
 export const assistantTasks: AssistantTask[] = [
   { title: '正在整理安保方案', detail: '校核已采纳意见，补充第四章岗点职责。', steps: ['提取意见', '关联章节', '校核表述'], activeStep: 2 },
+  { title: '正在整理会议纪要', detail: '同步归纳发言要点、议定事项和责任分工。', steps: ['记录发言', '提炼决议', '核对责任'], activeStep: 1 },
   { title: '正在查询历史安保案例', detail: '检索近五年同类会议安保部署和场馆管控材料。', steps: ['构造检索', '筛选案例', '提取依据'], activeStep: 1 },
   { title: '正在分析当前发言', detail: '识别责任单位、时间要求和可能影响的作战组。', steps: ['识别实体', '提炼任务', '分析影响'], activeStep: 1 },
   { title: '正在检查方案完整性', detail: '核对任务边界、责任人和应急处置要求。', steps: ['检查职责', '检查时限', '检查联动'], activeStep: 0 },
@@ -244,4 +245,21 @@ export const planDocument: PlanDocument = {
       ],
     },
   ],
+  minutes: {
+    title: '大型会议保障动员会会议纪要',
+    recorder: '会议助手 · 小智',
+    status: '实时草拟中',
+    summary: '会议听取了前期筹备情况，审议总体安保方案，并围绕人员审核、现场安保、场馆检查、舆情监测和应急处置等事项进行了讨论。',
+    decisions: [
+      '同意增设公安、外事、网信、消防联合指挥专席，重大情况同步会商。',
+      '境外参会人员名单提前至会前 72 小时提交审核，增补名单于会前 24 小时完成复核。',
+      '主入口安检通道在高峰时段全部开启，并保留独立应急疏散通道。',
+      '会前检查增加弱电机房与临时搭建区域，隐患整改实行复核销号。',
+    ],
+    actions: [
+      { id: 'minute-action-1', content: '完成境外参会人员首轮审核并形成补充材料清单', owner: '人员审核组', deadline: '会前 72 小时' },
+      { id: 'minute-action-2', content: '核定主入口安检通道和应急疏散通道布设', owner: '现场安保组', deadline: '9月21日 18:00' },
+      { id: 'minute-action-3', content: '完成弱电机房、临时搭建区域专项检查', owner: '场馆检查组', deadline: '9月22日 12:00' },
+    ],
+  },
 }

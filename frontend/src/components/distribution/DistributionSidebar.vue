@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Connection } from '@element-plus/icons-vue'
 import type { DistributionGroup, DistributionTask } from '../../types/distribution'
 
@@ -17,14 +16,13 @@ const groupProgress = (groupId: string) => {
   const items = groupTasks(groupId)
   return items.length ? Math.round((items.filter((task) => task.status !== 'pending').length / items.length) * 100) : 0
 }
-const totalMembers = computed(() => props.groups.reduce((sum, group) => sum + group.memberCount, 0))
 </script>
 
 <template>
   <aside class="panel-frame distribution-sidebar" aria-label="作战组列表">
     <header class="distribution-sidebar-head">
       <span class="panel-icon"><el-icon><Connection /></el-icon></span>
-      <div><h2>作战编组</h2><p>{{ groups.length }} 个组 · {{ totalMembers }} 人</p></div>
+      <div><h2>作战编组</h2><p>{{ groups.length }} 个组 · 组长负责组建</p></div>
       <strong>{{ progress }}%</strong>
     </header>
     <div class="revision-progress"><span :style="{ width: `${progress}%` }" /></div>

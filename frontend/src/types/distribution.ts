@@ -2,12 +2,6 @@ export type DistributionTaskStatus = 'pending' | 'confirmed' | 'sent'
 export type WorkGroupStatus = 'draft' | 'ready' | 'sent'
 export type MaterialStatus = 'ready' | 'sent' | 'read'
 
-export interface DistributionMember {
-  name: string
-  role: string
-  unit: string
-}
-
 export interface DistributionGroup {
   id: string
   name: string
@@ -16,8 +10,6 @@ export interface DistributionGroup {
   department: string
   memberCount: number
   color: string
-  members: DistributionMember[]
-  membersPulled: boolean
 }
 
 export interface DistributionTask {

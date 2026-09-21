@@ -2,7 +2,7 @@
 import SignoffAssistantPanel from '../components/signoff/SignoffAssistantPanel.vue'
 import SignoffDocumentPanel from '../components/signoff/SignoffDocumentPanel.vue'
 import SignoffSidebar from '../components/signoff/SignoffSidebar.vue'
-import type { SignoffActivity, SignoffAssistantTask, SignoffClause, SignoffDepartment, SignoffOpinion } from '../types/signoff'
+import type { SignoffActivity, SignoffAssistantTask, SignoffClause, SignoffDepartment, SignoffMaterial, SignoffOpinion } from '../types/signoff'
 
 defineProps<{
   version: string
@@ -14,6 +14,9 @@ defineProps<{
   selectedOpinion: SignoffOpinion | null
   activities: SignoffActivity[]
   currentTask: SignoffAssistantTask
+  materials: SignoffMaterial[]
+  selectedMaterialId: string
+  selectedMaterial?: SignoffMaterial
   signedCount: number
   progress: number
 }>()
@@ -23,6 +26,7 @@ defineEmits<{
   resolve: [opinionId: string]
   sign: [departmentId: string]
   remind: [departmentId: string]
+  'select-material': [materialId: string]
   'complete-all': []
 }>()
 </script>
@@ -46,6 +50,9 @@ defineEmits<{
     />
     <SignoffAssistantPanel
       :current-task="currentTask"
+      :materials="materials"
+      :selected-material-id="selectedMaterialId"
+      :selected-material="selectedMaterial"
       :activities="activities"
       :opinion="selectedOpinion"
       :department="selectedDepartment"
@@ -53,6 +60,7 @@ defineEmits<{
       :total-count="departments.length"
       :progress="progress"
       @remind="$emit('remind', $event)"
+      @select-material="$emit('select-material', $event)"
       @complete-all="$emit('complete-all')"
     />
   </main>

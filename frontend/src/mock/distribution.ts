@@ -9,53 +9,21 @@ import type {
 export const distributionGroups: DistributionGroup[] = [
   {
     id: 'x', name: '人员审核组', responsibility: '境外参会人员审核', lead: '陈立', department: '出入境管理支队', memberCount: 8, color: '#54d6ff',
-    members: [
-      { name: '李娜', role: '审核员', unit: '出入境管理支队' },
-      { name: '张磊', role: '复核员', unit: '出入境管理支队' },
-      { name: '王芳', role: '材料核对员', unit: '出入境管理支队' },
-    ],
-    membersPulled: true,
   },
   {
     id: 'y', name: '舆情监测组', responsibility: '会议及场馆舆情监测', lead: '赵敏', department: '网安支队', memberCount: 12, color: '#6e8cff',
-    members: [
-      { name: '周妍', role: '分析员', unit: '网安支队' },
-      { name: '徐磊', role: '值守监测员', unit: '网安支队' },
-    ],
-    membersPulled: false,
   },
   {
     id: 'z', name: '现场安保组', responsibility: '核心区域现场安保', lead: '王凯', department: '治安支队', memberCount: 46, color: '#45e0b4',
-    members: [
-      { name: '刘超', role: '机动单元负责人', unit: '特警支队' },
-      { name: '马强', role: '岗点值守负责人', unit: '治安支队' },
-      { name: '赵虎', role: '前置识别岗负责人', unit: '治安支队' },
-    ],
-    membersPulled: true,
   },
   {
     id: 'e', name: '场馆检查组', responsibility: '会前重点场馆检查', lead: '孙梅', department: '内保支队', memberCount: 10, color: '#efc24f',
-    members: [
-      { name: '高伟', role: '检查员', unit: '内保支队' },
-      { name: '宋洁', role: '复核员', unit: '场馆运营方' },
-    ],
-    membersPulled: true,
   },
   {
     id: 'f', name: '重点监测组', responsibility: '重点群体动态监测', lead: '周宁', department: '情报支队', memberCount: 9, color: '#e78962',
-    members: [
-      { name: '吴倩', role: '监测员', unit: '情报支队' },
-      { name: '郑凯', role: '属地联络员', unit: '属地分局' },
-    ],
-    membersPulled: true,
   },
   {
     id: 'g', name: '情况通报组', responsibility: '情况汇总与通报', lead: '林珊', department: '市局指挥中心', memberCount: 6, color: '#a985ff',
-    members: [
-      { name: '郑晓', role: '通报专员', unit: '市局指挥中心' },
-      { name: '何静', role: '信息归集员', unit: '市局指挥中心' },
-    ],
-    membersPulled: false,
   },
 ]
 
@@ -113,12 +81,12 @@ export const distributionTasks: DistributionTask[] = [
 export const distributionMaterials: DistributionMaterial[] = [
   { id: 'material-1', title: '最终安保方案', type: '正式文件', recipients: '6 个作战组', status: 'ready' },
   { id: 'material-2', title: '安保动员会会议纪要', type: '会议材料', recipients: '组长及联络员', status: 'ready' },
-  { id: 'material-3', title: '作战组任务清单', type: '任务附件', recipients: '91 名执行人员', status: 'ready' },
+  { id: 'material-3', title: '作战组任务清单', type: '任务附件', recipients: '6 个工作组组长', status: 'ready' },
 ]
 
 export const distributionActivities: DistributionActivity[] = [
   { id: 1, time: '12:16', title: '完成方案任务拆解', detail: '从最终方案提取 8 项执行任务', type: 'success' },
-  { id: 2, time: '12:17', title: '建立六个作战组', detail: '已匹配组长、成员和协作单位', type: 'success' },
+  { id: 2, time: '12:17', title: '建立六个作战组', detail: '已明确组长、职责范围和协作单位', type: 'success' },
   { id: 3, time: '12:18', title: '正在核对跨组依赖', detail: '检查现场安保组与交警支队协同时段', type: 'running' },
 ]
 
