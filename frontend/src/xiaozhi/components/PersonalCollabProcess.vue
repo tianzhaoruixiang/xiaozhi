@@ -141,7 +141,7 @@ const summaryLine = computed(() => {
 
           <div v-if="isExpertOpen(step.id)" class="expert-detail">
             <p v-if="step.objective" class="objective">{{ step.objective }}</p>
-            <AgentThoughtChain :step="step" tone="dark" />
+            <AgentThoughtChain :step="step" tone="light" />
             <div v-if="step.summary && step.status === 'done'" class="result">
               <strong>产出</strong>
               <p>{{ step.summary }}</p>
@@ -418,63 +418,5 @@ const summaryLine = computed(() => {
 /* 浅色气泡里思考链可读性 */
 .expert-detail :deep(.md) {
   color: #14304a;
-}
-
-/* 深色任务对话中的协作执行状态。 */
-.process {
-  border-color: var(--color-line);
-  background: oklch(0.16 0.052 251 / 0.68);
-}
-
-.process[data-done='1'] {
-  border-color: var(--color-line);
-  background: oklch(0.145 0.045 251 / 0.66);
-}
-
-.toggle-left strong,
-.goal,
-.meta strong,
-.result p,
-.expert-detail :deep(.md) {
-  color: var(--color-ink);
-}
-
-.toggle-left em {
-  color: var(--color-cyan);
-  background: oklch(0.32 0.085 220 / 0.24);
-  border-color: var(--color-line-bright);
-}
-
-.process-body,
-.expert-detail,
-.result {
-  border-color: var(--color-line);
-}
-
-.expert {
-  border-color: var(--color-line);
-  background: oklch(0.2 0.06 249 / 0.82);
-}
-
-.expert[data-status='running'] { border-color: var(--color-line-bright); }
-.expert[data-status='done'] { border-color: oklch(0.79 0.17 162 / 0.36); }
-.expert[data-status='error'] { border-color: oklch(0.67 0.21 25 / 0.4); }
-
-.badge {
-  color: var(--color-ink-muted);
-  background: oklch(0.15 0.05 251 / 0.72);
-  border-color: var(--color-line);
-}
-
-.expert[data-status='running'] .badge {
-  color: var(--color-cyan);
-  background: oklch(0.32 0.085 220 / 0.24);
-  border-color: var(--color-line-bright);
-}
-
-.expert[data-status='done'] .badge {
-  color: var(--color-success);
-  background: oklch(0.3 0.07 162 / 0.2);
-  border-color: oklch(0.79 0.17 162 / 0.32);
 }
 </style>

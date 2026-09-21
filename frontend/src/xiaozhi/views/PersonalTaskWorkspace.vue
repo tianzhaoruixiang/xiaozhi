@@ -303,7 +303,7 @@ onUnmounted(() => {
 
               <MarkdownView
                 v-if="msg.content && msg.role === 'assistant'"
-                tone="dark"
+                tone="light"
                 :source="msg.content"
               />
               <p v-else-if="msg.content" class="plain">{{ msg.content }}</p>
@@ -857,121 +857,5 @@ onUnmounted(() => {
   .composer {
     grid-template-columns: 1fr;
   }
-}
-
-/* 任务子页延续会议端的深色面板和状态语义。 */
-.back {
-  border-color: var(--color-line);
-  border-radius: 7px;
-  color: var(--color-ink);
-  background: oklch(0.18 0.055 249 / 0.88);
-}
-
-.back:hover {
-  border-color: var(--color-line-bright);
-  background: oklch(0.25 0.075 235 / 0.72);
-}
-
-.back-mark {
-  color: var(--color-cyan);
-  background: none;
-  -webkit-background-clip: border-box;
-  background-clip: border-box;
-}
-
-.top-meta h1,
-.dialog-head h2,
-.plain,
-.picker-pop strong {
-  color: var(--color-ink);
-}
-
-.dialog {
-  border-color: var(--color-line);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(160deg, oklch(0.22 0.074 248 / 0.94), oklch(0.16 0.056 251 / 0.96));
-  backdrop-filter: none;
-  box-shadow: inset 0 1px 0 oklch(0.84 0.145 207 / 0.06);
-}
-
-.dialog-head,
-.dock {
-  border-color: var(--color-line);
-}
-
-.orch select,
-.composer textarea {
-  border-color: var(--color-line);
-  color: var(--color-ink);
-  background: oklch(0.145 0.052 251 / 0.9);
-}
-
-.bubble {
-  border-color: var(--color-line);
-  color: var(--color-ink);
-  background: oklch(0.2 0.06 249 / 0.82);
-}
-
-.bubble[data-role='assistant'] {
-  color: var(--color-ink);
-  background: oklch(0.2 0.064 248 / 0.9);
-}
-
-.bubble[data-role='user'] {
-  color: var(--color-ink);
-  border-color: var(--color-line-bright);
-  background: oklch(0.3 0.085 222 / 0.34);
-}
-
-.bubble[data-role='system'] {
-  color: var(--color-ink-muted);
-  background: oklch(0.145 0.045 251 / 0.7);
-}
-
-.dock {
-  background: oklch(0.135 0.048 252 / 0.72);
-}
-
-.picker-btn {
-  border-color: var(--color-line);
-  border-radius: 7px;
-  color: var(--color-ink);
-  background: oklch(0.19 0.058 249 / 0.9);
-}
-
-.picker-btn:hover,
-.picker-btn.open {
-  border-color: var(--color-line-bright);
-  color: var(--color-cyan);
-  background: oklch(0.25 0.075 235 / 0.72);
-}
-
-.picker-pop {
-  border-color: var(--color-line-bright);
-  border-radius: var(--radius-lg);
-  color: var(--color-ink);
-  background: oklch(0.17 0.06 250 / 0.98);
-  box-shadow: 0 0.75rem 1.5rem rgb(0 0 0 / 0.28);
-}
-
-.picker-pop li button {
-  color: var(--color-ink);
-}
-
-.picker-pop li button:hover,
-.picker-pop li button.active {
-  border-color: var(--color-line);
-  background: oklch(0.29 0.085 224 / 0.3);
-}
-
-.composer textarea::placeholder {
-  color: var(--color-ink-muted);
-}
-
-.composer button[type='submit'] {
-  border: 1px solid var(--color-line-bright);
-  border-radius: 7px;
-  color: oklch(0.12 0.045 245);
-  background: var(--color-cyan);
 }
 </style>

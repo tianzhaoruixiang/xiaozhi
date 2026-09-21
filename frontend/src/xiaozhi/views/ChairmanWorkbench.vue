@@ -459,41 +459,4 @@ const onModeChange = (mode: string) => {
     opacity: 1;
   }
 }
-
-/* 领导工作台沿用会议端的深色指挥背景。 */
-.workbench {
-  color: var(--color-ink);
-  background:
-    radial-gradient(circle at 68% 14%, oklch(0.5 0.16 240 / 0.2), transparent 32%),
-    radial-gradient(circle at 8% 70%, oklch(0.42 0.15 254 / 0.16), transparent 34%),
-    linear-gradient(145deg, oklch(0.125 0.068 254), var(--color-mist) 48%, oklch(0.15 0.08 244));
-}
-
-.mesh,
-.orb,
-.grid-layer,
-.grain,
-.horizon {
-  display: none;
-}
-
-.vignette {
-  background: linear-gradient(118deg, transparent 12%, oklch(0.56 0.13 225 / 0.05) 48%, transparent 76%);
-}
-
-.shell {
-  max-width: 1120px;
-  padding: 18px clamp(16px, 2.4vw, 30px) 24px;
-}
-
-.listen-banner {
-  border-color: oklch(0.82 0.16 83 / 0.5);
-  border-radius: 8px;
-  background: linear-gradient(120deg, oklch(0.18 0.06 250 / 0.98), oklch(0.21 0.065 205 / 0.94));
-}
-
-.listen-banner strong {
-  font-family: var(--font-display);
-  color: var(--color-gold-soft);
-}
 </style>

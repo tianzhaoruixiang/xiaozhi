@@ -5,7 +5,7 @@
       <span>实时刷新 · {{ tick }}s</span>
       <span>{{ weather }} {{ temperature }}°C</span>
     </div>
-    <h1 class="header-title">指挥作战大屏看板</h1>
+    <h1 class="header-title">{{ title }}</h1>
     <div class="header-side right">
       <span v-if="location">{{ location }}</span>
       <span class="accent">{{ timeText }}</span>
@@ -18,6 +18,7 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
+  title: string
   now: Date
   tick: number
   weather: string

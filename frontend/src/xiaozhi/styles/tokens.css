@@ -1,79 +1,41 @@
-/*
-  工作台中的弹窗与抽屉会 Teleport 到 body；把同一套语义色挂在路由根节点，
-  保证浮层不再退回旧的浅色变量。
-*/
-html.xiaozhi-desk {
-  color-scheme: dark;
-  --color-abyss: var(--bg-deep);
-  --color-steel: var(--panel);
-  --color-signal: var(--cyan);
-  --color-brass: var(--amber);
-  --color-mist: var(--bg);
-  --color-ink: var(--text);
-  --color-ink-muted: var(--muted);
-  --color-surface: var(--panel);
-  --color-surface-solid: oklch(0.19 0.068 250);
-  --color-surface-glass: var(--panel-soft);
-  --color-line: var(--line);
-  --color-line-bright: var(--line-strong);
-  --color-gold: var(--amber);
-  --color-gold-soft: oklch(0.88 0.11 87);
-  --color-accent: var(--cyan);
-  --color-accent-bright: var(--cyan);
-  --color-blue: var(--blue);
-  --color-cyan: var(--cyan);
-  --color-cyan-glow: oklch(0.84 0.145 207 / 0.35);
-  --color-success: var(--green);
-  --color-warn: var(--amber);
-  --color-danger: var(--danger);
-  --radius-lg: 10px;
-  --radius-md: 8px;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-soft: cubic-bezier(0.33, 0.1, 0.25, 1);
-  --dur-fast: 220ms;
-  --dur-mid: 380ms;
-  --dur-slow: 620ms;
-}
-
 .xiaozhi-scope {
-  color-scheme: dark;
-  /* 与会议指挥端共用同一套深海蓝语义色 */
-  --color-abyss: oklch(0.12 0.06 254);
-  --color-steel: oklch(0.21 0.075 249);
-  --color-signal: oklch(0.84 0.145 207);
-  --color-brass: oklch(0.82 0.16 83);
-  --color-mist: oklch(0.155 0.072 250);
-  --color-ink: oklch(0.94 0.02 220);
-  --color-ink-muted: oklch(0.69 0.035 228);
+  color-scheme: light;
+  /* 指挥舱色板：深海钢蓝 × 信号青 × 香槟铜 */
+  --color-abyss: #06141f;
+  --color-steel: #0f2a3d;
+  --color-signal: #2ec4d6;
+  --color-brass: #c9a86c;
+  --color-mist: #e7f0f6;
+  --color-ink: #14283a;
+  --color-ink-muted: #5a7084;
 
   /* 兼容旧变量名 */
   --color-bg-deep: var(--color-abyss);
   --color-bg-mid: var(--color-steel);
   --color-bg-soft: var(--color-mist);
-  --color-surface: oklch(0.21 0.075 249 / 0.9);
-  --color-surface-solid: oklch(0.19 0.068 250);
-  --color-surface-glass: oklch(0.24 0.072 247 / 0.72);
-  --color-line: oklch(0.58 0.12 222 / 0.38);
-  --color-line-bright: oklch(0.78 0.16 210 / 0.62);
+  --color-surface: rgba(255, 255, 255, 0.62);
+  --color-surface-solid: #f2f7fb;
+  --color-surface-glass: rgba(255, 255, 255, 0.48);
+  --color-line: rgba(20, 40, 58, 0.1);
+  --color-line-bright: rgba(46, 196, 214, 0.42);
   --color-gold: var(--color-brass);
-  --color-gold-soft: oklch(0.88 0.11 87);
-  --color-accent: oklch(0.84 0.145 207);
+  --color-gold-soft: #e6d4a8;
+  --color-accent: #1a7a92;
   --color-accent-bright: var(--color-signal);
-  --color-blue: oklch(0.62 0.21 254);
-  --color-cyan: oklch(0.84 0.145 207);
-  --color-cyan-glow: oklch(0.84 0.145 207 / 0.35);
-  --color-success: oklch(0.79 0.17 162);
-  --color-warn: oklch(0.82 0.16 83);
-  --color-danger: oklch(0.67 0.21 25);
+  --color-cyan: #6ad4e4;
+  --color-cyan-glow: rgba(46, 196, 214, 0.4);
+  --color-success: #2f7d5a;
+  --color-warn: #b87a35;
+  --color-danger: #a84848;
 
-  --font-display: 'Alibaba PuHuiTi 2.0', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
-  --font-body: 'Alibaba PuHuiTi 2.0', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
-  --font-mono: 'Rajdhani', ui-monospace, 'Alibaba PuHuiTi 2.0', monospace;
+  --font-display: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --font-body: 'Sora', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
 
-  --shadow-soft: 0 0.5rem 1.5rem rgb(0 0 0 / 0.2);
-  --shadow-glow: 0 0 1.5rem oklch(0.84 0.145 207 / 0.12);
-  --radius-lg: 10px;
-  --radius-md: 8px;
+  --shadow-soft: 0 22px 56px rgba(6, 20, 31, 0.14);
+  --shadow-glow: 0 0 36px rgba(46, 196, 214, 0.16);
+  --radius-lg: 20px;
+  --radius-md: 12px;
   --avatar-size: 124px;
 
   /* 丝滑动效：偏 expo-out，少弹跳 */

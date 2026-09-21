@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import CollabFeed from '../components/dashboard/CollabFeed.vue'
 import CommandCabin from '../components/dashboard/CommandCabin.vue'
@@ -12,24 +12,34 @@ import TaskList from '../components/dashboard/TaskList.vue'
 import ViewSwitcher from '../components/dashboard/ViewSwitcher.vue'
 import { useDashboard } from '../composables/useDashboard'
 import { getMeetingHandoff, updateMeetingHandoff } from '../composables/useMeetingHandoff'
+import { getTaskExecutionProgress } from '../mock/dashboard'
 import '../styles/dashboard.css'
 
 const { data, viewMode, now } = useDashboard()
 const route = useRoute()
+const dashboardTitle = ref('大型会议保障 · 指挥作战大屏')
 
 onMounted(async () => {
   const handoffId = typeof route.query.handoffId === 'string' ? route.query.handoffId : 'SEC-20260921-001'
   const session = await getMeetingHandoff(handoffId)
   if (!session?.tasks?.length) return
   const groupNames = new Map(session.groups.map((group) => [group.id, group.name]))
-  data.value.tasks = session.tasks.map((task) => ({
-    id: task.id,
-    group: groupNames.get(task.groupId) ?? task.groupId,
-    title: task.title,
-    status: (task.progress ?? 0) >= 100 ? '已完成' : task.status === 'pending' ? '待处置' : '推进中',
-    progress: task.progress ?? (task.status === 'sent' ? 12 : 0),
-  }))
+  data.value.tasks = session.tasks.map((task) => {
+    const progress = getTaskExecutionProgress(task.id, task.progress)
+    return {
+      id: task.id,
+      group: groupNames.get(task.groupId) ?? task.groupId,
+      title: task.title,
+      status: progress >= 100 ? '已完成' : task.status === 'pending' ? '待处置' : '推进中',
+      progress,
+    }
+  })
   data.value.commandGroups = session.groups.map((group) => ({ id: group.id, name: group.name, online: true, members: group.memberCount }))
+  data.value.location = session.location
+    ? `深圳国际交流中心 · ${session.location}`
+    : data.value.location
+  data.value.overallReport = `${session.groups.length}个作战组在线，${session.tasks.length}项会议任务进入执行阶段，现场安保与场馆检查为当前重点。`
+  dashboardTitle.value = `${session.title.replace(/动员会$/, '')} · 指挥作战大屏`
   data.value.taskSummary = {
     total: data.value.tasks.length,
     done: data.value.tasks.filter((task) => task.status === '已完成').length,
@@ -50,6 +60,7 @@ const showCollab = computed(() => viewMode.value === 'opinion' || viewMode.value
 <template>
   <div class="dashboard">
     <DashboardHeader
+      :title="dashboardTitle"
       :now="now"
       :tick="data.tick"
       :weather="data.weather"

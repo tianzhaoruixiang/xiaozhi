@@ -15,7 +15,7 @@
           <div class="campus-layer">
             <img
               class="campus-img"
-              :src="campusMap"
+              src="/venue/sz-iec-campus-3d.png"
               alt="深圳国际交流中心三维态势"
               draggable="false"
             />
@@ -141,8 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import campusMap from '../../assets/venue/sz-iec-campus-3d.svg'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { PatrolPoint } from '../../types/dashboard'
 import PanelFrame from './PanelFrame.vue'
 
@@ -150,9 +149,10 @@ const props = defineProps<{
   patrolPoints: PatrolPoint[]
 }>()
 
-const MIN_ZOOM = 0.8
+const MIN_ZOOM = 0.95
 const MAX_ZOOM = 2.6
-const BASE_SCALE = 1.06
+const BASE_SCALE = 1.12
+const ORBIT_DURATION = 36_000
 
 const mapRef = ref<HTMLElement | null>(null)
 const zoom = ref(1)
@@ -160,6 +160,9 @@ const offsetX = ref(0)
 const offsetY = ref(0)
 const dragging = ref(false)
 const dragStart = ref({ x: 0, y: 0, ox: 0, oy: 0 })
+const orbitAngle = ref(0)
+let orbitFrame: number | undefined
+let lastOrbitAt = 0
 
 const hoveredId = ref<string | null>(null)
 const selectedId = ref<string | null>(null)
@@ -178,12 +181,18 @@ const mappedPoints = computed<MappedPoint[]>(() =>
 /** 用宽高缩放代替 transform:scale，避免文字被栅格化发糊 */
 const sceneStyle = computed(() => {
   const z = BASE_SCALE * zoom.value
+  const radians = (orbitAngle.value * Math.PI) / 180
+  const horizontal = Math.sin(radians)
+  const depth = Math.cos(radians)
+  const cameraOffset = horizontal * 28
+  const cameraYaw = horizontal * -9
+  const depthScale = 1 + depth * 0.025
   return {
     width: `${z * 100}%`,
     height: `${z * 100}%`,
     left: `calc(50% + ${offsetX.value}px)`,
     top: `calc(52% + ${offsetY.value}px)`,
-    transform: 'translate(-50%, -50%)',
+    transform: `translate(-50%, -50%) translate3d(${cameraOffset}px, 0, ${depth * 24}px) rotateY(${cameraYaw}deg) scale(${depthScale})`,
     cursor: dragging.value ? 'grabbing' : zoom.value > 1 ? 'grab' : 'default',
   }
 })
@@ -217,6 +226,25 @@ function getLabelStyle(point: MappedPoint) {
     color: statusColor(point.status),
   }
 }
+
+function orbitScene(timestamp: number) {
+  if (!lastOrbitAt) lastOrbitAt = timestamp
+  const elapsed = timestamp - lastOrbitAt
+  lastOrbitAt = timestamp
+  if (!dragging.value) {
+    orbitAngle.value = (orbitAngle.value + (elapsed / ORBIT_DURATION) * 360) % 360
+  }
+  orbitFrame = window.requestAnimationFrame(orbitScene)
+}
+
+onMounted(() => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  orbitFrame = window.requestAnimationFrame(orbitScene)
+})
+
+onUnmounted(() => {
+  if (orbitFrame) window.cancelAnimationFrame(orbitFrame)
+})
 
 const totalForce = computed(() => props.patrolPoints.reduce((sum, p) => sum + p.force, 0))
 const alertCount = computed(() => props.patrolPoints.filter((p) => p.status !== '正常').length)
@@ -312,6 +340,8 @@ function statusClass(status: PatrolPoint['status']) {
 .scene-3d {
   position: absolute;
   transform-origin: center center;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .campus-tilt {

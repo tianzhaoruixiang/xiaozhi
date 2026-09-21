@@ -1,5 +1,5 @@
 ﻿<template>
-  <PanelFrame title="重点群体监控">
+  <PanelFrame title="重点群体动态监测">
     <template #extra>
       <span class="panel-badge">预警 {{ totalWarning }} · 人员 {{ keyPersons.length }}</span>
     </template>

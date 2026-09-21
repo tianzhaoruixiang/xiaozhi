@@ -1,5 +1,5 @@
 ﻿<template>
-  <PanelFrame title="重点群体出入境">
+  <PanelFrame title="参会人员审核与出入境">
     <template #extra>
       <span class="panel-badge">广东 · 深圳</span>
     </template>

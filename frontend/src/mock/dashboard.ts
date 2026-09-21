@@ -12,39 +12,42 @@
   TaskStatus,
   TrackPoint,
 } from '../types/dashboard'
-
-const GROUPS = ['一组', '二组', '三组', '四组', '五组', '六组']
+import { distributionGroups, distributionTasks } from './distribution'
 
 const OPINION_POOL = [
-  { content: '大型国际会议安保部署进入实战阶段，周边交通有序疏导', sensitive: false },
-  { content: '网传会场周边出现可疑人员聚集，核查后为游客排队拍照', sensitive: true },
-  { content: '外媒关注本地区接待保障能力，评论总体偏正面', sensitive: false },
-  { content: '社交平台出现涉会敏感谣言，已启动溯源与辟谣联动', sensitive: true },
-  { content: '市民点赞志愿服务与交通引导，相关话题热度上升', sensitive: false },
-  { content: '匿名账号散布“会场封锁”不实信息，属敏感预警内容', sensitive: true },
-  { content: '周边商户营业秩序平稳，夜间巡查反馈良好', sensitive: false },
-  { content: '境外社媒转发涉会截图，内容含煽动性表述需重点盯防', sensitive: true },
+  { content: '大型会议保障任务进入执行阶段，场馆周边交通疏导平稳', sensitive: false },
+  { content: '会场东侧道路管制讨论量上升，暂未形成集中负面传播', sensitive: false },
+  { content: '网传会场周边出现人员聚集，经核查为参会人员有序入场', sensitive: true },
+  { content: '外媒关注会议接待保障能力，相关评论总体偏正面', sensitive: false },
+  { content: '匿名账号发布“会场封锁”不实信息，已进入溯源核查', sensitive: true },
+  { content: '场馆消防通道整改信息传播正常，未引发次生舆情', sensitive: false },
+  { content: '境外社媒转发涉会截图，舆情监测组已纳入重点词表', sensitive: true },
+  { content: '市民点赞现场交通引导，会议保障话题热度稳步上升', sensitive: false },
 ]
 
 const COLLAB_POOL = [
-  { from: '交警支队', content: '东门匝道车流峰值已过，建议保持现有分流方案', level: 'info' as const },
-  { from: '武警机动队', content: '南广场完成二次清场，待命点位已就位', level: 'info' as const },
-  { from: '网安支队', content: '发现敏感舆情线索，已推送属地核查', level: 'warn' as const },
-  { from: '特勤一组', content: 'VIP通道临时管控升级，请各组同步避让', level: 'urgent' as const },
-  { from: '医疗保障组', content: '急救点位人员轮换完成，设备自检正常', level: 'info' as const },
-  { from: '情报研判中心', content: '重点群体 B 类人员轨迹异常，请二组核处', level: 'warn' as const },
+  { from: '人员审核组', content: '首批42人身份及证件核验完成，2份行程材料待补充', level: 'warn' as const },
+  { from: '舆情监测组', content: '首轮18项监测词表巡检完成，东侧交通话题持续观察', level: 'info' as const },
+  { from: '现场安保组', content: '第三联合机动单元12人、2台车辆已完成编成', level: 'info' as const },
+  { from: '场馆检查组', content: '东区消防通道和弱电机房发现2项问题，正在整改', level: 'urgent' as const },
+  { from: '重点监测组', content: '分级监测渠道反馈平稳，当前未触发升级条件', level: 'info' as const },
+  { from: '情况通报组', content: '已汇集三个作战组反馈，阶段情况通报进入复核', level: 'info' as const },
 ]
 
-const TASK_TITLES = [
-  '会场周界封控巡查',
-  '重点通道安检复核',
-  '停车场清场核验',
-  '舆情线索落地核查',
-  'VIP 线路护卫演练',
-  '应急通道畅通保障',
-  '周边旅馆排查回访',
-  '无人机低空侦察',
-]
+const TASK_PROGRESS: Record<string, number> = {
+  'task-x-01': 68,
+  'task-y-01': 42,
+  'task-z-01': 66,
+  'task-z-02': 100,
+  'task-e-01': 50,
+  'task-f-01': 36,
+  'task-g-01': 48,
+  'task-g-02': 30,
+}
+
+export function getTaskExecutionProgress(taskId: string, progress?: number) {
+  return progress ?? TASK_PROGRESS[taskId] ?? 12
+}
 
 function rand(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -65,24 +68,24 @@ function nowTime() {
 
 function createPatrolPoints(): PatrolPoint[] {
   const positions = [
-    { x: 48, y: 28, name: '北门岗' },
-    { x: 22, y: 46, name: '西门岗' },
-    { x: 78, y: 44, name: '东门岗' },
-    { x: 52, y: 72, name: '南门岗' },
-    { x: 54, y: 48, name: '主会场' },
-    { x: 12, y: 40, name: '停车A区' },
-    { x: 88, y: 40, name: '停车B区' },
-    { x: 32, y: 78, name: '南广场西' },
-    { x: 70, y: 78, name: '南广场东' },
+    { x: 48, y: 28, name: '主会场识别岗', group: '人员审核组', force: 8, status: '正常' },
+    { x: 22, y: 46, name: '北门安检通道', group: '现场安保组', force: 16, status: '正常' },
+    { x: 78, y: 44, name: '东侧缓冲区', group: '现场安保组', force: 18, status: '警戒' },
+    { x: 52, y: 72, name: '联合机动待命区', group: '现场安保组', force: 12, status: '正常' },
+    { x: 54, y: 48, name: '联合指挥专席', group: '情况通报组', force: 6, status: '正常' },
+    { x: 12, y: 40, name: '舆情监测专席', group: '舆情监测组', force: 12, status: '正常' },
+    { x: 88, y: 40, name: '弱电机房', group: '场馆检查组', force: 4, status: '处置中' },
+    { x: 32, y: 78, name: '临时搭建检查区', group: '场馆检查组', force: 6, status: '正常' },
+    { x: 70, y: 78, name: '重点监测专席', group: '重点监测组', force: 9, status: '正常' },
   ]
   return positions.map((p, i) => ({
     id: `P${i + 1}`,
     name: p.name,
-    group: GROUPS[i % GROUPS.length],
+    group: p.group,
     x: p.x,
     y: p.y,
-    force: rand(4, 18),
-    status: pick(['正常', '正常', '正常', '警戒', '处置中'] as const),
+    force: p.force,
+    status: p.status as PatrolPoint['status'],
   }))
 }
 
@@ -117,10 +120,10 @@ function createTracks(): TrackPoint[] {
 
 function createKeyGroups(): KeyGroupStat[] {
   return [
-    { type: 'A', label: 'A类重点', count: rand(18, 36), warning: rand(0, 4), color: '#2ee6a6' },
-    { type: 'B', label: 'B类重点', count: rand(40, 72), warning: rand(1, 8), color: '#ff9f1a' },
-    { type: 'C', label: 'C类重点', count: rand(60, 110), warning: rand(0, 6), color: '#a78bfa' },
-    { type: 'D', label: 'D类重点', count: rand(90, 160), warning: rand(0, 5), color: '#3d9bff' },
+    { type: 'A', label: '核心关注', count: 12, warning: 0, color: '#2ee6a6' },
+    { type: 'B', label: '重点核查', count: 18, warning: 1, color: '#ff9f1a' },
+    { type: 'C', label: '持续监测', count: 46, warning: 0, color: '#a78bfa' },
+    { type: 'D', label: '常规关注', count: 50, warning: 0, color: '#3d9bff' },
   ]
 }
 
@@ -129,18 +132,18 @@ function createKeyPersons(): KeyPerson[] {
   const given = ['伟', '强', '磊', '洋', '勇', '军', '杰', '涛', '超', '明', '芳', '娜', '敏', '静', '丽', '艳', '霞', '婷', '雪', '慧']
   const titles = ['随行人员', '商务代表', '媒体记者', '安保人员', '联络官', '技术专家', '翻译官', '医疗保障', '后勤协调', '观察员']
   const countries = ['中国', '新加坡', '马来西亚', '泰国', '日本', '韩国', '德国', '法国', '英国', '美国', '澳大利亚', '印度尼西亚']
-  const statuses = ['在控', '核处中', '轨迹异常', '已核查'] as const
-  const types = ['A', 'B', 'C', 'D'] as const
-
-  return Array.from({ length: 48 }, (_, i) => ({
-    id: `KP${1000 + i}`,
-    name: `${surnames[i % surnames.length]}${given[(i * 3) % given.length]}${given[(i * 7) % given.length]}`,
-    type: types[i % 4],
-    status: statuses[i % statuses.length],
-    age: 22 + ((i * 5) % 37),
-    title: titles[i % titles.length],
-    country: countries[i % countries.length],
-  }))
+  return Array.from({ length: 126 }, (_, i) => {
+    const type: KeyPerson['type'] = i < 12 ? 'A' : i < 30 ? 'B' : i < 76 ? 'C' : 'D'
+    return {
+      id: `KP${1000 + i}`,
+      name: `${surnames[i % surnames.length]}${given[(i * 3) % given.length]}${given[(i * 7) % given.length]}`,
+      type,
+      status: i === 17 ? '核处中' : i < 30 ? '已核查' : '在控',
+      age: 22 + ((i * 5) % 37),
+      title: titles[i % titles.length],
+      country: countries[i % countries.length],
+    }
+  })
 }
 
 function createOpinions(tick: number): OpinionItem[] {
@@ -157,15 +160,14 @@ function createOpinions(tick: number): OpinionItem[] {
 }
 
 function createTasks(): TaskItem[] {
-  return Array.from({ length: 8 }, (_, i) => {
-    const status = pick(['推进中', '已完成', '待处置'] as const)
-    const progress =
-      status === '已完成' ? 100 : status === '待处置' ? rand(0, 15) : rand(35, 92)
+  const groupNames = new Map(distributionGroups.map((group) => [group.id, group.name]))
+  return distributionTasks.map((task) => {
+    const progress = getTaskExecutionProgress(task.id)
     return {
-      id: `TK${i + 1}`,
-      group: GROUPS[i % GROUPS.length],
-      title: TASK_TITLES[i],
-      status,
+      id: task.id,
+      group: groupNames.get(task.groupId) ?? task.groupId,
+      title: task.title,
+      status: progress >= 100 ? '已完成' : '推进中',
       progress,
     }
   })
@@ -184,14 +186,12 @@ function createCollabs(tick: number): CollabItem[] {
   })
 }
 
-const COMMAND_GROUPS = ['一组', '二组', '三组', '四组']
-
 function createCommandGroups(): CommandGroup[] {
-  return COMMAND_GROUPS.map((name, i) => ({
-    id: `G${i + 1}`,
-    name,
-    online: Math.random() > 0.08,
-    members: rand(6, 24),
+  return distributionGroups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    online: true,
+    members: group.memberCount,
   }))
 }
 
@@ -207,17 +207,20 @@ function shiftTracks(tracks: TrackPoint[]): TrackPoint[] {
 
 function createBorderFlow(): BorderFlowData {
   const hours = ['08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18']
+  const gdSeries = [4, 7, 9, 12, 13, 14, 16, 18, 14, 11, 8]
+  const szSeries = [3, 5, 7, 9, 10, 11, 12, 13, 9, 7, 6]
+  const outSeries = [0, 1, 1, 1, 1, 2, 2, 1, 2, 2, 1]
   const trend = hours.map((h, i) => ({
     label: `${h}:00`,
-    gdIn: 18 + i * 3 + rand(0, 8),
-    szIn: 10 + i * 2 + rand(0, 6),
-    out: 8 + i + rand(0, 5),
+    gdIn: gdSeries[i]!,
+    szIn: szSeries[i]!,
+    out: outSeries[i]!,
   }))
   return {
     gdInToday: trend.reduce((s, p) => s + p.gdIn, 0),
     szInToday: trend.reduce((s, p) => s + p.szIn, 0),
     outToday: trend.reduce((s, p) => s + p.out, 0),
-    inProvince: 86 + rand(0, 20),
+    inProvince: 112,
     trend,
     records: createBorderRecords(0),
   }
@@ -232,7 +235,7 @@ function createBorderRecords(tick: number): BorderRecord[] {
     id: `BF${tick}-${i}`,
     time: nowTime(),
     name: names[(tick + i) % names.length],
-    type: pick(['A', 'B', 'C', 'D'] as const),
+    type: (i < 1 ? 'A' : i < 3 ? 'B' : i < 6 ? 'C' : 'D') as BorderRecord['type'],
     direction: dirs[(tick + i) % dirs.length],
     port: ports[(tick + i) % ports.length],
     from: froms[(tick + i * 3) % froms.length],
@@ -240,27 +243,13 @@ function createBorderRecords(tick: number): BorderRecord[] {
 }
 
 function refreshBorderFlow(prev: BorderFlowData, tick: number): BorderFlowData {
-  const trend = prev.trend.map((p, i) =>
-    i === prev.trend.length - 1
-      ? {
-          ...p,
-          gdIn: Math.max(8, p.gdIn + rand(-2, 4)),
-          szIn: Math.max(5, p.szIn + rand(-2, 3)),
-          out: Math.max(3, p.out + rand(-1, 2)),
-        }
-      : p,
-  )
   const records =
     tick % 3 === 0
       ? [createBorderRecords(tick)[0], ...prev.records.slice(0, 7)]
       : prev.records
 
   return {
-    gdInToday: Math.max(prev.gdInToday, trend.reduce((s, p) => s + p.gdIn, 0)),
-    szInToday: Math.max(prev.szInToday, trend.reduce((s, p) => s + p.szIn, 0)),
-    outToday: Math.max(prev.outToday, trend.reduce((s, p) => s + p.out, 0)),
-    inProvince: Math.max(60, prev.inProvince + rand(-1, 2)),
-    trend,
+    ...prev,
     records,
   }
 }
@@ -271,8 +260,8 @@ export function createInitialData(): DashboardData {
     tick: 0,
     weather: '晴',
     temperature: 27,
-    location: '',
-    overallReport: '总体可控，各组按预案推进，重点群体预警已闭环处置。',
+    location: '深圳国际交流中心 · 联合指挥中心',
+    overallReport: '会议部署的8项任务已全部下发，6个作战组进入执行阶段，当前重点关注东侧缓冲区和场馆隐患整改。',
     patrolPoints: createPatrolPoints(),
     tracks: createTracks(),
     keyGroups: createKeyGroups(),
@@ -297,13 +286,7 @@ function summarizeTasks(tasks: TaskItem[]) {
 
 export function refreshDashboardData(prev: DashboardData): DashboardData {
   const tick = prev.tick + 1
-  const patrolPoints = prev.patrolPoints.map((p) => ({
-    ...p,
-    force: Math.max(3, p.force + rand(-1, 1)),
-    status: Math.random() > 0.9 ? pick(['正常', '警戒', '处置中'] as const) : p.status,
-    x: Math.min(90, Math.max(10, p.x + (Math.random() - 0.5) * 0.35)),
-    y: Math.min(82, Math.max(18, p.y + (Math.random() - 0.5) * 0.35)),
-  }))
+  const patrolPoints = prev.patrolPoints
 
   const tasks: TaskItem[] =
     tick % 3 === 0
@@ -321,11 +304,7 @@ export function refreshDashboardData(prev: DashboardData): DashboardData {
         })
       : prev.tasks
 
-  const keyGroups = prev.keyGroups.map((g) => ({
-    ...g,
-    count: Math.max(10, g.count + rand(-1, 2)),
-    warning: Math.max(0, g.warning + rand(-1, 1)),
-  }))
+  const keyGroups = prev.keyGroups
 
   const opinions =
     tick % 2 === 0
@@ -344,27 +323,20 @@ export function refreshDashboardData(prev: DashboardData): DashboardData {
     overallReport:
       tick % 5 === 0
         ? pick([
-            '总体可控，各组按预案推进，重点群体预警已闭环处置。',
-            '东侧通道客流上升，已增派机动力量支援。',
-            '敏感舆情已压降至黄线以下，持续盯防中。',
-            '任务销号进度稳步提升，待处置事项已清零过半。',
+            '6个作战组在线，8项会议任务按计划推进，整体态势可控。',
+            '东侧缓冲区边界条件待确认，现场安保组持续跟进。',
+            '舆情监测首轮词表巡检完成，交通话题保持重点观察。',
+            '场馆检查发现2项问题，消防通道和弱电机房正在整改。',
           ])
         : prev.overallReport,
     patrolPoints,
     tracks: shiftTracks(prev.tracks),
     keyGroups,
-    keyPersons:
-      tick % 6 === 0
-        ? prev.keyPersons.map((p, i) =>
-            i % 7 === tick % 7
-              ? { ...p, status: pick(['在控', '核处中', '轨迹异常', '已核查']) }
-              : p,
-          )
-        : prev.keyPersons,
+    keyPersons: prev.keyPersons,
     opinions,
     tasks,
     collabs,
-    commandGroups: tick % 5 === 0 ? createCommandGroups() : prev.commandGroups,
+    commandGroups: prev.commandGroups,
     borderFlow: refreshBorderFlow(prev.borderFlow, tick),
     taskSummary: summarizeTasks(tasks),
   }
