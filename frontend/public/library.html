@@ -11,12 +11,12 @@
       --font-mono:'IBM Plex Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace;
       --cyan:#4dd9e8; --green:#4ae8a0; --amber:#e8c94a; --purple:#b44ae8; --red:#e84a6a; --blue:#4a9de8;
       --accent:#1a7a92; --signal:#2ec4d6; --brass:#c9a86c;
-      --text:#eef2f7; --muted:#8899aa; --ink:#14283a;
+      --text:#eef2f7; --muted:#5a7084; --ink:#14283a;
       --kraft1:#c9a877; --kraft2:#b08e5e; --kraft3:#96754a;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
-    body{font-family:var(--font-body);color:var(--text);background:radial-gradient(circle at 68% 14%,oklch(0.5 0.16 240/0.22),transparent 32%),radial-gradient(circle at 8% 70%,oklch(0.42 0.15 254/0.2),transparent 32%),linear-gradient(145deg,oklch(0.125 0.068 254),oklch(0.155 0.072 250) 48%,oklch(0.15 0.08 244));background-attachment:fixed;overflow:hidden}
+    body{font-family:var(--font-body);color:var(--ink);background:radial-gradient(1200px 620px at 6% -10%,rgba(46,196,214,0.2),transparent 58%),radial-gradient(920px 540px at 96% 0%,rgba(201,168,108,0.14),transparent 50%),radial-gradient(780px 420px at 48% 110%,rgba(26,122,146,0.14),transparent 55%),linear-gradient(168deg,#c5d8e6 0%,#e7f0f6 42%,#eef4f8 78%,#e9eef3 100%);background-attachment:fixed;overflow:hidden}
 
     .lib-header{position:fixed;top:0;left:0;right:0;height:3.5rem;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:linear-gradient(160deg,rgba(255,255,255,.78),rgba(240,248,252,.52));backdrop-filter:blur(18px) saturate(1.2);border-bottom:1px solid rgba(255,255,255,.72);box-shadow:0 22px 56px rgba(6,20,31,.14);z-index:50}
     .header-left{display:flex;align-items:center;gap:.75rem}
@@ -36,18 +36,45 @@
     .view{position:fixed;top:3.5rem;bottom:2.4rem;left:0;right:0;overflow-y:auto;transition:opacity .45s ease,transform .45s ease}
     .view.hidden{opacity:0;pointer-events:none;transform:scale(.97)}
 
-    /* ============ 第一层：档案架 + 牛皮纸箱（两行六盒） ============ */
-    #viewShelf{padding:1.25rem 2rem}
-    .shelf-unit{max-width:1440px;margin:0 auto;height:100%;display:flex;flex-direction:column;justify-content:space-evenly;padding:1rem 2.5rem 0;border-radius:12px;position:relative;
-      background:linear-gradient(180deg,#182438 0%,#101a2c 55%,#0c1424 100%);
-      box-shadow:inset 0 0 100px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.04)}
-    .shelf-unit::before{content:'';position:absolute;inset:0;border-radius:12px;pointer-events:none;background:repeating-linear-gradient(90deg,transparent,transparent 90px,rgba(255,255,255,.012) 90px,rgba(255,255,255,.012) 92px)}
-    .shelf-row{position:relative;display:flex;justify-content:space-around;align-items:flex-end;padding:2.2rem 1rem 3.4rem;flex:1}
-    .plank{position:absolute;bottom:1.1rem;left:-2.5rem;right:-2.5rem;height:24px;border-radius:3px;z-index:6;
-      background:linear-gradient(180deg,#7a5a38 0%,#5c4226 35%,#3a2917 100%);
-      box-shadow:0 8px 18px rgba(0,0,0,.55),inset 0 1.5px 0 rgba(255,220,170,.22)}
-    .plank::before{content:'';position:absolute;inset:0;border-radius:3px;background:repeating-linear-gradient(90deg,transparent,transparent 70px,rgba(0,0,0,.1) 70px,rgba(0,0,0,.1) 72px)}
-    .plank::after{content:'';position:absolute;top:100%;left:0;right:0;height:14px;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent)}
+    /* ============ 第一层：书架 + 书本（三行两列网格） ============ */
+    #viewShelf{padding:24px 2rem;overflow-y:auto}
+    /* 书架容器（2列 × 3行网格） */
+    .shelf-unit{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:26px 30px;padding:0;position:relative}
+    /* 书架格（每格一个类别） */
+    .shelf-row{position:relative;display:flex;align-items:stretch;padding:0;margin-bottom:0;min-height:290px;border-bottom:24px solid #f2f6f4;background:rgba(255,255,255,.4);border-radius:8px;box-shadow:inset 0 1px 0 rgba(0,30,43,.04),0 0 0 1px rgba(0,30,43,.05)}
+    /* 每格底部的木架板 */
+    .shelf-row::before{content:'';position:absolute;bottom:-24px;left:10px;right:10px;height:24px;background:linear-gradient(180deg,#dfe8e2 0%,#f2f6f4 100%);border-radius:0 0 8px 8px;box-shadow:0 2px 0 rgba(0,30,43,.04),0 3px 0 rgba(0,30,43,.06),0 6px 14px rgba(0,30,43,.12);z-index:5}
+    /* 类别标签（每格左上，横排） */
+    .category-title{position:absolute;left:0;top:0;color:#001e2b;font-family:var(--font-display);font-size:.95rem;font-weight:600;letter-spacing:.02em;padding:.5rem .85rem .5rem 1.05rem;background:rgba(255,255,255,.95);border-bottom:2px solid rgba(0,30,43,.1);border-radius:8px 0 8px 0;z-index:10;white-space:nowrap;box-shadow:0 1px 4px rgba(0,30,43,.06)}
+    .category-title::before{content:'';position:absolute;left:7px;top:50%;transform:translateY(-50%);width:5px;height:5px;border-radius:50%;background:#00ed64;box-shadow:0 0 6px rgba(0,237,100,.5)}
+    /* 书本容器 */
+    .boxes-container{display:flex;align-items:flex-end;justify-content:center;gap:4px;padding:44px 10px 30px;flex:1;overflow-x:clip;overflow-y:visible;flex-wrap:nowrap}
+    /* 单本书（高低错落，缩小适配半格） */
+    .archive-box{position:relative;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:168px;width:44px}
+    .archive-box:nth-child(odd){height:168px;width:44px}
+    .archive-box:nth-child(even){height:186px;width:48px}
+    .archive-box:nth-child(3n){height:178px;width:52px}
+    .archive-box:hover{transform:translateY(-16px);z-index:20}
+    .archive-box:hover .book-spine{box-shadow:0 0 0 1px rgba(0,30,43,.08),0 4px 8px rgba(0,30,43,.08),0 16px 32px rgba(0,30,43,.16)}
+    .archive-box:hover .folder-tooltip{opacity:1;transform:translateX(-50%) translateY(-10px)}
+    /* 书脊主体 */
+    .book-spine{width:100%;height:100%;background:linear-gradient(180deg,var(--folder-color) 0%,var(--folder-color-dark) 100%);border-radius:5px 5px 0 0;box-shadow:0 0 0 1px rgba(0,30,43,.06),0 2px 6px rgba(0,30,43,.04),0 6px 14px rgba(0,30,43,.1),inset 2px 0 0 rgba(255,255,255,.14),inset -2px 0 0 rgba(0,0,0,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 3px;position:relative;overflow:hidden;transition:box-shadow .35s cubic-bezier(.2,.8,.2,1)}
+    /* 书顶/书底装饰线 */
+    .book-spine::before{content:'';position:absolute;top:0;left:12%;right:12%;height:4px;background:rgba(255,255,255,.28);border-radius:5px 5px 0 0}
+    .book-spine::after{content:'';position:absolute;bottom:0;left:12%;right:12%;height:4px;background:rgba(0,0,0,.18)}
+    /* 书名条带 */
+    .book-title-band{width:80%;background:rgba(255,255,255,.94);border-radius:2px;padding:4px 2px;text-align:center;box-shadow:0 1px 2px rgba(0,30,43,.08),inset 0 0 0 1px rgba(0,30,43,.04);margin:6px 0}
+    .folder-label-text{font-size:7px;font-weight:700;font-family:var(--font-display);color:#001e2b;line-height:1.3;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;max-height:82px}
+    /* 书脊日期 */
+    .book-meta{font-size:5.5px;font-weight:600;color:rgba(255,255,255,.8);writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.12em;overflow:hidden;text-overflow:ellipsis;max-height:60px}
+    /* 装饰横线 */
+    .book-line{width:34%;height:2px;background:rgba(255,255,255,.35);border-radius:1px;margin:3px 0}
+    /* 悬浮提示 */
+    .folder-tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(0);background:#001e2b;border-radius:6px;padding:10px 14px;white-space:nowrap;box-shadow:0 0 0 1px rgba(0,30,43,.1),0 2px 6px rgba(0,30,43,.08),0 12px 24px rgba(0,30,43,.18);opacity:0;transition:all .3s;pointer-events:none;z-index:100;font-size:.76rem;color:#f7f8f8;letter-spacing:.01em}
+    .folder-tooltip strong{display:block;margin-bottom:3px;font-size:.82rem;font-weight:600;font-family:var(--font-display);color:#00ed64}
+    .folder-tooltip small{color:rgba(247,248,248,.65);font-size:.66rem}
+    /* 档案盒阴影 */
+    .box-shadow{display:none}
 
     /* 牛皮纸箱 */
     .kbox{width:min(330px,28vw);height:min(250px,24vw);position:relative;perspective:1200px;cursor:pointer;z-index:5;transition:transform .4s cubic-bezier(.34,1.4,.64,1)}
@@ -405,46 +432,94 @@
     }
     function renderBreadcrumb(){
       let h=`<span class="bc-item ${state.level===0?'active':''}" onclick="navTo(0)">档案架</span>`;
-      if(state.level>=1) h+=`<span class="bc-sep">›</span><span class="bc-item ${state.level===1?'active':''}" onclick="navTo(1)">${DATA[state.boxIdx].name}</span>`;
-      if(state.level>=2) h+=`<span class="bc-sep">›</span><span class="bc-item active">${DATA[state.boxIdx].folders[state.folderIdx].name}</span>`;
+      if(state.level>=2) {
+        const cat=DATA[state.boxIdx];
+        const folder=cat.folders[state.folderIdx];
+        h+=`<span class="bc-sep">›</span><span class="bc-item">${cat.name}</span>`;
+        h+=`<span class="bc-sep">›</span><span class="bc-item active">${folder.name}</span>`;
+      }
       bcEl.innerHTML=h;
     }
     function navTo(level,rec=true){ if(level===0){state.boxIdx=-1;state.folderIdx=-1;} if(level===1){state.folderIdx=-1;} showView(level); if(rec)recordHist(); }
 
-    /* ===== 第一层：档案架 + 六箱（两行×三盒） ===== */
+    /* ===== 第一层：木制书架 + 档案盒（每行一个类别） ===== */
+    const FOLDER_COLORS = ['#023430','#0c5f47','#00684a','#1c4a5e','#001e2b','#5e3a1e','#7a2c3d','#145241','#0e4d5e','#4a3318','#313c4e','#204c3d'];
     function renderShelf(){
-      const rows=[DATA.slice(0,3),DATA.slice(3)];
       views.shelf.innerHTML=`
         <div class="shelf-unit">
-          ${rows.map(row=>`
+          ${DATA.map((cat,catIdx)=>`
             <div class="shelf-row">
-              ${row.map(b=>{
-                const i=DATA.indexOf(b);
-                const n=Math.max(b.folders.length,3);
-                const peek=Array.from({length:Math.min(n,5)},(_,k)=>`<i style="--c:${FB_COLORS[k%FB_COLORS.length].c}"></i>`).join('');
-                return `
-                <div class="kbox" style="--sc:${b.color}" onclick="clickBox(${i},this)">
-                  <div class="kbox-shadow"></div>
-                  <div class="kbox-inside"></div>
-                  <div class="kbox-peek">${peek}</div>
-                  <div class="kbox-lid"></div>
-                  <div class="kbox-front">
-                    <div class="kbox-stamp">档案</div>
-                    <div class="kbox-cat">${b.name}</div>
-                    <div class="kbox-desc">${b.intro}</div>
-                    <div class="kbox-hint">${b.folders.length} 盒 · ${b.folders.reduce((s,f)=>s+f.pages.length,0)} 页</div>
-                  </div>
-                </div>`;
-              }).join('')}
-              <div class="plank"></div>
+              <div class="category-title">${cat.name}</div>
+              <div class="boxes-container">
+                ${cat.folders.map((folder,folderIdx)=>{
+                  const colorIdx=(catIdx*3+folderIdx)%FOLDER_COLORS.length;
+                  const fc=FOLDER_COLORS[colorIdx];
+                  return `
+                  <div class="archive-box" style="--folder-color:${fc};--folder-color-dark:${adjustColor(fc,-25)}" onclick="openFolder(${catIdx},${folderIdx})">
+                    <div class="folder-tooltip"><strong>${folder.name}</strong><small>${folder.date} · ${folder.pages.length} 页</small></div>
+                    <div class="book-spine">
+                      <div class="book-title-band"><div class="folder-label-text">${folder.name}</div></div>
+                      <div class="book-line"></div>
+                      <div class="book-meta">${folder.date}</div>
+                    </div>
+                  </div>`;
+                }).join('')}
+              </div>
             </div>
           `).join('')}
         </div>`;
     }
-    function clickBox(i,el){
-      if(el.classList.contains('opening'))return;
-      el.classList.add('opening');
-      setTimeout(()=>{el.classList.remove('opening');openFileboxes(i);},550);
+    function adjustColor(hex,percent){const num=parseInt(hex.replace('#',''),16);const r=Math.max(0,Math.min(255,(num>>16)+percent));const g=Math.max(0,Math.min(255,((num>>8)&0x00FF)+percent));const b=Math.max(0,Math.min(255,(num&0x0000FF)+percent));return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');}
+    function openFolder(catIdx,folderIdx){
+      state.boxIdx=catIdx;
+      state.folderIdx=folderIdx;
+      pageIdx=0;
+      renderPagesView(catIdx, folderIdx);
+    }
+    function renderPagesView(catIdx, folderIdx, rec=true){
+      const box=DATA[catIdx];
+      const folder=box.folders[folderIdx];
+      const total=folder.pages.length;
+      const pages=Math.ceil(total/3);
+      const col=FB_COLORS[catIdx%FB_COLORS.length];
+      views.pages.innerHTML=`
+        <div class="takeout" id="takeout">
+          <div class="to-box" id="toBox" style="--fc:${col.c};--fc-hi:${col.hi};--fc-lo:${col.lo}">
+            <div class="to-inner"><div class="to-pages"></div></div>
+            <div class="to-cover"><div class="to-spine"></div><div class="to-label">${folder.name}<small>${folder.date} · 共 ${total} 页</small></div></div>
+          </div>
+        </div>
+        <div class="pg-main" id="pgMain">
+          <div class="pg-bar">
+            <div class="pg-title" style="color:${box.color}">${folder.name}<small>${box.name} · ${folder.date} · 共 ${total} 页</small></div>
+            <button class="back-btn" onclick="navTo(0)">← 返回档案架</button>
+          </div>
+          <div class="spread-wrap">
+            <button class="pg-btn" id="pvPrev" title="上一页"><span class="pg-arr">&#8249;</span>上一页</button>
+            <div class="spread" id="spread"></div>
+            <button class="pg-btn" id="pvNext" title="下一页">下一页<span class="pg-arr">&#8250;</span></button>
+          </div>
+          <div class="pager">
+            <div class="pg-dots" id="pgDots">${Array.from({length:pages},(_,k)=>`<i data-k="${k}" onclick="flipTo(${k})"></i>`).join('')}</div>
+            <div class="pg-ind" id="pgInd"></div>
+          </div>
+        </div>`;
+      views.pages._folder=folder;
+      views.pages._ready=false;
+      document.getElementById('pvPrev').onclick=()=>flipTo(pageIdx-1);
+      document.getElementById('pvNext').onclick=()=>flipTo(pageIdx+1);
+      showView(2);
+      if(rec)recordHist();
+      // 直接展示正面(0.3s) → 翻书式开盖(0.5s) → 盒体退场、档案页铺平
+      const to=document.getElementById('takeout'), tob=document.getElementById('toBox'), main=document.getElementById('pgMain');
+      setTimeout(()=>tob.classList.add('opened'),380);
+      setTimeout(()=>{
+        to.classList.add('out');
+        main.style.opacity=1;
+        renderSpread(0);
+        views.pages._ready=true;
+      },950);
+      setTimeout(()=>to.remove(),1500);
     }
 
     /* ===== 第二层：俯视箱内 · 文件盒侧面书脊 ===== */

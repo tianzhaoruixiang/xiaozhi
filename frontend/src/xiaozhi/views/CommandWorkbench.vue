@@ -211,20 +211,18 @@ const startFreeTask = () => {
   height: 100%;
   max-height: 100vh;
   min-height: 0;
-  padding: 16px clamp(16px, 2.5vw, 28px) 16px;
+  padding: 0;
   box-sizing: border-box;
 }
 
-/* 总结材料生成页：充满任务壳体的内嵌页面 */
+/* 总结材料生成页：充满任务壳体的内嵌页面（无装饰边框，与 /personal/task 视觉一致） */
 .task-frame {
   display: block;
   flex: 1;
   min-height: 0;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 22px;
-  background: #e9eef3;
-  box-shadow: var(--shadow-soft);
+  border: 0;
+  background: transparent;
 }
 
 /* 四块内容下方的输入框 */

@@ -44,12 +44,7 @@
       min-width: 1100px;
       color: var(--color-ink);
       /* 与 /personal/task 的 .workbench 浅色底完全一致 */
-      background:
-        radial-gradient(1200px 620px at 6% -10%, rgba(46, 196, 214, 0.2), transparent 58%),
-        radial-gradient(920px 540px at 96% 0%, rgba(201, 168, 108, 0.14), transparent 50%),
-        radial-gradient(780px 420px at 48% 110%, rgba(26, 122, 146, 0.14), transparent 55%),
-        linear-gradient(168deg, #c5d8e6 0%, #e7f0f6 42%, #eef4f8 78%, #e9eef3 100%);
-      background-attachment: fixed;
+      background: transparent;
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
@@ -591,38 +586,8 @@
     }
 
     async function loadData() {
-      const base = 'mdData/';
-      // 404 / SPA 兜底 HTML 都要抛错，才能回退到内置数据（应用内 public/ 下无 mdData 目录）
-      const fetchText = u => fetch(u).then(r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.text();
-      }).then(t => {
-        if (/^\s*<(\!doctype|html)/i.test(t)) throw new Error('SPA fallback HTML');
-        return t;
-      });
-      try {
-        const [metaRaw, matRaw, outRaw, draftRaw, verifyRaw, finalRaw] = await Promise.all([
-          fetchText(base + 'meta.md'),
-          fetchText(base + 'materials.md'),
-          fetchText(base + 'outline.md'),
-          fetchText(base + 'draft.md'),
-          fetchText(base + 'verify.md'),
-          fetchText(base + 'final.md'),
-        ]);
-        metaData = parseMeta(metaRaw);
-        const matSections = matRaw.split('\n## ');
-        const matListSection = matSections.find(s => s.startsWith('素材列表'));
-        const matCardsSection = matSections.find(s => s.startsWith('匹配分类'));
-        materials = parseListItems(matListSection || '').map(m => ({ name: m.name, meta: m.meta, color: m.color, icon: m.icon }));
-        matchCards = parseListItems(matCardsSection || '').map(c => ({ title: c.title, desc: c.desc }));
-        outlineData = parseListItems(outRaw).map(o => ({ level: parseInt(o.level), text: o.text, tag: o.tag || '' }));
-        draftParagraphs = parseDraft(draftRaw);
-        verifyItems = parseListItems(verifyRaw).map(v => ({ text: v.text }));
-        finalParagraphs = parseDraft(finalRaw);
-      } catch (e) {
-        console.warn('md文件加载失败，使用内置数据', e);
-        loadFallbackData();
-      }
+      // 所有内容直接内置在 HTML 中，不依赖外部 md 文件
+      loadFallbackData();
     }
 
     function loadFallbackData() {
@@ -1084,7 +1049,8 @@
     function makeArchiveLink() {
       const a = document.createElement('a');
       a.className = 'archive-link';
-      a.href = '/library.html';
+      a.href = '/library';
+      a.target = '_top';
       a.innerHTML = `${ICONS.doc} 前往档案馆`;
       return a;
     }
