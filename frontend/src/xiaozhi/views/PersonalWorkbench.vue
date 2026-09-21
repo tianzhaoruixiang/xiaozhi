@@ -124,7 +124,7 @@ const panels = computed<WorkbenchPanel[]>(() => [
       <WorkbenchHeader
         v-if="!isTaskPage"
         compact
-        brand="小智"
+        brand="张磊，你好"
         tagline="个人助手 · 协同工作台"
       >
         <template #actions>

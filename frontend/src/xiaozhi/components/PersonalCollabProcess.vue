@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { ChatMessage, CollabStep } from '../types/assistant'
 import AgentAvatar from './AgentAvatar.vue'
 import AgentThoughtChain from './AgentThoughtChain.vue'
@@ -43,20 +43,13 @@ const doneCount = computed(
   () => steps.value.filter((s) => s.status === 'done').length,
 )
 
-/** 用户手动展开/收起；null 表示跟随自动逻辑 */
+/** 用户手动展开/收起；null 表示沿用默认（收起） */
 const manualOpen = ref<boolean | null>(null)
 
+/** 执行过程默认收起，仅由用户点击展开 */
 const open = computed(() => {
   if (manualOpen.value !== null) return manualOpen.value
-  // 执行中自动展开，完成后自动收起
-  return !allDone.value
-})
-
-watch(allDone, (done, wasDone) => {
-  if (done && !wasDone) {
-    // 刚完成：强制回到自动收起
-    manualOpen.value = null
-  }
+  return false
 })
 
 const toggle = () => {

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { ChatMessage } from '../types/assistant'
-import MarkdownView from './MarkdownView.vue'
+import {
+  downloadWordDocument,
+  renderWordBodyHtml,
+} from '../utils/wordDocument'
 
 type DeliverableKind = 'shortlist' | 'online-plan' | 'offline-plan'
 
@@ -95,13 +98,20 @@ const show = computed(
       )),
 )
 
-const fileName = computed(() => {
+const fileBase = computed(() => {
   const base = (props.taskTitle || meta.value?.defaultTitle || '交付方案')
     .replace(/[\\/:*?"<>|]+/g, '-')
     .replace(/\s+/g, '-')
     .slice(0, 40)
-  return `${base || 'plan'}.md`
+  return base || 'plan'
 })
+
+/** 交付物为 Word 文档（.doc，Word 可直接编辑） */
+const fileName = computed(() => `${fileBase.value}.doc`)
+
+const docTitle = computed(
+  () => props.taskTitle || meta.value?.defaultTitle || '交付方案',
+)
 
 const documentMarkdown = computed(() => {
   const body = rawMarkdown.value
@@ -109,6 +119,9 @@ const documentMarkdown = computed(() => {
   if (/^#\s/.test(body)) return body
   return `${meta.value?.titleFallback || '# 交付方案\n\n'}${body}`
 })
+
+/** Word 正文 HTML：预览、下载、上报归档三处共用同一份内容 */
+const wordBodyHtml = computed(() => renderWordBodyHtml(documentMarkdown.value))
 
 watch(viewing, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
@@ -122,16 +135,9 @@ const closeViewer = () => {
   viewing.value = false
 }
 
-const downloadMd = () => {
-  const blob = new Blob([documentMarkdown.value], {
-    type: 'text/markdown;charset=utf-8',
-  })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = fileName.value
-  a.click()
-  URL.revokeObjectURL(url)
+const downloadWord = () => {
+  if (!wordBodyHtml.value) return
+  downloadWordDocument(fileName.value, docTitle.value, wordBodyHtml.value)
 }
 
 const reportToHrbp = async () => {
@@ -143,10 +149,11 @@ const reportToHrbp = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: props.taskTitle || meta.value?.defaultTitle || '交付方案',
+        title: docTitle.value,
         markdown: documentMarkdown.value,
+        html: wordBodyHtml.value,
         taskId: props.taskId,
-        fileName: fileName.value.replace(/\.md$/i, ''),
+        fileName: fileBase.value,
         kind: kind.value,
       }),
     })
@@ -176,7 +183,7 @@ const reportToHrbp = async () => {
   <div v-if="show" class="deliverable">
     <header class="head">
       <div>
-        <p class="eyebrow">交付物</p>
+        <p class="eyebrow">交付物 · Word</p>
         <h3>{{ fileName }}</h3>
         <p class="desc">{{ meta?.desc }}</p>
       </div>
@@ -186,8 +193,8 @@ const reportToHrbp = async () => {
     </header>
 
     <div class="actions">
-      <button type="button" class="btn ghost" @click="openViewer">查阅 MD</button>
-      <button type="button" class="btn ghost" @click="downloadMd">下载 .md</button>
+      <button type="button" class="btn ghost" @click="openViewer">查阅文档</button>
+      <button type="button" class="btn ghost" @click="downloadWord">下载 Word</button>
       <button
         type="button"
         class="btn primary"
@@ -217,23 +224,23 @@ const reportToHrbp = async () => {
         :class="{ open: viewing }"
         role="dialog"
         aria-modal="true"
-        aria-label="方案 Markdown 查阅"
+        aria-label="交付物 Word 文档查阅"
       >
         <header class="drawer-head">
           <div>
-            <p class="drawer-eyebrow">Markdown 查阅</p>
+            <p class="drawer-eyebrow">Word 文档查阅</p>
             <h2>{{ fileName }}</h2>
-            <p class="drawer-meta">{{ meta?.defaultTitle }}</p>
+            <p class="drawer-meta">{{ meta?.defaultTitle }} · A4 版式</p>
           </div>
           <div class="drawer-actions">
-            <button type="button" class="btn ghost" @click="downloadMd">下载</button>
+            <button type="button" class="btn ghost" @click="downloadWord">下载 Word</button>
             <button type="button" class="icon-close" aria-label="关闭" @click="closeViewer">
               ×
             </button>
           </div>
         </header>
         <div class="drawer-body">
-          <MarkdownView tone="light" :source="documentMarkdown" />
+          <div class="word-paper" v-html="wordBodyHtml" />
         </div>
         <footer class="drawer-foot">
           <button type="button" class="btn ghost" @click="closeViewer">关闭</button>
@@ -468,6 +475,104 @@ const reportToHrbp = async () => {
   min-height: 0;
   overflow: auto;
   padding: 18px 20px 24px;
+}
+
+/* 查阅抽屉里的 Word 版式预览（与导出 .doc 的 WORD_STYLE 对齐） */
+.word-paper {
+  padding: 30px 32px 34px;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: 'Microsoft YaHei', 'DengXian', 'SimSun', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  box-shadow: 0 14px 36px rgba(8, 28, 42, 0.14);
+  word-break: break-word;
+}
+
+.word-paper :deep(> *:first-child) {
+  margin-top: 0;
+}
+
+.word-paper :deep(h1) {
+  margin: 0 0 18px;
+  font-family: 'SimHei', 'Microsoft YaHei', sans-serif;
+  font-size: 1.42rem;
+  text-align: center;
+}
+
+.word-paper :deep(h2) {
+  margin: 18px 0 8px;
+  font-family: 'SimHei', 'Microsoft YaHei', sans-serif;
+  font-size: 1.14rem;
+}
+
+.word-paper :deep(h3) {
+  margin: 14px 0 6px;
+  font-family: 'SimHei', 'Microsoft YaHei', sans-serif;
+  font-size: 1.02rem;
+}
+
+.word-paper :deep(p) {
+  margin: 0 0 8px;
+}
+
+.word-paper :deep(ul),
+.word-paper :deep(ol) {
+  margin: 0 0 8px;
+  padding-left: 1.5em;
+}
+
+.word-paper :deep(li) {
+  margin: 0 0 4px;
+}
+
+.word-paper :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+}
+
+.word-paper :deep(th),
+.word-paper :deep(td) {
+  border: 1px solid #999;
+  padding: 5px 8px;
+  font-size: 0.86rem;
+  text-align: left;
+}
+
+.word-paper :deep(th) {
+  background: #f2f5f7;
+}
+
+.word-paper :deep(blockquote) {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid #bbb;
+  color: #444;
+}
+
+.word-paper :deep(code) {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #f2f4f6;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.86em;
+}
+
+.word-paper :deep(pre) {
+  margin: 10px 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid #e2e6ea;
+  border-radius: 6px;
+  background: #f6f8fa;
+}
+
+.word-paper :deep(hr) {
+  margin: 14px 0;
+  border: 0;
+  border-top: 1px solid #ccc;
 }
 
 .drawer-foot {

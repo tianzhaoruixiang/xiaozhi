@@ -2,6 +2,8 @@ node_modules
 dist
 .env
 *.log
+.venv
+__pycache__
 .DS_Store
 frontend/dist
 backend/dist
