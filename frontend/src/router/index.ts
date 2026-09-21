@@ -28,10 +28,18 @@ const router = createRouter({
       meta: { title: '小智 · 张处工作台' },
     },
     {
-      path: '/command',
+      // 高总工作台；/command/task 为「总结材料生成」交互页（参考 writing.html）
+      path: '/command/:pathMatch(.*)*',
       name: 'command',
       component: () => import('../xiaozhi/views/CommandWorkbench.vue'),
       meta: { title: '小智 · 高总工作台' },
+    },
+    {
+      // 知识体系档案馆（参考 library.html）
+      path: '/library',
+      name: 'library',
+      component: () => import('../xiaozhi/views/LibraryWorkbench.vue'),
+      meta: { title: '小智 · 知识体系档案馆' },
     },
     {
       // 原「安保协同指挥」；个人工作台的「进入会议」按路由名跳转，路径改名不影响调用
@@ -64,7 +72,8 @@ router.afterEach((to) => {
     to.name === 'leader' ||
     to.name === 'personal' ||
     to.name === 'team' ||
-    to.name === 'command'
+    to.name === 'command' ||
+    to.name === 'library'
   document.documentElement.classList.toggle('xiaozhi-desk', xiaozhiDesk)
 })
 

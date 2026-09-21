@@ -1,20 +1,32 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useGroupTasks } from '../data/groupTasks'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
 import CurrentGroupBoard from '../components/CurrentGroupBoard.vue'
 
 const { currentGroup } = useGroupTasks()
+const route = useRoute()
 const router = useRouter()
 
-/** 底部输入框：继续交给小智办理 */
+// /command/task：总结材料生成交互页（整页由 /writing.html 提供，参考 writingAndLib/writing.html）
+const isTaskPage = computed(
+  () => route.path === '/command/task' || route.path.startsWith('/command/task/'),
+)
+
+// 首页输入的对话通过 ?q= 透传，由 writing.html 读取后自动开始执行
+const writingSrc = computed(() => {
+  const q = typeof route.query.q === 'string' && route.query.q ? route.query.q : ''
+  return q ? `/writing.html?q=${encodeURIComponent(q)}` : '/writing.html'
+})
+
+/** 底部输入框：进入 /command/task 交给小智办理 */
 const homeDraft = ref('')
 const startFreeTask = () => {
   const text = homeDraft.value.trim()
   if (!text) return
   homeDraft.value = ''
-  void router.push(`/personal/task?q=${encodeURIComponent(text)}`)
+  void router.push(`/command/task?q=${encodeURIComponent(text)}`)
 }
 </script>
 
@@ -31,26 +43,32 @@ const startFreeTask = () => {
       <div class="horizon" />
     </div>
 
-    <div class="shell wide">
-      <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 当前组任务与成员进展">
-        <template #actions>
-          <RouterLink class="desk-link" to="/team">张处工作台</RouterLink>
-          <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
-        </template>
-      </WorkbenchHeader>
+    <div class="shell wide" :class="{ task: isTaskPage }">
+      <template v-if="isTaskPage">
+        <iframe class="task-frame" :src="writingSrc" title="总结材料生成工作台" />
+      </template>
 
-      <CurrentGroupBoard :group="currentGroup" />
+      <template v-else>
+        <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 当前组任务与成员进展">
+          <template #actions>
+            <RouterLink class="desk-link" to="/team">张处工作台</RouterLink>
+            <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
+          </template>
+        </WorkbenchHeader>
 
-      <form class="home-dock" @submit.prevent="startFreeTask">
-        <textarea
-          :value="homeDraft"
-          rows="2"
-          placeholder="也可以直接问小智，例如：当前组哪些任务需要我协调资源…"
-          @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
-          @keydown.enter.exact.prevent="startFreeTask"
-        />
-        <button type="submit" :disabled="!homeDraft.trim()">发送</button>
-      </form>
+        <CurrentGroupBoard :group="currentGroup" />
+
+        <form class="home-dock" @submit.prevent="startFreeTask">
+          <textarea
+            :value="homeDraft"
+            rows="2"
+            placeholder="也可以直接问小智，例如：当前组哪些任务需要我协调资源…"
+            @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
+            @keydown.enter.exact.prevent="startFreeTask"
+          />
+          <button type="submit" :disabled="!homeDraft.trim()">发送</button>
+        </form>
+      </template>
     </div>
   </div>
 </template>
@@ -189,6 +207,18 @@ const startFreeTask = () => {
   min-height: 0;
   padding: 16px clamp(16px, 2.5vw, 28px) 16px;
   box-sizing: border-box;
+}
+
+/* 总结材料生成页：充满任务壳体的内嵌页面 */
+.task-frame {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 22px;
+  background: #e9eef3;
+  box-shadow: var(--shadow-soft);
 }
 
 /* 四块内容下方的输入框 */
