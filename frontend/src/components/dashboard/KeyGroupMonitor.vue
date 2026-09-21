@@ -211,7 +211,7 @@ function resetFilters() {
 }
 
 .stat-type {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--c);
   letter-spacing: 0.08em;
 }
@@ -238,7 +238,7 @@ function resetFilters() {
 .stat-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -506,7 +506,7 @@ function resetFilters() {
   grid-template-columns: 30px 1fr;
   gap: 5px;
   align-items: baseline;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   min-width: 0;
 }

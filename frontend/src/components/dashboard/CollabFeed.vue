@@ -4,11 +4,11 @@
       <span class="panel-badge">实时推送</span>
     </template>
 
-    <div class="scroll-list">
-      <div class="scroll-list-inner">
+    <div class="push-list">
+      <TransitionGroup name="push" tag="div" class="push-list-inner">
         <div
-          v-for="item in doubled"
-          :key="item._key"
+          v-for="item in collabs"
+          :key="item.id"
           class="collab-item"
           :class="item.level"
         >
@@ -19,22 +19,16 @@
           </div>
           <p>{{ item.content }}</p>
         </div>
-      </div>
+      </TransitionGroup>
     </div>
   </PanelFrame>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { CollabItem } from '../../types/dashboard'
 import PanelFrame from './PanelFrame.vue'
 
-const props = defineProps<{ collabs: CollabItem[] }>()
-
-const doubled = computed(() => [
-  ...props.collabs.map((c, i) => ({ ...c, _key: `a-${c.id}-${i}` })),
-  ...props.collabs.map((c, i) => ({ ...c, _key: `b-${c.id}-${i}` })),
-])
+defineProps<{ collabs: CollabItem[] }>()
 
 function levelText(level: CollabItem['level']) {
   if (level === 'urgent') return '紧急'
@@ -44,6 +38,12 @@ function levelText(level: CollabItem['level']) {
 </script>
 
 <style scoped>
+.push-list {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .collab-item {
   padding: 8px 6px 8px 10px;
   border-bottom: 1px dashed oklch(0.84 0.145 207 / .14);
@@ -70,5 +70,23 @@ function levelText(level: CollabItem['level']) {
 p {
   font-size: 13px;
   line-height: 1.45;
+}
+
+.push-enter-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.push-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.push-leave-active {
+  position: absolute;
+  opacity: 0;
+}
+
+.push-move {
+  transition: transform 0.5s ease;
 }
 </style>

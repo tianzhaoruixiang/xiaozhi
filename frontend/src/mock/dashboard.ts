@@ -147,7 +147,7 @@ function createKeyPersons(): KeyPerson[] {
 }
 
 function createOpinions(tick: number): OpinionItem[] {
-  return Array.from({ length: 12 }, (_, i) => {
+  return Array.from({ length: 5 }, (_, i) => {
     const item = OPINION_POOL[(tick + i) % OPINION_POOL.length]
     return {
       id: `OP${tick}-${i}`,
@@ -174,7 +174,7 @@ function createTasks(): TaskItem[] {
 }
 
 function createCollabs(tick: number): CollabItem[] {
-  return Array.from({ length: 8 }, (_, i) => {
+  return Array.from({ length: 4 }, (_, i) => {
     const item = COLLAB_POOL[(tick + i) % COLLAB_POOL.length]
     return {
       id: `CB${tick}-${i}`,
@@ -307,19 +307,18 @@ export function refreshDashboardData(prev: DashboardData): DashboardData {
   const keyGroups = prev.keyGroups
 
   const opinions =
-    tick % 2 === 0
+    tick % 6 === 0
       ? [createOpinions(tick)[0], ...prev.opinions.slice(0, 11)]
       : prev.opinions
 
   const collabs =
-    tick % 2 === 0
+    tick % 6 === 3
       ? [createCollabs(tick)[0], ...prev.collabs.slice(0, 7)]
       : prev.collabs
 
   return {
     ...prev,
     tick,
-    temperature: 26 + (tick % 3),
     overallReport:
       tick % 5 === 0
         ? pick([

@@ -61,6 +61,9 @@ const showEntry = computed(() => viewMode.value === 'overview')
 const showOpinion = computed(() => viewMode.value === 'overview' || viewMode.value === 'opinion')
 const showTasks = computed(() => viewMode.value === 'overview' || viewMode.value === 'tasks')
 const showCollab = computed(() => viewMode.value === 'opinion' || viewMode.value === 'tasks')
+const alertCount = computed(() => data.value.patrolPoints.filter((point) => point.status !== '正常').length)
+const sensitiveCount = computed(() => data.value.opinions.filter((opinion) => opinion.sensitive).length)
+const activeTaskCount = computed(() => data.value.tasks.filter((task) => task.status !== '已完成').length)
 </script>
 
 <template>
@@ -122,6 +125,12 @@ const showCollab = computed(() => viewMode.value === 'opinion' || viewMode.value
       />
     </main>
 
-    <ViewSwitcher v-model="viewMode" />
+    <ViewSwitcher
+      v-model="viewMode"
+      :alert-count="alertCount"
+      :key-person-count="data.keyPersons.length"
+      :sensitive-count="sensitiveCount"
+      :active-task-count="activeTaskCount"
+    />
   </div>
 </template>

@@ -1,7 +1,7 @@
 <template>
-  <PanelFrame title="任务执行清单">
+  <PanelFrame title="任务完成进度">
     <template #extra>
-      <span class="panel-badge">销号 {{ summary.done }}/{{ summary.total }}</span>
+      <span class="panel-badge">已完成 {{ summary.done }}/{{ summary.total }}</span>
     </template>
 
     <div class="tasks-layout">
@@ -25,7 +25,7 @@
               {{ doneRate }}%
             </text>
           </svg>
-          <span>销号进度</span>
+          <span>完成进度</span>
         </div>
         <div class="summary-nums">
           <div class="stat-card doing">
