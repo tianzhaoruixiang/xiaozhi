@@ -1,7 +1,7 @@
 {
   "name": "task-decomposition",
   "displayName": "任务分解流程",
-  "description": "小智调度任务分解专家，把一项交办工作拆成任务项并给出负责人建议。",
+  "description": "智枢调度任务分解专家，把一项交办工作拆成任务项并给出负责人建议。",
   "goalTemplate": "把「{{shortMessage}}」拆解为可分配的任务项",
   "steps": [
     {

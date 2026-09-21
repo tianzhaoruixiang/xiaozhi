@@ -1,6 +1,6 @@
 /**
- * 小智动态调度：不写死专家角色。
- * 代码只提供「可挂载能力」；专家 id/名称/职责/提示词由小智本轮生成。
+ * 智枢动态调度：不写死专家角色。
+ * 代码只提供「可挂载能力」；专家 id/名称/职责/提示词由智枢本轮生成。
  */
 import type { AgentDefinition } from '@anthropic-ai/claude-agent-sdk'
 import { HUIXUN_TOOL_FQN } from '../tools/huixunMcp.js'
@@ -31,9 +31,9 @@ export const CAPABILITY_HINT = `可选能力（填入 capabilities，可多选�
 - huixun：通过汇讯向全体参会人（含领导人）发送会议通知，发出前须领导人确认，并附上《会议议程》与《会议资料》（须实际调用 send_meeting_notice）`
 
 export interface DynamicExpert {
-  /** Claude Code 风格 slug，由小智生成，如 security-management-expert */
+  /** Claude Code 风格 slug，由智枢生成，如 security-management-expert */
   id: string
-  /** 展示名，由小智生成 */
+  /** 展示名，由智枢生成 */
   name: string
   /** 一句话职责 */
   role: string
@@ -41,7 +41,7 @@ export interface DynamicExpert {
   title: string
   /** 本轮具体目标 */
   objective: string
-  /** 该专家的系统提示（由小智撰写） */
+  /** 该专家的系统提示（由智枢撰写） */
   prompt: string
   /** 本轮需要挂载的能力 */
   capabilities: CapabilityId[]
@@ -57,7 +57,7 @@ export interface DynamicPlan {
   experts: DynamicExpert[]
 }
 
-export const XIAOZHI_SYSTEM = `你是「小智」，政府机关领导的智能助手与编排器。
+export const XIAOZHI_SYSTEM = `你是「智枢」，政府机关领导的智能助手与编排器。
 
 先判断领导意图：
 - 普通问询（今日安排、重点事项、闲聊确认）：由你直接答复，不要虚构开会、预定会议室或发通知。
@@ -71,10 +71,10 @@ export const XIAOZHI_SYSTEM = `你是「小智」，政府机关领导的智能�
 5. 需要对接厅长出席时间时，给对应专家挂 schedule 能力（须查厅长日程、找空档并写入安排）
 6. 需要发政务汇讯通知时，给对应专家挂 huixun 能力；须把《会议议程》与《会议资料》发给全体参会人（含领导人），发出前必须先请领导人确认；地点应引用已预定的会议室全名
 7. 无数据依赖的专家应并行（dependsOn 相同或互不依赖）；有先后依赖的用 dependsOn 指向前置专家 id
-8. 你本人负责最后向领导汇总与口述汇报，不要把「小智」再写成子专家
+8. 你本人负责最后向领导汇总与口述汇报，不要把「智枢」再写成子专家
 9. 最终面向领导的答复用简洁规范的政务中文，分点清晰，用语得体`
 
-export const XIAOZHI_BRIEF_PROMPT = `你是「小智」，领导助手。各专业子智能体已按你的调度完成工作，现在向领导做最终汇报。
+export const XIAOZHI_BRIEF_PROMPT = `你是「智枢」，领导助手。各专业子智能体已按你的调度完成工作，现在向领导做最终汇报。
 
 先给出简要书面纪要（Markdown），再单独用标记【口述汇报】给出可朗读纯文本。
 
@@ -166,7 +166,7 @@ export function parseXiaozhiPlan(rawText: string, fallbackMessage: string): Dyna
       .replace(/^-|-$/g, '')
     if (!id) id = slugifyExpertId(name, i)
     // 禁止把编排器自己塞进子专家
-    if (id === 'xiaozhi' || name === '小智') continue
+    if (id === 'xiaozhi' || id === 'zhishu' || name === '智枢' || name === '小智') continue
     if (seen.has(id)) id = `${id}-${i + 1}`
     seen.add(id)
 
@@ -347,7 +347,7 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
   }
 
   return {
-    goal: `围绕「${short}${message.length > 36 ? '…' : ''}」由小智调度专家协同交付`,
+    goal: `围绕「${short}${message.length > 36 ? '…' : ''}」由智枢调度专家协同交付`,
     experts,
   }
 }
@@ -380,11 +380,11 @@ ${CAPABILITY_HINT}
 3. experts 由你原创命名与设计，不要使用预置角色清单
 4. 数量按需（通常 0-5 个）；用 dependsOn 表达依赖，无依赖的任务必须并行
 5. dependsOn 填本轮其他专家的 id；起点专家用 []；汇聚类（如发通知）应依赖所有前置产出方
-6. 不要生成名为小智 / xiaozhi 的子专家
+6. 不要生成名为智枢 / 小智 / xiaozhi 的子专家
 7. prompt 必须足够具体，使该专家无需再问你即可开干`
 }
 
-/** 把小智生成的专家编成 Claude Agent SDK agents map */
+/** 把智枢生成的专家编成 Claude Agent SDK agents map */
 export function buildClaudeAgentsFromRoster(
   experts: DynamicExpert[],
 ): Record<string, AgentDefinition> {

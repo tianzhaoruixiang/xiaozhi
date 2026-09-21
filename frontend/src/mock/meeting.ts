@@ -247,7 +247,7 @@ export const planDocument: PlanDocument = {
   ],
   minutes: {
     title: '大型会议保障动员会会议纪要',
-    recorder: '会议助手 · 小智',
+    recorder: '会议助手 · 智枢',
     status: '实时草拟中',
     summary: '会议听取了前期筹备情况，审议总体安保方案，并围绕人员审核、现场安保、场馆检查、舆情监测和应急处置等事项进行了讨论。',
     decisions: [

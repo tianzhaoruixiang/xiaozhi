@@ -85,11 +85,16 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
 function resampleTo16k(input: Float32Array, inputRate: number): Float32Array {
   const targetRate = 16000
   if (inputRate === targetRate) return input
-  const ratio = inputRate / targetRate
-  const newLen = Math.max(1, Math.floor(input.length / ratio))
+  const duration = input.length / inputRate
+  const newLen = Math.max(1, Math.round(duration * targetRate))
   const out = new Float32Array(newLen)
+  const scale = input.length / newLen
   for (let i = 0; i < newLen; i += 1) {
-    out[i] = input[Math.min(input.length - 1, Math.floor(i * ratio))] ?? 0
+    const src = i * scale
+    const i0 = Math.floor(src)
+    const i1 = Math.min(input.length - 1, i0 + 1)
+    const t = src - i0
+    out[i] = (input[i0] ?? 0) * (1 - t) + (input[i1] ?? 0) * t
   }
   return out
 }
@@ -103,13 +108,13 @@ function rms(frame: Float32Array): number {
 /**
  * 语音唤醒 + 一段话收音。
  *
- * 平时待机：持续做本地 VAD，只有识别文本以「你好小智」开头才算唤醒，
+ * 平时待机：持续做本地 VAD，只有识别文本以「你好智枢」开头才算唤醒，
  * 其它声音（聊天、噪声、电视）一律丢弃，不会进入识别/发送流程。
  *
- * 唤醒后：进入「等着听指令」状态，领导一停嘴（检测到约 0.7s 静音）
+ * 唤醒后：进入「等着听指令」状态，领导一停嘴（约 0.4s 静音）
  * 就自动把这一整段送 ASR 并回调 onTranscript，不再需要点按发送。
  *
- * 一句话同时说「你好小智 + 指令」时直接给指令，不播「我在」。
+ * 一句话同时说「你好智枢 + 指令」时直接给指令，不播「我在」。
  */
 export function useVoiceWake(callbacks: WakeCallbacks) {
   const supported = ref(false)
@@ -347,12 +352,12 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
       muteGain = audioCtx.createGain()
       muteGain.gain.value = 0
 
-      // 约 85ms/帧 @48k：停嘴 0.8s 视为说完，最短语音 0.3s
-      const silenceNeed = Math.max(6, Math.round((0.8 * inputRate) / 4096))
-      const speechNeed = Math.max(3, Math.round((0.3 * inputRate) / 4096))
-      const energyOn = 0.018
-      const energyOff = 0.01
+      // 约 85ms/帧 @48k。待命稍长以免误切；已唤醒后加快收尾。
+      const silenceNeedIdle = Math.max(5, Math.round((0.55 * inputRate) / 4096))
+      const silenceNeedArmed = Math.max(4, Math.round((0.4 * inputRate) / 4096))
+      const speechNeed = Math.max(2, Math.round((0.22 * inputRate) / 4096))
       const maxSpeechSec = 12
+      let noiseFloor = 0.006
 
       const flushUtterance = (chunks: Float32Array[]) => {
         const total = chunks.reduce((n, c) => n + c.length, 0)
@@ -382,6 +387,8 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
         updateSoundLevel(level)
 
         if (!inSpeech) {
+          noiseFloor = noiseFloor * 0.97 + level * 0.03
+          const energyOn = Math.max(0.01, noiseFloor * 3.4)
           if (level >= energyOn) {
             speechFrames += 1
             speechChunks.push(new Float32Array(input))
@@ -398,11 +405,13 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
         }
 
         speechChunks.push(new Float32Array(input))
+        const energyOff = Math.max(0.007, noiseFloor * 1.9)
         if (level < energyOff) silenceFrames += 1
         else silenceFrames = 0
 
         const totalSamples = speechChunks.reduce((n, c) => n + c.length, 0)
         const tooLong = totalSamples >= inputRate * maxSpeechSec
+        const silenceNeed = awaitingCommand.value ? silenceNeedArmed : silenceNeedIdle
         if (silenceFrames >= silenceNeed || tooLong) {
           const chunks = speechChunks
           speechChunks = []

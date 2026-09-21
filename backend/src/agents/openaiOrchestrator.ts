@@ -51,7 +51,7 @@ import {
 } from '../lib/oralReport.js'
 import { runGeneralChat } from '../lib/generalChat.js'
 
-/** 小智调度：生成本轮专家团队（无预置角色） */
+/** 智枢调度：生成本轮专家团队（无预置角色） */
 export async function planExpertsWithXiaozhi(
   contextBlock: string,
   message: string,
@@ -833,7 +833,7 @@ async function runXiaozhiBrief(options: {
   onEvent({
     type: 'agent_spawn',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     agentRole: enableOral
       ? '领导助手 · 编排监督与口述汇报'
       : '个人助手 · 编排汇总',
@@ -841,18 +841,18 @@ async function runXiaozhiBrief(options: {
     objective: enableOral
       ? '汇总本轮专家结论并向领导口述汇报'
       : '汇总本轮专家结论并给出书面答复',
-    summary: '小智登场：监督汇总',
+    summary: '智枢登场：监督汇总',
   })
   onEvent({
     type: 'agent_start',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     agentRole: enableOral
       ? '领导助手 · 编排监督与口述汇报'
       : '个人助手 · 编排汇总',
     summary: enableOral
-      ? '小智正在监督汇总，并准备向领导口述汇报…'
-      : '小智正在汇总本轮结论…',
+      ? '智枢正在监督汇总，并准备向领导口述汇报…'
+      : '智枢正在汇总本轮结论…',
   })
 
   const briefUserTail = enableOral
@@ -887,7 +887,7 @@ ${briefUserTail}`,
   onEvent({
     type: 'agent_done',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     summary: written,
   })
 
@@ -908,12 +908,12 @@ ${briefUserTail}`,
     onEvent({
       type: 'agent_progress',
       agentId: 'xiaozhi',
-      agentName: '小智',
+      agentName: '智枢',
       summary:
         resolved.source === 'section'
           ? '已从汇报正文提取口述稿'
           : resolved.source === 'llm'
-            ? '已由小智生成口述汇报'
+            ? '已由智枢生成口述汇报'
             : '模型暂不可用，已据本轮结论压缩口述稿',
     })
   } catch {
@@ -924,9 +924,9 @@ ${briefUserTail}`,
   onEvent({
     type: 'oral_report',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     text: oral,
-    summary: '小智开始向领导语音汇报',
+    summary: '智枢开始向领导语音汇报',
   })
   onEvent({ type: 'final', text: brief })
   return brief
@@ -949,7 +949,7 @@ export async function runOpenAIOrchestrator(options: {
   try {
     options.onEvent({
       type: 'plan_start',
-      message: '小智正在识别意图并选择协作方式…',
+      message: '智枢正在识别意图并选择协作方式…',
     })
 
     const picked = pickPlanSource({
@@ -962,7 +962,7 @@ export async function runOpenAIOrchestrator(options: {
     options.onEvent({
       type: 'agent_progress',
       agentId: 'xiaozhi',
-      agentName: '小智',
+      agentName: '智枢',
       summary: picked.routeLabel
         ? `意图：${picked.intentText} · ${picked.routeLabel}`
         : `意图：${picked.intentText}`,
@@ -983,7 +983,7 @@ export async function runOpenAIOrchestrator(options: {
       options.onEvent({
         type: 'agent_progress',
         agentId: 'xiaozhi',
-        agentName: '小智',
+        agentName: '智枢',
         summary: `使用配置工作流（${picked.reason}）· ${plan.experts.length} 位专家`,
       })
     } else if (picked.mode === 'config') {
@@ -994,7 +994,7 @@ export async function runOpenAIOrchestrator(options: {
       options.onEvent({
         type: 'agent_progress',
         agentId: 'xiaozhi',
-        agentName: '小智',
+        agentName: '智枢',
         summary: '改为动态生成专家团队…',
       })
       plan = await planExpertsWithXiaozhi(contextBlock, options.message)
@@ -1045,7 +1045,7 @@ export async function runOpenAIOrchestrator(options: {
         options.onEvent({
           type: 'agent_progress',
           agentId: wave[0].id,
-          agentName: '小智',
+          agentName: '智枢',
           summary: `第 ${w + 1} 波并行：${wave.map((e) => e.name).join('、')}`,
         })
       }
@@ -1187,5 +1187,5 @@ async function runExpertWork(options: {
   })
 }
 
-/** 供 Claude 路径复用：先由小智生成专家，再编成 SDK agents */
+/** 供 Claude 路径复用：先由智枢生成专家，再编成 SDK agents */
 export { buildClaudeAgentsFromRoster }

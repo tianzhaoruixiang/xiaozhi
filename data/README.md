@@ -4,7 +4,7 @@
 
 ```
 data/
-  models/           # TTS（OmniVoice）/ ASR（SenseVoice）离线模型
+  models/           # TTS（Higgs Audio V2）/ ASR（SenseVoice）离线模型
   hrbp-reports/     # 上报 HRBP 的 Markdown 存档
   runtime/          # 进程运行时写入（HOME 等）
 ```
@@ -12,7 +12,7 @@ data/
 ## 预置模型
 
 ```bash
-bash tts/download_model.sh
+python tts/download_model.py
 bash tts/download_asr_model.sh
 ```
 

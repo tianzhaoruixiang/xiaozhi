@@ -1,20 +1,32 @@
 /**
- * 语音唤醒词匹配：主唤醒词「你好，小智」；兼容 ASR 常见误听。
+ * 语音唤醒词匹配：主唤醒词「你好，智枢」；兼容 ASR 常见误听。
  *
  * 唤醒只在句首生效（小爱同学式）：
- * - 「你好小智」            → 唤醒，等待后续指令
- * - 「你好小智，明天几点开会」→ 唤醒 + 指令
- * - 「刚才我说了你好小智吗」  → 不唤醒（避免闲聊误唤醒）
- * - 「你好小」              → 视为被截断的半句，不算唤醒，避免 ASR 拆句导致误触发
+ * - 「你好智枢」            → 唤醒，等待后续指令
+ * - 「你好智枢，明天几点开会」→ 唤醒 + 指令
+ * - 「刚才我说了你好智枢吗」  → 不唤醒（避免闲聊误唤醒）
+ * - 「你好智」              → 视为被截断的半句，不算唤醒，避免 ASR 拆句导致误触发
  */
 
 /** 对外展示用标准唤醒词 */
-export const WAKE_PHRASE_DISPLAY = '你好，小智'
+export const WAKE_PHRASE_DISPLAY = '你好，智枢'
 
-const WAKE_CANONICAL = ['你好小智', '你好，小智'] as const
+const WAKE_CANONICAL = ['你好智枢', '你好，智枢'] as const
 
 /** 精确短语 + 常见误听变体（去空白标点后匹配） */
 const WAKE_ALIASES: string[] = [
+  '你好智枢',
+  '您好智枢',
+  '你好智书',
+  '你好智树',
+  '你好知枢',
+  '你好之枢',
+  '你好支枢',
+  '您好智书',
+  '您好智树',
+  'nihaozhishu',
+  'hellozhishu',
+  // 旧唤醒词误听兼容
   '你好小智',
   '您好小智',
   '你好晓智',
@@ -38,9 +50,9 @@ function stripNoise(text: string): string {
     .toLowerCase()
 }
 
-/** 「你好/您好 + 可选字 + 小X」松匹配，仅句首 */
+/** 「你好/您好 + 可选字 + 智枢/小智」松匹配，仅句首 */
 function looseWake(compact: string): { hit: boolean; prefixLen: number } {
-  const m = /^(你好|您好)[\u4e00-\u9fff]{0,1}小[智至知枝纸只质]/.exec(compact)
+  const m = /^(你好|您好)[\u4e00-\u9fff]{0,1}(智[枢书树舒殊]|小[智至知枝纸只质])/.exec(compact)
   if (!m) return { hit: false, prefixLen: 0 }
   return { hit: true, prefixLen: m[0].length }
 }
@@ -116,4 +128,4 @@ export function matchWakePhrase(
   return { hit: false, command: '', wakeOnly: false }
 }
 
-export const DEFAULT_WAKE_WORDS = [WAKE_PHRASE_DISPLAY, '你好小智']
+export const DEFAULT_WAKE_WORDS = [WAKE_PHRASE_DISPLAY, '你好智枢']

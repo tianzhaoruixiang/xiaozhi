@@ -30,7 +30,7 @@ export function useAssistantChat() {
     {
       id: 'welcome',
       role: 'system',
-      content: '您好，我是小智，您的领导助手。请说「你好，小智」唤醒我，再说出您的指示。问今日安排可直接聊；要准备会议、预定或通知时，我会调度专家协同办理。',
+      content: '您好，我是智枢，您的领导助手。请说「你好，智枢」唤醒我，再说出您的指示。问今日安排可直接聊；要准备会议、预定或通知时，我会调度专家协同办理。',
     },
   ])
   const streaming = ref(false)
@@ -90,7 +90,7 @@ export function useAssistantChat() {
     if (!step) {
       step = {
         id: agentId,
-        name: extra?.name ?? (agentId === 'xiaozhi' ? '小智' : agentId),
+        name: extra?.name ?? (agentId === 'xiaozhi' ? '智枢' : agentId),
         role: extra?.role ?? (agentId === 'xiaozhi' ? '领导助手 · 编排监督与口述汇报' : '专业专家'),
         status: 'queued',
         title: extra?.title,
@@ -403,7 +403,7 @@ export function useAssistantChat() {
             if (!enableOral) break
             state.value = 'speaking'
             plan.phase = 'done'
-            plan.statusText = '小智正在向领导语音汇报'
+            plan.statusText = '智枢正在向领导语音汇报'
             if (payload.text) msg.oralReport = payload.text
             break
           }

@@ -55,7 +55,7 @@ function wordDocument(title: string, bodyHtml: string, stamp: Date) {
 </head>
 <body>
 ${bodyHtml}
-<p class="doc-meta">小智 · 个人助手生成 · ${escapeHtml(generatedAt)}</p>
+<p class="doc-meta">智枢 · 个人助手生成 · ${escapeHtml(generatedAt)}</p>
 </body>
 </html>
 `

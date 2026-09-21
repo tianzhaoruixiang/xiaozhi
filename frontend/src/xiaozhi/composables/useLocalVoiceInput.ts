@@ -133,13 +133,18 @@ export function useLocalVoiceInput(options?: {
     }
     chunks = []
 
-    // 重采样到 16k（ASR 常用）
+    // 线性重采样到 16k，比取整抽取更保辅音
     const targetRate = 16000
-    const ratio = inputRate / targetRate
-    const newLen = Math.max(1, Math.floor(merged.length / ratio))
+    const duration = merged.length / inputRate
+    const newLen = Math.max(1, Math.round(duration * targetRate))
     const resampled = new Float32Array(newLen)
+    const scale = merged.length / newLen
     for (let i = 0; i < newLen; i += 1) {
-      resampled[i] = merged[Math.min(merged.length - 1, Math.floor(i * ratio))] ?? 0
+      const src = i * scale
+      const i0 = Math.floor(src)
+      const i1 = Math.min(merged.length - 1, i0 + 1)
+      const t = src - i0
+      resampled[i] = (merged[i0] ?? 0) * (1 - t) + (merged[i1] ?? 0) * t
     }
 
     recognizing.value = true

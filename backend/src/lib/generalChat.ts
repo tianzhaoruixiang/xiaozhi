@@ -42,7 +42,7 @@ function buildDirectSystem(kind: 'direct' | 'schedule_query'): string {
 }
 
 /**
- * 普通问题 / 日程问询：小智直接执行（优先 Claude Code，否则 OpenAI 兼容）。
+ * 普通问题 / 日程问询：智枢直接执行（优先 Claude Code，否则 OpenAI 兼容）。
  * 不再写死「汇报今日重点」。
  */
 export async function runXiaozhiDirect(options: {
@@ -62,21 +62,21 @@ export async function runXiaozhiDirect(options: {
     type: 'plan_start',
     message:
       kind === 'schedule_query'
-        ? '小智正在整理今日安排…'
-        : '小智正在调度执行您的问题…',
+        ? '智枢正在整理今日安排…'
+        : '智枢正在调度执行您的问题…',
   })
   await sleep(100)
 
   onEvent({
     type: 'agent_progress',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     summary:
       kind === 'schedule_query'
-        ? '日程问询 · 小智直接答复'
+        ? '日程问询 · 智枢直接答复'
         : getLlmProvider() === 'claude'
           ? '普通问题 · 经 Claude Code 执行'
-          : '普通问题 · 小智直接执行',
+          : '普通问题 · 智枢直接执行',
   })
 
   onEvent({
@@ -86,14 +86,14 @@ export async function runXiaozhiDirect(options: {
         ? '答复今日工作安排'
         : `直接回答：${options.message.slice(0, 40)}`,
     total: 1,
-    message: '本轮由小智执行，不拉起会议专家团',
+    message: '本轮由智枢执行，不拉起会议专家团',
   })
   onEvent({
     type: 'plan_item',
     index: 1,
     total: 1,
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     agentRole: '领导助手',
     title: kind === 'schedule_query' ? '答复今日安排' : '直接作答',
     objective: options.message,
@@ -104,16 +104,16 @@ export async function runXiaozhiDirect(options: {
   onEvent({
     type: 'agent_spawn',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     agentRole: '领导助手',
     title: kind === 'schedule_query' ? '答复今日安排' : '直接作答',
     objective: options.message,
-    summary: '登场：小智',
+    summary: '登场：智枢',
   })
   onEvent({
     type: 'agent_start',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     agentRole: '领导助手',
     title: kind === 'schedule_query' ? '答复今日安排' : '直接作答',
     summary: '执行中…',
@@ -149,7 +149,7 @@ export async function runXiaozhiDirect(options: {
     onEvent({
       type: 'agent_progress',
       agentId: 'xiaozhi',
-      agentName: '小智',
+      agentName: '智枢',
       summary: `执行受阻，改用本地兜底：${err instanceof Error ? err.message : '未知错误'}`,
     })
     answer = buildDirectFallback(options.message, kind, clock, options.plans)
@@ -163,16 +163,16 @@ export async function runXiaozhiDirect(options: {
   onEvent({
     type: 'agent_done',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     summary: answer,
   })
   if (options.enableOralReport !== false) {
     onEvent({
       type: 'oral_report',
       agentId: 'xiaozhi',
-      agentName: '小智',
+      agentName: '智枢',
       text: answer.replace(/\n+/g, ' ').trim(),
-      summary: '小智开始向领导语音答复',
+      summary: '智枢开始向领导语音答复',
     })
   }
   onEvent({ type: 'final', text: answer })
@@ -186,13 +186,13 @@ async function runViaClaudeCode(options: {
 }): Promise<string> {
   const state = { finalText: '' }
   const mapMessage = createSdkEventMapper(options.onEvent, state, {
-    displayNames: { xiaozhi: '小智' },
+    displayNames: { xiaozhi: '智枢' },
     roles: { xiaozhi: '领导助手' },
   })
 
   const prompt = `${options.contextBlock}
 
-请作为小智直接回答领导问题。
+请作为智枢直接回答领导问题。
 - 不要调用子专家 Agent
 - 若问当前时间，可用 Bash 执行 date 核对，但以【当前系统时间】为准作出口语答复
 - 不要跑题去汇报无关的今日重点`

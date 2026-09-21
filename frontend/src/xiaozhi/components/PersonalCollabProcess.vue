@@ -93,7 +93,7 @@ const summaryLine = computed(() => {
     <button type="button" class="process-toggle" :aria-expanded="open" @click="toggle">
       <span class="toggle-left">
         <span class="pulse" :class="{ live: !allDone }" aria-hidden="true" />
-        <strong>小智执行过程</strong>
+        <strong>智枢执行过程</strong>
         <em>{{ phaseLabel }}</em>
       </span>
       <span class="toggle-right">

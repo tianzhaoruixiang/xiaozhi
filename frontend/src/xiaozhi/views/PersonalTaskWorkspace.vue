@@ -99,8 +99,8 @@ const resetWelcome = (task: PersonalTask | null) => {
       id: `welcome-${task?.id ?? 'none'}`,
       role: 'system',
       content: task
-        ? `已进入${kind}「${task.title}」。确认指令后点击发送，小智即刻开始执行。`
-        : '选择下方任务，或直接输入指令后点击发送，小智即刻开始执行。',
+        ? `已进入${kind}「${task.title}」。确认指令后点击发送，智枢即刻开始执行。`
+        : '选择下方任务，或直接输入指令后点击发送，智枢即刻开始执行。',
     },
   ]
   state.value = 'idle'
@@ -229,7 +229,7 @@ onUnmounted(() => {
   <div class="task-workspace">
     <header class="topbar">
       <button type="button" class="back" title="返回工作台" @click="emit('back')">
-        <span class="back-mark">小智</span>
+        <span class="back-mark">智枢</span>
         <span class="back-hint">返回工作台</span>
       </button>
       <div v-if="selected" class="top-meta">
@@ -242,12 +242,12 @@ onUnmounted(() => {
       <header class="dialog-head">
         <div class="dialog-title">
           <p class="eyebrow">任务协作</p>
-          <h2>{{ selected ? selected.title : '与小智对话' }}</h2>
+          <h2>{{ selected ? selected.title : '与智枢对话' }}</h2>
           <p class="hint">
             {{
               selected
                 ? '任务内容已填入下方输入框，确认后点击发送即可开始执行。'
-                : '输入指令后点击发送，小智即刻开始执行。'
+                : '输入指令后点击发送，智枢即刻开始执行。'
             }}
           </p>
         </div>
@@ -303,7 +303,7 @@ onUnmounted(() => {
               :data-role="msg.role"
             >
               <header v-if="msg.role !== 'system'" class="bubble-meta">
-                <span>{{ msg.role === 'user' ? '我' : '小智' }}</span>
+                <span>{{ msg.role === 'user' ? '我' : '智枢' }}</span>
               </header>
 
               <PersonalCollabProcess

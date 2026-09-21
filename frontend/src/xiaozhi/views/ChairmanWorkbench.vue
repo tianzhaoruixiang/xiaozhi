@@ -15,7 +15,7 @@ import AssistantPanel from '../components/AssistantPanel.vue'
 
 const plans = mockPlans
 
-/** 主屏只展示最要紧的几条，完整计划仍交给小智上下文 */
+/** 主屏只展示最要紧的几条，完整计划仍交给智枢上下文 */
 const DESK_LIMIT = 6
 const deskSeed = [
   mockFocusWork[0],
@@ -89,7 +89,7 @@ const orchestration = () => ({
 })
 
 /**
- * 语音链路：待机（说「你好小智」才醒）→ 播报「我在，请讲」→ 听领导这一整段话
+ * 语音链路：待机（说「你好智枢」才醒）→ 播报「我在，请讲」→ 听领导这一整段话
  * → 停嘴自动上报并进入推演 → 播报完成后默认继续聆听下一条。
  */
 const {
@@ -316,7 +316,7 @@ const onModeChange = (mode: string) => {
         <span>请讲，说完停一下我就开始办</span>
       </template>
       <template v-else>
-        <strong>{{ voiceCapturing ? '正在聆听…' : '小智已唤醒' }}</strong>
+        <strong>{{ voiceCapturing ? '正在聆听…' : '智枢已唤醒' }}</strong>
         <span>{{ voiceCapturing ? '请继续说出您的指示' : '请直接说出您的指示，停顿后自动发送' }}</span>
       </template>
     </div>

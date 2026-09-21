@@ -1,8 +1,8 @@
-# 小智 · 领导助手 · 政府人员调度会
+# 智枢 · 领导助手 · 政府人员调度会
 
 Vue 3 工作台 + Node/Hono 后端（多智能体协作）+ Docker Compose 一键部署。
 
-小智作为领导助手，按需动态调度专家，协助组织**人员调度会**（材料检索、汇讯通知、口述汇报）。
+智枢作为领导助手，按需动态调度专家，协助组织**人员调度会**（材料检索、汇讯通知、口述汇报）。
 
 默认对接 **OpenAI 兼容接口**（Ollama / vLLM / LM Studio 等本地模型）；也可切换 Claude Agent SDK。
 
@@ -43,9 +43,12 @@ cp .env.example .env
 # 容器访问宿主机模型时，将 OPENAI_BASE_URL 设为：
 # OPENAI_BASE_URL=http://host.docker.internal:11434/v1
 
-# 预下载语音模型到 data/models（首次；TTS 现为 OmniVoice）
-bash tts/download_model.sh
+# 预下载语音模型到 data/models（首次；TTS 为 Higgs Audio V2）
+python tts/download_model.py
 bash tts/download_asr_model.sh
+
+# 本机 AMD GPU：先在宿主机启动 TTS（占用 8090）
+# powershell -ExecutionPolicy Bypass -File tts/run_windows_gpu.ps1
 
 docker compose up --build -d
 ```
@@ -57,11 +60,11 @@ docker compose up --build -d
 ## 功能
 
 - 领导助手工作台与今日政务安排
-- 右下角「小智」虚拟形象，语音唤醒（默认「你好，小智」）
+- 右下角「智枢」虚拟形象，语音唤醒（默认「你好，智枢」）
   - 平时处于待机，麦克风只做本地 VAD 与唤醒词判定；闲聊、电视、噪声都不会误唤醒
-  - 听到「你好，小智」后应答「我在，请讲」，随即开始收领导这一整段话
+  - 听到「你好，智枢」后应答「我在，请讲」，随即开始收领导这一整段话
   - 领导停嘴约 0.7s 自动把识别文本作为指令发出，无需点按发送
-  - 唤醒后 12s 无人说话自动回到待机；一句话说成「你好小智，明天几点开会」则直接执行，不播应答
-- 小智按需动态生成专家团队并展示协作流程
+  - 唤醒后 12s 无人说话自动回到待机；一句话说成「你好智枢，明天几点开会」则直接执行，不播应答
+- 智枢按需动态生成专家团队并展示协作流程
 - 知识能力检索历年调度会档案并汇编背景；汇讯能力通知相关部门并分发资料
-- 任务完成后小智向领导口述汇报（时间地点参会人、资料已发送、外出代参会等）
+- 任务完成后智枢向领导口述汇报（时间地点参会人、资料已发送、外出代参会等）

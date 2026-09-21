@@ -102,7 +102,7 @@ const startFreeTask = () => {
             :placeholder="
               selectedTask
                 ? '可补充说明后发送'
-                : '你可以向小智分配任务，询问进度'
+                : '你可以向智枢分配任务，询问进度'
             "
             @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
             @keydown.enter.exact.prevent="startFreeTask"
