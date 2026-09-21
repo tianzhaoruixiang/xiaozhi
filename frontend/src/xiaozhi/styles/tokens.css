@@ -137,17 +137,17 @@
   to { opacity: 1; }
 }
 
-/* 全局滚动条 */
+/* 全局滚动条：浅色工作台用极淡细轨 */
 .xiaozhi-scope,
 .xiaozhi-scope * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(46, 196, 214, 0.18) transparent;
+  scrollbar-color: rgba(46, 196, 214, 0.22) transparent;
 }
 
 .xiaozhi-scope::-webkit-scrollbar,
 .xiaozhi-scope *::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 .xiaozhi-scope::-webkit-scrollbar-track,
@@ -157,7 +157,7 @@
 
 .xiaozhi-scope::-webkit-scrollbar-thumb,
 .xiaozhi-scope *::-webkit-scrollbar-thumb {
-  background: rgba(120, 160, 180, 0.14);
+  background: rgba(90, 128, 148, 0.28);
   border-radius: 999px;
   border: 1px solid transparent;
   background-clip: padding-box;
@@ -165,11 +165,66 @@
 
 .xiaozhi-scope::-webkit-scrollbar-thumb:hover,
 .xiaozhi-scope *::-webkit-scrollbar-thumb:hover {
-  background: rgba(46, 196, 214, 0.4);
+  background: rgba(46, 196, 214, 0.45);
 }
 
 .xiaozhi-scope::-webkit-scrollbar-corner,
 .xiaozhi-scope *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/*
+  协同任务 / 协作台：仪表槽式滚动条
+  深色凹槽 + 信号青/铜金滑块（Teleport 到 body 后也生效）
+*/
+.hud-scroll,
+.xiaozhi-scope .hud-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #6ec9d8 rgba(6, 18, 30, 0.72);
+}
+
+.hud-scroll::-webkit-scrollbar,
+.xiaozhi-scope .hud-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.hud-scroll::-webkit-scrollbar-track,
+.xiaozhi-scope .hud-scroll::-webkit-scrollbar-track {
+  margin: 4px;
+  background:
+    linear-gradient(180deg, rgba(12, 32, 48, 0.95), rgba(6, 16, 28, 0.9));
+  border: 1px solid rgba(94, 200, 232, 0.18);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.hud-scroll::-webkit-scrollbar-thumb,
+.xiaozhi-scope .hud-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, #9adce8 0%, #5eb8c8 42%, #c9a86c 100%) padding-box;
+  box-shadow: 0 0 8px rgba(46, 196, 214, 0.28);
+}
+
+.hud-scroll::-webkit-scrollbar-thumb:hover,
+.xiaozhi-scope .hud-scroll::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, #c6f3fb 0%, #7ed4e4 40%, #e6d4a8 100%) padding-box;
+  box-shadow: 0 0 12px rgba(154, 220, 232, 0.4);
+}
+
+.hud-scroll::-webkit-scrollbar-thumb:active,
+.xiaozhi-scope .hud-scroll::-webkit-scrollbar-thumb:active {
+  background:
+    linear-gradient(180deg, #e6d4a8 0%, #9adce8 100%) padding-box;
+}
+
+.hud-scroll::-webkit-scrollbar-corner,
+.xiaozhi-scope .hud-scroll::-webkit-scrollbar-corner {
   background: transparent;
 }
 

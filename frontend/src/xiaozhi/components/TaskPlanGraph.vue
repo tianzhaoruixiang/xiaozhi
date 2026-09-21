@@ -91,7 +91,7 @@ const waveDone = (waveIndex: number) => {
       <span v-if="parallelWaves" class="parallel-tag">{{ parallelWaves }} 处并行</span>
     </div>
 
-    <div class="dag-scroll" role="img" :aria-label="`协作 DAG：${plan.goal || '多智能体任务'}`">
+    <div class="dag-scroll hud-scroll" role="img" :aria-label="`协作 DAG：${plan.goal || '多智能体任务'}`">
       <div class="dag-row">
         <div v-if="plan.goal" class="node goal" :class="{ active: agentCount > 0 }">
           <span class="tag">GOAL</span>
@@ -140,12 +140,13 @@ const waveDone = (waveIndex: number) => {
                     :agent-id="node.agentId"
                     :name="node.agentName"
                     :status="node.status === 'pending' ? 'queued' : node.status"
-                    :size="28"
+                    :size="40"
                   />
                   <span class="badge">{{ statusLabel[node.status] }}</span>
                 </div>
                 <strong class="name">{{ node.agentName }}</strong>
                 <em class="role">{{ node.shortRole }}</em>
+                <p v-if="node.objective" class="desc">{{ node.objective }}</p>
                 <span class="seq">
                   {{ node.index }}/{{ plan.total || agentCount }}
                   <template v-if="node.dependsOn?.length">
@@ -240,10 +241,11 @@ const waveDone = (waveIndex: number) => {
 
 .dag-scroll {
   overflow-x: auto;
-  overflow-y: auto;
-  padding: 10px 4px 12px;
+  overflow-y: hidden;
+  padding: 10px 2px 14px;
   margin: 0 -2px;
   max-width: 100%;
+  overscroll-behavior-x: contain;
 }
 
 .dag-row {
@@ -262,7 +264,7 @@ const waveDone = (waveIndex: number) => {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
-  min-width: 132px;
+  min-width: 176px;
   padding: 18px 6px 4px;
   border-radius: 14px;
 }
@@ -300,15 +302,15 @@ const waveDone = (waveIndex: number) => {
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
-  opacity: 0;
-  transform: translate3d(0, 8px, 0);
   isolation: isolate;
 }
 
 .node.goal,
 .node.sink,
 .node.agent.revealed {
-  animation: node-in 640ms var(--ease-out) forwards;
+  opacity: 1;
+  transform: none;
+  animation: node-in 640ms var(--ease-out);
 }
 
 .node.goal {
@@ -341,19 +343,20 @@ const waveDone = (waveIndex: number) => {
 }
 
 .node.agent {
-  width: 128px;
-  min-height: 96px;
-  padding: 10px 12px;
+  width: 176px;
+  min-height: 148px;
+  padding: 10px 12px 12px;
   border-radius: 12px;
   background: rgba(12, 28, 42, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
-  gap: 4px;
+  gap: 5px;
   align-content: start;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+  overflow: visible;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
   transition:
     border-color var(--dur-fast) var(--ease-soft),
@@ -374,9 +377,9 @@ const waveDone = (waveIndex: number) => {
 }
 
 .node.agent:not(.revealed),
-.node.agent:disabled {
-  opacity: 0.4;
-  filter: grayscale(0.35);
+.node.agent:disabled:not(.revealed) {
+  opacity: 0.55;
+  filter: grayscale(0.25);
   transform: none;
   cursor: default;
   box-shadow: none;
@@ -401,14 +404,24 @@ const waveDone = (waveIndex: number) => {
 
 .role {
   font-style: normal;
-  font-size: 0.64rem;
+  font-size: 0.68rem;
   line-height: 1.35;
-  color: rgba(237, 244, 248, 0.55);
+  color: rgba(158, 216, 234, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desc {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: rgba(237, 244, 248, 0.62);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 1.7em;
+  min-height: 2.8em;
 }
 
 .seq {
@@ -584,6 +597,10 @@ const waveDone = (waveIndex: number) => {
 }
 
 @keyframes node-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -624,7 +641,8 @@ const waveDone = (waveIndex: number) => {
 
   .node.goal,
   .node.sink,
-  .node.agent.revealed {
+  .node.agent.revealed,
+  .node.agent:not(.revealed) {
     opacity: 1;
     transform: none;
   }

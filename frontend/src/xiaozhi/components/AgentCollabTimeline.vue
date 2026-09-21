@@ -197,7 +197,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="rail">
+  <div class="rail hud-scroll">
     <div class="rail-head">
       <div>
         <h3>智能体协作</h3>
@@ -347,8 +347,7 @@ onUnmounted(() => {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-right: 4px;
-  scrollbar-gutter: stable;
+  padding-right: 8px;
 }
 
 .rail-head {
@@ -414,8 +413,7 @@ onUnmounted(() => {
     linear-gradient(145deg, rgba(42, 180, 210, 0.12), rgba(196, 163, 90, 0.06)),
     rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(94, 200, 232, 0.22);
-  overflow-x: auto;
-  overflow-y: visible;
+  overflow: hidden;
   flex-shrink: 0;
 }
 

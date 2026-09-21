@@ -132,41 +132,46 @@ watch(
         </div>
 
         <header class="workspace-head">
-          <div>
+          <div class="head-left">
             <p class="eyebrow">
               <span class="live-dot" :class="{ voice: voiceActive }" />
               {{ voiceActive ? '正在聆听' : '协作进行中' }}
             </p>
-            <h2>小智协作台</h2>
-            <p class="status">
-              <template v-if="reportSpeaking">
-                小智正在向您语音汇报
-                <span v-if="ttsEngine === 'local'" class="voice-tag">神经语音</span>
-                <span v-else-if="ttsEngine === 'browser'" class="voice-tag dim">系统音色</span>
-              </template>
-              <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'planning'">
-                正在设计本轮专家团队…
-              </template>
-              <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'executing'">
-                专家正按调度执行任务
-              </template>
-              <template v-else-if="streaming">多智能体协作进行中</template>
-              <template v-else-if="voiceAckPlaying">
-                <span class="listen-live">小智应答「我在，请讲」…</span>
-                <span class="voice-tag">已唤醒</span>
-              </template>
-              <template v-else-if="voiceAwaiting">
-                <span class="listen-live">{{ voiceCapturing ? '正在聆听，停顿后自动发送…' : '已唤醒，请说出指示' }}</span>
-                <span class="voice-tag">聆听中</span>
-              </template>
-              <template v-else-if="voiceRecognizing">正在识别语音…</template>
-              <template v-else-if="voiceListening && voiceSupported">
-                待命中，说「你好，小智」唤醒
-                <span v-if="voiceMode === 'local-asr'" class="voice-tag">本地唤醒</span>
-              </template>
-              <template v-else>说出需求后，小智会调度专家并完成汇报</template>
-            </p>
-            <div v-if="teams?.length" class="orch-bar">
+            <div class="head-title">
+              <h2>小智协作台</h2>
+              <p class="status">
+                <template v-if="reportSpeaking">
+                  小智正在向您语音汇报
+                  <span v-if="ttsEngine === 'local'" class="voice-tag">神经语音</span>
+                  <span v-else-if="ttsEngine === 'browser'" class="voice-tag dim">系统音色</span>
+                </template>
+                <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'planning'">
+                  正在设计本轮专家团队…
+                </template>
+                <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'executing'">
+                  专家正按调度执行任务
+                </template>
+                <template v-else-if="streaming">多智能体协作进行中</template>
+                <template v-else-if="voiceAckPlaying">
+                  <span class="listen-live">小智应答「我在，请讲」…</span>
+                  <span class="voice-tag">已唤醒</span>
+                </template>
+                <template v-else-if="voiceAwaiting">
+                  <span class="listen-live">{{ voiceCapturing ? '正在聆听，停顿后自动发送…' : '已唤醒，请说出指示' }}</span>
+                  <span class="voice-tag">聆听中</span>
+                </template>
+                <template v-else-if="voiceRecognizing">正在识别语音…</template>
+                <template v-else-if="voiceListening && voiceSupported">
+                  待命中，说「你好，小智」唤醒
+                  <span v-if="voiceMode === 'local-asr'" class="voice-tag">本地唤醒</span>
+                </template>
+                <template v-else>说出需求后，小智会调度专家并完成汇报</template>
+              </p>
+            </div>
+          </div>
+
+          <div class="head-right">
+            <div v-if="teams?.length" class="orch-bar" aria-label="编排设置">
               <label>
                 专家团
                 <select
@@ -206,8 +211,8 @@ watch(
                 </select>
               </label>
             </div>
+            <button type="button" class="icon-btn" aria-label="关闭" @click="emit('close')">×</button>
           </div>
-          <button type="button" class="icon-btn" aria-label="关闭" @click="emit('close')">×</button>
         </header>
 
         <div class="workspace-body">
@@ -224,7 +229,7 @@ watch(
           </section>
 
           <section class="chat-pane">
-            <div ref="scroller" class="messages">
+            <div ref="scroller" class="messages hud-scroll">
               <article
                 v-for="msg in messages"
                 :key="msg.id"
@@ -399,11 +404,35 @@ watch(
   grid-row: 1;
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  padding: 22px 24px 16px;
+  align-items: center;
+  gap: 12px 20px;
+  min-height: 0;
+  padding: 12px 18px 10px 22px;
   border-bottom: 1px solid rgba(94, 200, 232, 0.12);
   background: linear-gradient(180deg, rgba(94, 200, 232, 0.05), transparent);
+}
+
+.head-left {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.head-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+}
+
+.head-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .hud-frame .c {
@@ -433,11 +462,11 @@ watch(
 }
 
 .eyebrow {
-  margin: 0 0 6px;
+  margin: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   letter-spacing: 0.04em;
   color: rgba(230, 212, 168, 0.85);
 }
@@ -468,8 +497,9 @@ watch(
 .workspace-head h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: 1.22rem;
   font-weight: 600;
+  line-height: 1.2;
   background: linear-gradient(120deg, #f4f8fb 18%, #9adce8 62%, #e6d4a8 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -477,28 +507,34 @@ watch(
 }
 
 .orch-bar {
-  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 14px;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
 }
 
 .orch-bar label {
-  display: grid;
-  gap: 4px;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  color: rgba(158, 216, 234, 0.8);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: rgba(158, 216, 234, 0.78);
+  white-space: nowrap;
 }
 
 .orch-bar select {
-  min-width: 140px;
-  padding: 6px 10px;
-  border-radius: 8px;
+  min-width: 0;
+  max-width: 148px;
+  padding: 4px 8px;
+  border-radius: 7px;
   border: 1px solid rgba(94, 200, 232, 0.28);
   background: rgba(8, 22, 36, 0.75);
   color: #edf4f8;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
 }
 
 .orch-bar select:disabled {
@@ -506,9 +542,10 @@ watch(
 }
 
 .status {
-  margin: 6px 0 0;
-  font-size: 0.88rem;
+  margin: 0;
+  font-size: 0.78rem;
   color: rgba(237, 244, 248, 0.62);
+  min-width: 0;
 }
 
 .voice-tag {
@@ -531,11 +568,11 @@ watch(
   border: 1px solid rgba(94, 200, 232, 0.22);
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   line-height: 1;
   flex-shrink: 0;
   transition:
@@ -577,7 +614,7 @@ watch(
 }
 
 .collab-pane {
-  padding: 18px 20px 18px 26px;
+  padding: 12px 14px 12px 18px;
   border-right: 1px solid rgba(94, 200, 232, 0.1);
   background:
     linear-gradient(180deg, rgba(94, 200, 232, 0.04), transparent 30%),
@@ -591,7 +628,7 @@ watch(
 }
 
 .chat-pane {
-  padding: 18px 26px 18px 18px;
+  padding: 12px 18px 12px 14px;
 }
 
 .empty-collab {
@@ -624,7 +661,7 @@ watch(
   display: grid;
   align-content: start;
   gap: 14px;
-  padding-right: 4px;
+  padding-right: 8px;
   margin-bottom: 12px;
 }
 
@@ -859,6 +896,14 @@ watch(
 @media (max-width: 1100px) {
   .workspace-body {
     grid-template-columns: minmax(360px, 1.05fr) minmax(300px, 0.95fr);
+  }
+
+  .head-right {
+    flex-wrap: wrap;
+  }
+
+  .orch-bar select {
+    max-width: 120px;
   }
 }
 

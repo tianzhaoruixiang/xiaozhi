@@ -7,6 +7,8 @@ export interface BoardListItem {
   title: string
   detail: string
   status: BoardItemStatus
+  /** 同一待办列表内区分重点工作 / 提醒 */
+  kind?: 'todo' | 'focus' | 'key' | 'reminder'
 }
 
 const props = defineProps<{
@@ -36,7 +38,7 @@ const onActivate = () => {
   <li
     class="row"
     :class="{ clickable, active }"
-    :data-variant="variant || 'todo'"
+    :data-variant="item.kind || variant || 'todo'"
     :data-status="item.status"
     :role="clickable ? 'button' : undefined"
     :tabindex="clickable ? 0 : undefined"
@@ -49,7 +51,8 @@ const onActivate = () => {
     <div class="main">
       <div class="title-row">
         <h3>{{ item.title }}</h3>
-        <span v-if="variant !== 'reminder'" class="status">{{ statusLabel[item.status] }}</span>
+        <span v-if="item.kind === 'focus'" class="mark">重点</span>
+        <span v-if="(item.kind || variant) !== 'reminder'" class="status">{{ statusLabel[item.status] }}</span>
       </div>
       <p>{{ item.detail }}</p>
     </div>
@@ -60,8 +63,8 @@ const onActivate = () => {
 .row {
   display: grid;
   grid-template-columns: 72px 1fr;
-  gap: 10px 14px;
-  padding: 12px 0;
+  gap: 6px 14px;
+  padding: 8px 0;
   border-bottom: 1px solid rgba(20, 40, 58, 0.07);
 }
 
@@ -129,6 +132,16 @@ const onActivate = () => {
 
 .row[data-variant='reminder'] .when {
   color: #a84848;
+}
+
+.mark {
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: #8a6a2e;
+  background: rgba(201, 168, 108, 0.16);
+  border: 1px solid rgba(201, 168, 108, 0.32);
 }
 
 .row[data-variant='focus'] .when {

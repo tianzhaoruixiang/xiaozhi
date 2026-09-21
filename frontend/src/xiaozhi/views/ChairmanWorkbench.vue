@@ -16,22 +16,13 @@ const plans = mockPlans
 const boardPanels: WorkbenchPanel[] = [
   {
     title: '待办事项',
-    subtitle: '按时间推进办理',
+    subtitle: '今日须办理',
     variant: 'todo',
-    items: mockTodos,
-  },
-  {
-    title: '重点工作',
-    subtitle: '阶段主线任务',
-    variant: 'focus',
-    items: mockFocusWork,
-  },
-  {
-    title: '重要事项提醒',
-    subtitle: '临期与必办提示',
-    variant: 'reminder',
-    items: mockReminders,
-    warn: true,
+    items: [
+      ...mockFocusWork.map((item) => ({ ...item, kind: 'focus' as const })),
+      ...mockTodos.map((item) => ({ ...item, kind: 'todo' as const })),
+      ...mockReminders.map((item) => ({ ...item, kind: 'reminder' as const })),
+    ],
   },
 ]
 const draft = ref('')
@@ -198,7 +189,7 @@ const onModeChange = (mode: string) => {
           <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
         </template>
       </WorkbenchHeader>
-      <WorkbenchBoards :panels="boardPanels" label="今日工作台" />
+      <WorkbenchBoards fill :panels="boardPanels" :columns="1" label="今日工作台" />
     </div>
 
     <AssistantPanel
@@ -269,8 +260,11 @@ const onModeChange = (mode: string) => {
 <style scoped>
 .workbench {
   position: relative;
-  min-height: 100%;
-  overflow: visible;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(1200px 620px at 6% -10%, rgba(46, 196, 214, 0.2), transparent 58%),
     radial-gradient(920px 540px at 96% 0%, rgba(201, 168, 108, 0.14), transparent 50%),
@@ -378,9 +372,14 @@ const onModeChange = (mode: string) => {
 .shell {
   position: relative;
   z-index: 1;
-  max-width: 1120px;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 920px;
   margin: 0 auto;
-  padding: clamp(28px, 5vw, 56px) clamp(20px, 4vw, 40px) 150px;
+  padding: 14px clamp(16px, 3vw, 32px) 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .listen-banner {

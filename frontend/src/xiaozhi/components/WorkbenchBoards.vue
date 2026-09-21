@@ -19,10 +19,13 @@ withDefaults(
     clickableVariants?: BoardVariant[]
     /** 每行面板数量，窄屏自动折叠为单列 */
     columns?: number
+    /** 占满剩余视口，列表在卡片内滚动 */
+    fill?: boolean
   }>(),
   {
     clickableVariants: () => [],
     columns: 3,
+    fill: false,
   },
 )
 
@@ -34,6 +37,7 @@ const emit = defineEmits<{
 <template>
   <section
     class="boards"
+    :class="{ fill }"
     :style="{ '--board-columns': String(columns) }"
     :aria-label="label || '工作台'"
   >
@@ -55,8 +59,8 @@ const emit = defineEmits<{
           v-for="item in panel.items"
           :key="item.id"
           :item="item"
-          :variant="panel.variant"
-          :clickable="clickableVariants.includes(panel.variant)"
+          :variant="item.kind || panel.variant"
+          :clickable="clickableVariants.includes(item.kind || panel.variant)"
           @select="emit('select', { item: $event, panel })"
         />
       </ol>
@@ -72,6 +76,27 @@ const emit = defineEmits<{
   gap: 16px;
   align-items: stretch;
   animation: page-rise var(--dur-enter) var(--ease-out) 160ms both;
+}
+
+.boards.fill {
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+  animation: none;
+}
+
+.boards.fill .panel {
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.boards.fill .list {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .panel {
@@ -120,8 +145,9 @@ const emit = defineEmits<{
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   padding-left: 10px;
+  flex-shrink: 0;
 }
 
 .panel-head h2 {
