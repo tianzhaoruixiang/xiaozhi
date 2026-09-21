@@ -1,0 +1,9 @@
+{
+  "name": "task-decomposition",
+  "displayName": "任务分解组",
+  "description": "把一项工作拆解为可分配任务项的专家组合。",
+  "agents": [
+    "task-decomposer"
+  ],
+  "defaultWorkflow": "task-decomposition"
+}

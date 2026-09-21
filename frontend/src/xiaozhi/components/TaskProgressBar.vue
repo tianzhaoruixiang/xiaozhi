@@ -72,6 +72,11 @@ const label = computed(() => STATUS_META[props.status].label)
   background: linear-gradient(90deg, #d8b878, #b87a35);
 }
 
+/* 待分配：进度 0，用低饱和灰表示尚未开工 */
+.track[data-status='unassigned'] .fill {
+  background: rgba(107, 124, 140, 0.32);
+}
+
 .value {
   flex-shrink: 0;
   min-width: 2.6rem;
@@ -85,6 +90,7 @@ const label = computed(() => STATUS_META[props.status].label)
 .value[data-status='done'] { color: var(--color-success); }
 .value[data-status='risk'] { color: var(--color-danger); }
 .value[data-status='todo'] { color: var(--color-warn); }
+.value[data-status='unassigned'] { color: #6b7c8c; }
 
 .track-wrap.compact .value {
   font-size: 0.72rem;

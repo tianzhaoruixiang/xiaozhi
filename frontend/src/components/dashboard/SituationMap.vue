@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PanelFrame title="作战态势图">
     <div
       ref="mapRef"
@@ -525,7 +525,7 @@ function statusClass(status: PatrolPoint['status']) {
 .hud-label {
   display: block;
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--muted);
   margin-bottom: 2px;
 }
 
@@ -537,7 +537,7 @@ function statusClass(status: PatrolPoint['status']) {
 }
 
 .hud-item.warn strong {
-  color: var(--warn);
+  color: var(--amber);
 }
 
 .map-legend {
@@ -548,7 +548,7 @@ function statusClass(status: PatrolPoint['status']) {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
   background: oklch(0.16 0.055 250 / .74);
   padding: 4px 8px;
   border: 1px solid oklch(0.84 0.145 207 / .14);

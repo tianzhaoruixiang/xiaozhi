@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Bell, MagicStick, Microphone, VideoCamera } from '@element-plus/icons-vue'
 import type { Participant } from '../types/meeting'
+import { getAvatar } from '../utils/avatars'
 
 defineProps<{
   speaker: Participant
@@ -21,7 +22,7 @@ defineProps<{
     </div>
 
     <div class="live-speaker">
-      <span class="live-speaker-avatar" :style="{ '--speaker-color': speaker.color }">{{ speaker.initial }}</span>
+      <img class="live-speaker-avatar" :src="getAvatar(speaker.name)" :alt="speaker.name" />
       <div>
         <small><el-icon><Microphone /></el-icon>正在发言</small>
         <strong>{{ speaker.name }} · {{ speaker.department }}</strong>

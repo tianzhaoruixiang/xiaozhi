@@ -42,11 +42,11 @@ onMounted(async () => {
 })
 
 const stageMeta = computed(() => ({
-  1: { status: '会议进行中 · 意见征集中', assist: '智能记录中', clock: '会议时长', liveStage: '意见征集中', pending: '待领导确认' },
-  2: { status: '会议进行中 · 统稿确认中', assist: '统稿核对中', clock: '会议时长', liveStage: '统稿确认中', pending: '统稿补充事项' },
-  3: { status: '会议进行中 · 联合会签中', assist: '会签核验中', clock: '会议时长', liveStage: '联合会签中', pending: '会签补充意见' },
-  4: { status: '会议进行中 · 任务部署中', assist: '部署校验中', clock: '会议时长', liveStage: '任务部署中', pending: '任务调整事项' },
-}[currentStep.value] ?? { status: '会议进行中', assist: '持续工作中', clock: '会议时长', liveStage: '会议进行中', pending: '待处理事项' }))
+  1: { status: '会议进行中 · 意见征集中', clock: '会议时长', liveStage: '意见征集中', pending: '待领导确认' },
+  2: { status: '会议进行中 · 统稿确认中', clock: '会议时长', liveStage: '统稿确认中', pending: '统稿补充事项' },
+  3: { status: '会议进行中 · 联合会签中', clock: '会议时长', liveStage: '联合会签中', pending: '会签补充意见' },
+  4: { status: '会议进行中 · 任务部署中', clock: '会议时长', liveStage: '任务部署中', pending: '任务调整事项' },
+}[currentStep.value] ?? { status: '会议进行中', clock: '会议时长', liveStage: '会议进行中', pending: '待处理事项' }))
 
 const enterRevision = () => {
   revision.startConsolidation(meeting.planVersion)
@@ -174,12 +174,11 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'has-live-strip': currentStep > 1 }">
+  <div class="app-shell meeting-shell" :class="{ 'has-live-strip': currentStep > 1 }">
     <MeetingHeader
       :elapsed="meeting.elapsed"
       :current-step="currentStep"
       :status-label="stageMeta.status"
-      :assist-label="stageMeta.assist"
       :clock-label="stageMeta.clock"
       status-tone="live"
       :meeting-title="handoff?.title"

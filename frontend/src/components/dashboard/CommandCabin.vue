@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PanelFrame title="综合指挥舱">
     <template #extra>
       <span class="panel-badge">{{ onlineCount }}/{{ commandGroups.length }} 在线</span>
@@ -208,7 +208,7 @@ watch(toast, (val) => {
   gap: 10px;
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
   letter-spacing: 0.04em;
 }
 
@@ -221,7 +221,7 @@ watch(toast, (val) => {
 }
 
 .summary em.ok {
-  color: var(--success);
+  color: var(--green);
 }
 
 .sep {
@@ -263,12 +263,12 @@ watch(toast, (val) => {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 5px var(--success);
+  background: var(--green);
+  box-shadow: 0 0 5px var(--green);
 }
 
 .channel.offline .dot {
-  background: var(--text-dim);
+  background: var(--muted);
   box-shadow: none;
 }
 
@@ -286,7 +286,7 @@ watch(toast, (val) => {
 }
 
 .channel.offline span {
-  color: var(--text-dim);
+  color: var(--muted);
 }
 
 .tools {
@@ -312,7 +312,7 @@ watch(toast, (val) => {
   border-color: var(--cyan);
   color: var(--text);
   background: linear-gradient(180deg, oklch(0.42 0.11 222 / .58), oklch(0.25 0.085 242 / .78));
-  box-shadow: var(--glow);
+  box-shadow: var(--ab-glow);
 }
 
 .toast {

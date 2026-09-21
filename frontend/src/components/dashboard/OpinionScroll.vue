@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PanelFrame title="舆情监测">
     <template #extra>
       <span class="panel-badge">敏感 {{ sensitiveCount }}</span>
@@ -57,7 +57,7 @@ const doubled = computed(() => [
   gap: 8px;
   margin-bottom: 4px;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
 }
 
 .source {

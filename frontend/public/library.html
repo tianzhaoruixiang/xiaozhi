@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知识体系档案馆</title>
+  <style>
+    :root {
+      --font-body:'Sora','PingFang SC','Microsoft YaHei',sans-serif;
+      --font-display:'Noto Serif SC','Songti SC','STSong','SimSun',serif;
+      --font-mono:'IBM Plex Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace;
+      --cyan:#4dd9e8; --green:#4ae8a0; --amber:#e8c94a; --purple:#b44ae8; --red:#e84a6a; --blue:#4a9de8;
+      --accent:#1a7a92; --signal:#2ec4d6; --brass:#c9a86c;
+      --text:#eef2f7; --muted:#8899aa; --ink:#14283a;
+      --kraft1:#c9a877; --kraft2:#b08e5e; --kraft3:#96754a;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--font-body);color:var(--text);background:radial-gradient(circle at 68% 14%,oklch(0.5 0.16 240/0.22),transparent 32%),radial-gradient(circle at 8% 70%,oklch(0.42 0.15 254/0.2),transparent 32%),linear-gradient(145deg,oklch(0.125 0.068 254),oklch(0.155 0.072 250) 48%,oklch(0.15 0.08 244));background-attachment:fixed;overflow:hidden}
+
+    .lib-header{position:fixed;top:0;left:0;right:0;height:3.5rem;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:linear-gradient(160deg,rgba(255,255,255,.78),rgba(240,248,252,.52));backdrop-filter:blur(18px) saturate(1.2);border-bottom:1px solid rgba(255,255,255,.72);box-shadow:0 22px 56px rgba(6,20,31,.14);z-index:50}
+    .header-left{display:flex;align-items:center;gap:.75rem}
+    .header-accent{width:5px;height:24px;border-radius:3px;background:linear-gradient(180deg,var(--signal),#3a7bd5);box-shadow:0 0 12px rgba(46,196,214,.5)}
+    .header-title{font-family:var(--font-display);font-size:1.3rem;font-weight:600;letter-spacing:.05em;color:var(--ink)}
+    .header-right{display:flex;align-items:center;gap:1.25rem}
+    .breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:#5a7084}
+    .bc-item{cursor:pointer;transition:color .2s}.bc-item:hover{color:var(--accent)}.bc-item.active{color:var(--accent);font-weight:600}
+    .bc-sep{opacity:.4}
+    .nav-btns{display:flex;gap:.4rem}
+    .nav-btn{width:28px;height:28px;display:grid;place-items:center;border:1px solid rgba(20,40,58,.12);border-radius:999px;background:rgba(255,255,255,.62);color:var(--accent);cursor:pointer;transition:all .2s ease}
+    .nav-btn:hover:not(:disabled){background:rgba(255,255,255,.9);border-color:rgba(46,196,214,.35)}
+    .nav-btn:active:not(:disabled){transform:scale(.92)}
+    .nav-btn:disabled{opacity:.4;cursor:not-allowed;color:#8fa3b8;border-color:rgba(20,40,58,.08);background:transparent;box-shadow:none}
+    .nav-btn svg{width:14px;height:14px}
+
+    .view{position:fixed;top:3.5rem;bottom:2.4rem;left:0;right:0;overflow-y:auto;transition:opacity .45s ease,transform .45s ease}
+    .view.hidden{opacity:0;pointer-events:none;transform:scale(.97)}
+
+    /* ============ 第一层：档案架 + 牛皮纸箱（两行六盒） ============ */
+    #viewShelf{padding:1.25rem 2rem}
+    .shelf-unit{max-width:1440px;margin:0 auto;height:100%;display:flex;flex-direction:column;justify-content:space-evenly;padding:1rem 2.5rem 0;border-radius:12px;position:relative;
+      background:linear-gradient(180deg,#182438 0%,#101a2c 55%,#0c1424 100%);
+      box-shadow:inset 0 0 100px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.04)}
+    .shelf-unit::before{content:'';position:absolute;inset:0;border-radius:12px;pointer-events:none;background:repeating-linear-gradient(90deg,transparent,transparent 90px,rgba(255,255,255,.012) 90px,rgba(255,255,255,.012) 92px)}
+    .shelf-row{position:relative;display:flex;justify-content:space-around;align-items:flex-end;padding:2.2rem 1rem 3.4rem;flex:1}
+    .plank{position:absolute;bottom:1.1rem;left:-2.5rem;right:-2.5rem;height:24px;border-radius:3px;z-index:6;
+      background:linear-gradient(180deg,#7a5a38 0%,#5c4226 35%,#3a2917 100%);
+      box-shadow:0 8px 18px rgba(0,0,0,.55),inset 0 1.5px 0 rgba(255,220,170,.22)}
+    .plank::before{content:'';position:absolute;inset:0;border-radius:3px;background:repeating-linear-gradient(90deg,transparent,transparent 70px,rgba(0,0,0,.1) 70px,rgba(0,0,0,.1) 72px)}
+    .plank::after{content:'';position:absolute;top:100%;left:0;right:0;height:14px;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent)}
+
+    /* 牛皮纸箱 */
+    .kbox{width:min(330px,28vw);height:min(250px,24vw);position:relative;perspective:1200px;cursor:pointer;z-index:5;transition:transform .4s cubic-bezier(.34,1.4,.64,1)}
+    .kbox:hover{transform:translateY(-10px)}
+    .kbox-shadow{position:absolute;bottom:-14px;left:8%;right:8%;height:20px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%);transition:all .4s;z-index:0}
+    .kbox:hover .kbox-shadow{left:13%;right:13%;bottom:-10px;opacity:.7}
+    /* 箱内黑暗缝隙 */
+    .kbox-inside{position:absolute;top:22px;left:14px;right:14px;height:52px;z-index:1;background:linear-gradient(180deg,#160f07 0%,#2c1e0d 60%,#3a2914 100%);border-radius:4px;box-shadow:inset 0 8px 14px rgba(0,0,0,.75)}
+    /* 箱内浮起的彩色文件盒：限制在箱口带内，不覆盖箱体正面 */
+    .kbox-peek{position:absolute;top:22px;left:14px;right:14px;height:52px;z-index:2;display:flex;gap:9px;justify-content:center;align-items:flex-end;overflow:hidden;pointer-events:none;padding-bottom:3px}
+    .kbox-peek i{width:26px;height:38px;border-radius:3px;background:linear-gradient(180deg,var(--c) 0%,var(--c) 70%,rgba(0,0,0,.35));border-top:3px solid rgba(255,255,255,.35);box-shadow:0 3px 8px rgba(0,0,0,.5);transform:translateY(48px);transition:transform .55s cubic-bezier(.34,1.35,.64,1)}
+    .kbox:hover .kbox-peek i{transform:translateY(2px)}
+    .kbox-peek i:nth-child(1){transition-delay:.08s}
+    .kbox-peek i:nth-child(2){transition-delay:.15s;height:44px}
+    .kbox-peek i:nth-child(3){transition-delay:.22s}
+    .kbox-peek i:nth-child(4){transition-delay:.29s;height:41px}
+    .kbox-peek i:nth-child(5){transition-delay:.36s}
+    /* 箱盖：整体上浮，悬浮开启/移开合上 */
+    .kbox-lid{position:absolute;top:22px;left:14px;right:14px;height:52px;z-index:5;border-radius:5px;border:1px solid rgba(90,60,25,.55);
+      background:linear-gradient(180deg,#c9a878,#ab8752 60%,#9c7a48);
+      box-shadow:inset 0 2px 4px rgba(255,240,210,.35),0 5px 12px rgba(0,0,0,.35);
+      transition:transform .5s cubic-bezier(.34,1.3,.64,1)}
+    .kbox-lid::before{content:'';position:absolute;inset:0;border-radius:5px;opacity:.5;background:repeating-linear-gradient(93deg,transparent,transparent 5px,rgba(120,80,35,.06) 5px,rgba(120,80,35,.06) 6px)}
+    .kbox-lid::after{content:'';position:absolute;top:50%;left:32%;right:32%;height:3px;transform:translateY(-50%);border-radius:2px;background:rgba(90,60,25,.3)}
+    .kbox:hover .kbox-lid{transform:translateY(-44px) rotateX(-12deg)}
+    .kbox.opening .kbox-lid{transform:translateY(-62px) rotateX(-16deg)}
+    .kbox.opening .kbox-peek i{transform:translateY(-4px)}
+    /* 箱体正面 */
+    .kbox-front{position:absolute;top:74px;left:0;right:0;bottom:0;z-index:4;border-radius:3px 3px 8px 8px;border:1px solid rgba(90,60,25,.45);
+      background:linear-gradient(168deg,var(--kraft1) 0%,var(--kraft2) 45%,var(--kraft3) 100%);
+      box-shadow:inset 0 4px 10px rgba(255,240,210,.18),inset 0 -20px 32px rgba(60,35,10,.28),0 14px 30px rgba(0,0,0,.45);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;padding:.9rem 1.2rem;text-align:center}
+    .kbox-front::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:.5;
+      background:repeating-linear-gradient(93deg,transparent,transparent 5px,rgba(120,80,35,.05) 5px,rgba(120,80,35,.05) 6px)}
+    .kbox-cat{font-size:1.22rem;font-weight:800;color:#3a2a12;letter-spacing:.05em;text-shadow:0 1px 0 rgba(255,240,210,.4)}
+    .kbox-cat::before{content:'';display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--sc);margin-right:.45rem;box-shadow:0 0 6px var(--sc)}
+    .kbox-desc{font-size:.72rem;line-height:1.6;color:#4a3618;border-top:1px dashed rgba(90,60,25,.4);padding-top:.5rem;width:94%}
+    .kbox-stamp{position:absolute;top:8px;right:10px;font-size:.58rem;letter-spacing:.16em;color:rgba(150,40,30,.65);border:2px solid rgba(150,40,30,.45);border-radius:4px;padding:2px 5px;transform:rotate(6deg);font-weight:700}
+    .kbox-hint{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.6rem;font-family:var(--font-mono);color:rgba(60,40,15,.55);letter-spacing:.1em}
+    .kbox:hover .kbox-hint{color:rgba(60,40,15,.95)}
+
+    /* ============ 第二层：俯视箱内 · 文件盒侧面（书脊） ============ */
+    #viewFilebox{display:flex;align-items:center;justify-content:center}
+    .fb-scene{width:min(1360px,96vw);perspective:1500px}
+    .fb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+    .fb-title{font-size:1.15rem;font-weight:600;font-family:var(--font-display)}
+    .fb-title small{display:block;font-size:.75rem;color:var(--muted);font-weight:400;margin-top:.25rem;max-width:660px;line-height:1.5}
+    .back-btn{padding:.5rem 1rem;border:1px solid rgba(20,40,58,.12);border-radius:999px;background:rgba(255,255,255,.62);color:var(--accent);cursor:pointer;font-size:.8125rem;transition:all .2s;white-space:nowrap}
+    .back-btn:hover{background:rgba(255,255,255,.9);border-color:rgba(46,196,214,.35)}
+    .fb-title:hover{color:inherit}
+    /* 俯视平面：保持俯角不变的淡入上浮入场（避免 3D 面展开拖动） */
+    .td-plane{transform:rotateX(18deg);transform-style:preserve-3d;animation:camIn .55s ease}
+    @keyframes camIn{0%{opacity:0;transform:rotateX(18deg) scale(.94) translateY(3.5vh)}100%{opacity:1;transform:rotateX(18deg) scale(1) translateY(0)}}
+    .td-box{position:relative;width:min(1240px,95vw);height:min(600px,60vh);margin:0 auto;transform-style:preserve-3d}
+    /* 箱壁（牛皮纸框） */
+    .td-walls{position:absolute;inset:0;border-radius:14px;border:42px solid #a8834f;background:#a8834f;box-shadow:0 26px 60px rgba(0,0,0,.6),inset 0 0 0 2px rgba(80,52,20,.5)}
+    .td-walls::before{content:'';position:absolute;inset:-42px;border-radius:14px;background:linear-gradient(168deg,#c2a06e,#a5824f 55%,#8a6a3e);z-index:-1}
+    .td-walls::after{content:'';position:absolute;inset:-42px;border-radius:14px;pointer-events:none;opacity:.5;background:repeating-linear-gradient(93deg,transparent,transparent 5px,rgba(120,80,35,.06) 5px,rgba(120,80,35,.06) 6px)}
+    /* 箱底（内部阴影） */
+    .td-bottom{position:absolute;inset:42px;border-radius:6px;background:linear-gradient(180deg,#241a0e,#3a2b18);box-shadow:inset 0 14px 32px rgba(0,0,0,.75);z-index:1}
+    /* 向外翻开的箱盖 */
+    .td-flap{position:absolute;height:56px;width:72%;z-index:0;background:linear-gradient(180deg,#8f6f45,#a8834f);border:1px solid rgba(90,60,25,.5);opacity:.92}
+    .td-flap-n{top:-58px;left:14%;border-radius:6px 6px 0 0;transform-origin:bottom center;transform:rotateX(52deg)}
+    .td-flap-s{bottom:-58px;left:14%;border-radius:0 0 6px 6px;transform-origin:top center;transform:rotateX(-52deg)}
+    .td-flap-w{left:-58px;top:14%;height:72%;width:52px;border-radius:6px 0 0 6px;transform-origin:right center;transform:rotateY(-52deg);background:linear-gradient(90deg,#8f6f45,#a8834f)}
+    .td-flap-e{right:-58px;top:14%;height:72%;width:52px;border-radius:0 6px 6px 0;transform-origin:left center;transform:rotateY(52deg);background:linear-gradient(90deg,#a8834f,#8f6f45)}
+    /* 文件盒书脊排（立体文件盒：正面+顶面+两侧+背面） */
+    .td-inner{position:absolute;inset:42px;z-index:2;display:flex;gap:26px;justify-content:center;align-items:flex-end;padding:26px 44px 30px;transform-style:preserve-3d}
+    .spine{position:relative;width:clamp(72px,8vw,106px);height:100%;transform-style:preserve-3d;cursor:pointer;
+      transition:transform .38s cubic-bezier(.34,1.4,.64,1)}
+    .s3d{position:absolute;backface-visibility:hidden}
+    /* 正面（书脊面） */
+    .s3d-front{inset:0;border-radius:4px 4px 2px 2px;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;gap:8px;transform:translateZ(22px);
+      background:linear-gradient(90deg,var(--fc-lo) 0%,var(--fc) 30%,var(--fc-hi) 52%,var(--fc) 74%,var(--fc-lo) 100%);
+      border:1px solid rgba(0,0,0,.35);
+      box-shadow:0 10px 22px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,255,255,.3),inset 0 -8px 14px rgba(0,0,0,.28);
+      transition:box-shadow .38s}
+    .s3d-front::before{content:'';position:absolute;top:14px;left:50%;transform:translateX(-50%);width:70%;height:6px;border-radius:3px;background:rgba(0,0,0,.28)}
+    .s3d-front::after{content:'';position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:70%;height:6px;border-radius:3px;background:rgba(0,0,0,.28)}
+    /* 顶面（俯视可见，带纸张切口边）：旋转后平移居中，与前后面对齐 */
+    .s3d-top{left:-1px;right:-1px;top:0;height:44px;transform-origin:top center;transform:translateZ(-22px) rotateX(90deg);
+      background:linear-gradient(180deg,var(--fc-hi) 0%,var(--fc) 55%,var(--fc-lo) 100%);
+      border:1px solid rgba(0,0,0,.35);border-bottom:none}
+    .s3d-top::after{content:'';position:absolute;left:8%;right:8%;top:55%;bottom:12%;border-radius:2px;
+      background:repeating-linear-gradient(90deg,#efe8d6 0 3px,#cfc6ac 3px 5px);opacity:.85}
+    /* 两侧面：同样居中，避免沿 Z 轴超出正面 */
+    .s3d-side-r{top:-1px;bottom:0;right:0;width:44px;transform-origin:right center;transform:translateZ(-22px) rotateY(90deg);
+      background:linear-gradient(90deg,var(--fc) 0%,var(--fc-lo) 100%);border:1px solid rgba(0,0,0,.35)}
+    .s3d-side-l{top:-1px;bottom:0;left:0;width:44px;transform-origin:left center;transform:translateZ(-22px) rotateY(-90deg);
+      background:linear-gradient(270deg,var(--fc) 0%,var(--fc-lo) 100%);border:1px solid rgba(0,0,0,.35)}
+    /* 背面 */
+    .s3d-back{inset:0;transform:translateZ(-22px);border-radius:4px;background:linear-gradient(90deg,var(--fc-lo),var(--fc),var(--fc-lo));filter:brightness(.5);border:1px solid rgba(0,0,0,.35)}
+    .spine-txt{font-size:clamp(.88rem,1.05vw,1.02rem);font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.55);letter-spacing:.3em;padding:26px 0}
+    .spine:hover{transform:translateY(-44px)}
+    .spine:hover .s3d-front{box-shadow:0 30px 44px rgba(0,0,0,.6),inset 0 2px 4px rgba(255,255,255,.35)}
+    .spine.taking{transform:translateY(-180px) scale(1.2) rotate(-3deg);transition:transform .5s cubic-bezier(.4,0,.6,1)}
+    .spine-meta{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);writing-mode:horizontal-tb;font-size:.6rem;color:var(--muted);font-family:var(--font-mono);white-space:nowrap;opacity:0;transition:opacity .3s}
+    .spine:hover .spine-meta{opacity:1}
+
+    /* ============ 第三层：档案页铺平 · 大版面3页 ============ */
+    #viewPages{display:flex;flex-direction:column;align-items:center;padding:.9rem 1rem}
+    .pg-bar{display:flex;align-items:center;justify-content:space-between;width:min(1500px,97vw);margin-bottom:.5rem}
+    .pg-title{font-size:1rem;font-weight:600;font-family:var(--font-display)}
+    .pg-title small{font-size:.72rem;color:var(--muted);font-weight:400;margin-left:.7rem}
+    .pg-main{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;opacity:0;transition:opacity .5s ease}
+    /* 文件盒拿起 → 展示正面 → 从正面打开 */
+    .takeout{position:fixed;top:3.5rem;bottom:2.4rem;left:0;right:0;display:grid;place-items:center;z-index:40;pointer-events:none}
+    .takeout.out{animation:toOut .5s ease forwards}
+    @keyframes toOut{to{transform:translateY(-60px);opacity:0}}
+    .to-box{position:relative;width:250px;height:310px;perspective:1200px;transform-style:preserve-3d}
+    /* 盒内：纸页堆（封面翻开后露出） */
+    .to-inner{position:absolute;inset:0;border-radius:8px;background:linear-gradient(160deg,var(--fc),var(--fc-lo));border:1px solid rgba(0,0,0,.35);box-shadow:0 24px 50px rgba(0,0,0,.55)}
+    .to-pages{position:absolute;inset:12px;border-radius:4px;background:repeating-linear-gradient(180deg,#f7f2e4 0 6px,#ddd2b8 6px 8px);box-shadow:inset 0 0 20px rgba(0,0,0,.3);opacity:0;transform:translateY(8px);transition:opacity .45s ease .15s,transform .45s ease .15s}
+    .to-box.opened .to-pages{opacity:1;transform:translateY(0)}
+    /* 前封面：直接展示正面，再像翻书一样绕左侧书脊翻开 */
+    .to-cover{position:absolute;inset:0;z-index:3;border-radius:8px;transform-origin:left center;
+      background:linear-gradient(160deg,var(--fc-hi) 0%,var(--fc) 45%,var(--fc-lo) 100%);
+      border:1px solid rgba(0,0,0,.35);
+      box-shadow:0 24px 50px rgba(0,0,0,.55),inset 0 3px 8px rgba(255,255,255,.3),inset 0 -14px 26px rgba(0,0,0,.3);
+      display:flex;align-items:center;justify-content:center;
+      animation:toTurn .3s ease;
+      transition:transform .5s cubic-bezier(.55,.05,.35,1)}
+    @keyframes toTurn{0%{transform:scale(.82);opacity:0}100%{transform:scale(1);opacity:1}}
+    .to-box.opened .to-cover{transform:rotateY(-152deg);box-shadow:-16px 18px 44px rgba(0,0,0,.5)}
+    .to-spine{position:absolute;left:-6px;top:0;bottom:0;width:12px;border-radius:6px;background:linear-gradient(90deg,var(--fc-lo),var(--fc));box-shadow:0 0 8px rgba(0,0,0,.4)}
+    .to-label{width:80%;background:rgba(252,250,244,.96);border-radius:4px;padding:.9rem .7rem;text-align:center;color:#2a2012;font-weight:700;font-size:.92rem;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+    .to-label small{display:block;font-weight:400;font-size:.68rem;color:#6a5a3e;margin-top:.35rem}
+    .spread-wrap{position:relative;display:flex;align-items:center;gap:.8rem;flex:1;width:min(1560px,98vw);justify-content:center}
+    .spread{display:flex;gap:.9rem;transition:opacity .28s ease,transform .28s ease;perspective:2200px}
+    .spread.flip-out-l{opacity:0;transform:translateX(-46px) rotateY(10deg)}
+    .spread.flip-out-r{opacity:0;transform:translateX(46px) rotateY(-10deg)}
+    .spread.flip-in{opacity:0;transform:translateX(30px) scale(.97)}
+    .page-sheet{width:min(31.5vw,500px);height:100%;min-height:420px;background:linear-gradient(172deg,#fefcf7,#f5efe2);border-radius:4px;padding:1.6rem 1.5rem 2.2rem 2.8rem;color:#2c2418;box-shadow:0 14px 40px rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.07);position:relative;font-size:.88rem;line-height:1.95;overflow:hidden;opacity:0;transform:translateY(34px) rotateX(28deg);transition:opacity .5s ease,transform .55s cubic-bezier(.25,.9,.35,1.1)}
+    .page-sheet.show{opacity:1;transform:translateY(0) rotateX(0)}
+    .spread .page-sheet{height:calc(100vh - 15.5rem)}
+    .page-sheet::before{content:'';position:absolute;top:0;left:50px;width:1px;height:100%;background:rgba(200,60,60,.18)}
+    .page-sheet::after{content:'';position:absolute;bottom:0;right:0;border-width:0 22px 22px 0;border-style:solid;border-color:transparent #dcd2ba #dcd2ba transparent}
+    .page-holes{position:absolute;left:14px;top:0;bottom:0;width:20px;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center}
+    .page-holes i{width:10px;height:10px;border-radius:50%;background:#0c1526;box-shadow:inset 0 1px 2px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.7)}
+    .page-title{font-size:1.05rem;font-weight:700;margin-bottom:.8rem;padding-bottom:.55rem;border-bottom:1.5px solid rgba(0,0,0,.12);color:#1a1510}
+    .page-line{margin-bottom:.55rem}
+    .page-stamp{position:absolute;top:14px;right:18px;font-size:.62rem;color:rgba(180,50,50,.6);border:1.5px solid rgba(180,50,50,.4);padding:2px 7px;border-radius:3px;transform:rotate(-8deg);letter-spacing:.12em}
+    .page-no{position:absolute;bottom:9px;left:0;right:0;text-align:center;font-size:.62rem;color:rgba(0,0,0,.35);font-family:var(--font-mono)}
+    .pager{display:flex;align-items:center;gap:1.1rem;margin:.55rem 0 .5rem}
+    .pg-btn{display:flex;align-items:center;gap:.45rem;padding:.8rem 1.5rem;border-radius:30px;border:2px solid rgba(77,217,232,.7);background:radial-gradient(circle,rgba(77,217,232,.3),rgba(77,217,232,.1));color:var(--cyan);font-size:1.05rem;font-weight:700;letter-spacing:.08em;cursor:pointer;transition:all .2s;box-shadow:0 0 18px rgba(77,217,232,.35),inset 0 0 12px rgba(77,217,232,.15);animation:pgGlow 2.2s ease-in-out infinite}
+    .pg-btn .pg-arr{font-size:1.5rem;line-height:1;font-weight:700}
+    @keyframes pgGlow{0%,100%{box-shadow:0 0 14px rgba(77,217,232,.3),inset 0 0 8px rgba(77,217,232,.12)}50%{box-shadow:0 0 30px rgba(77,217,232,.65),inset 0 0 16px rgba(77,217,232,.3)}}
+    .pg-btn:hover:not(:disabled){background:radial-gradient(circle,rgba(77,217,232,.55),rgba(77,217,232,.2));border-color:var(--cyan);transform:scale(1.08);animation:none;box-shadow:0 0 36px rgba(77,217,232,.8)}
+    .pg-btn:active:not(:disabled){transform:scale(.96)}
+    .pg-btn:disabled{opacity:.22;cursor:not-allowed;border-color:rgba(100,140,180,.3);background:rgba(30,40,55,.4);color:var(--muted);box-shadow:none;animation:none}
+    .pg-ind{font-size:.78rem;color:var(--muted);font-family:var(--font-mono)}
+    .pg-dots{display:flex;gap:.45rem;align-items:center}
+    .pg-dots i{width:7px;height:7px;border-radius:50%;background:rgba(136,153,170,.35);cursor:pointer;transition:all .25s}
+    .pg-dots i.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan);transform:scale(1.25)}
+
+    /* ============ 浮动机器人问答助手 ============ */
+    .robot-fab{position:fixed;right:1.5rem;bottom:3.6rem;width:64px;height:64px;border-radius:50%;z-index:60;cursor:pointer;background:radial-gradient(circle at 35% 30%,#2b4a6e,#122036);border:2px solid rgba(77,217,232,.55);box-shadow:0 0 22px rgba(77,217,232,.35),inset 0 0 14px rgba(77,217,232,.15);animation:bob 3s ease-in-out infinite;transition:opacity .3s}
+    .robot-fab:hover{box-shadow:0 0 34px rgba(77,217,232,.6)}
+    .rb-head{position:absolute;top:17px;left:50%;transform:translateX(-50%);width:38px;height:27px;border-radius:9px;background:linear-gradient(180deg,#3f6a94,#274a6d);border:1px solid rgba(120,220,240,.5)}
+    .rb-eye{position:absolute;top:9px;width:7px;height:9px;border-radius:4px;background:var(--cyan);box-shadow:0 0 6px var(--cyan);animation:blink 4s infinite}
+    .rb-eye.l{left:9px}.rb-eye.r{right:9px}
+    .rb-mouth{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:14px;height:3px;border-radius:2px;background:rgba(77,217,232,.85)}
+    .rb-antenna{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:2px;height:9px;background:#7fdce8}
+    .rb-antenna::after{content:'';position:absolute;top:-6px;left:-3px;width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:breathe 1.6s infinite}
+    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes blink{0%,44%,50%,100%{transform:scaleY(1)}47%{transform:scaleY(.12)}}
+    .chat-panel{position:fixed;right:1.5rem;bottom:3.6rem;width:360px;max-height:calc(100vh - 9rem);height:490px;z-index:61;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:rgba(252,254,255,.97);border:1px solid rgba(46,196,214,.25);box-shadow:0 22px 56px rgba(6,20,31,.24),inset 0 1px 0 rgba(255,255,255,.85);transform:translateY(24px) scale(.95);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.3,.64,1)}
+    .chat-panel.open{transform:none;opacity:1;pointer-events:auto}
+    .chat-head{display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;background:linear-gradient(160deg,rgba(46,196,214,.1),rgba(240,248,252,.6));border-bottom:1px solid rgba(20,40,58,.08);flex-shrink:0}
+    .chat-avatar{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3f6a94,#16294a);border:1.5px solid var(--signal);position:relative;flex-shrink:0}
+    .chat-avatar::before{content:'';position:absolute;top:11px;left:8px;width:4px;height:6px;border-radius:2px;background:var(--cyan);box-shadow:11px 0 0 var(--cyan),0 0 5px var(--cyan),11px 0 5px var(--cyan)}
+    .chat-id b{font-size:.9rem;color:var(--ink)}
+    .chat-id small{display:block;font-size:.64rem;color:#5a7084}
+    .chat-close{margin-left:auto;background:none;border:none;color:#5a7084;font-size:1.25rem;cursor:pointer;line-height:1;padding:.2rem .4rem}
+    .chat-close:hover{color:var(--accent)}
+    .chat-msgs{flex:1;overflow-y:auto;padding:.8rem;display:flex;flex-direction:column;gap:.6rem}
+    .chat-msgs::-webkit-scrollbar{width:5px}.chat-msgs::-webkit-scrollbar-thumb{background:rgba(90,128,148,.28);border-radius:3px}
+    .msg{max-width:88%;padding:.55rem .75rem;border-radius:10px;font-size:.78rem;line-height:1.7;word-break:break-word;color:var(--ink)}
+    .msg.user{align-self:flex-end;background:rgba(46,196,214,.14);border:1px solid rgba(46,196,214,.22)}
+    .msg.bot{align-self:flex-start;background:rgba(6,20,31,.03);border:1px solid rgba(20,40,58,.08)}
+    .msg .loc{color:var(--accent);font-weight:600}
+    .qa-open{display:inline-flex;align-items:center;gap:.3rem;margin:.45rem .4rem 0;padding:.32rem .75rem;border-radius:999px;border:1px solid rgba(46,196,214,.38);background:rgba(46,196,214,.12);color:var(--accent);font-size:.7rem;cursor:pointer;transition:all .2s}
+    .qa-open:hover{background:rgba(46,196,214,.22)}
+    .chat-quicks{display:flex;gap:.5rem;padding:0 .8rem .55rem;flex-wrap:wrap;flex-shrink:0}
+    .quick{padding:.36rem .7rem;border-radius:999px;border:1px dashed rgba(26,122,146,.45);background:transparent;color:var(--accent);font-size:.7rem;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+    .quick:hover{background:rgba(46,196,214,.12);border-style:solid}
+    .chat-input{display:flex;gap:.5rem;padding:.6rem .8rem;border-top:1px solid rgba(20,40,58,.08);flex-shrink:0}
+    .chat-input input{flex:1;background:rgba(255,255,255,.84);border:1px solid rgba(20,40,58,.12);border-radius:12px;padding:.5rem .7rem;color:var(--ink);font-size:.78rem;outline:none;font-family:var(--font-body)}
+    .chat-input input:focus{border-color:rgba(46,196,214,.42);box-shadow:0 0 0 3px rgba(46,196,214,.14)}
+    .chat-input button{padding:.5rem .95rem;border-radius:12px;border:none;background:linear-gradient(160deg,#1f8ea8,#176f84);color:#fff;font-weight:600;font-size:.78rem;cursor:pointer}
+    .chat-input button:hover{filter:brightness(1.1)}
+
+    .lib-footer{position:fixed;bottom:0;left:0;right:0;height:2.4rem;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(240,248,252,.5));backdrop-filter:blur(18px) saturate(1.2);border-top:1px solid rgba(255,255,255,.72);font-size:.72rem;color:#5a7084;z-index:50}
+    .footer-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#2f7d5a;box-shadow:0 0 6px rgba(47,125,90,.5);margin-right:.5rem;animation:breathe 2s infinite}
+    @keyframes breathe{0%,100%{opacity:1}50%{opacity:.4}}
+    @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <header class="lib-header">
+    <div class="header-left"><div class="header-accent"></div><h1 class="header-title">知识体系档案馆</h1></div>
+    <div class="header-right">
+      <nav class="breadcrumb" id="breadcrumb"></nav>
+      <div class="nav-btns">
+        <button class="nav-btn" id="btnBack" title="后退 (Alt+←)" aria-label="后退"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="nav-btn" id="btnFwd" title="前进 (Alt+→)" aria-label="前进"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+      <button class="back-btn" onclick="window.top.location.href='/command'" title="返回高总工作台">← 返回工作台</button>
+    </div>
+  </header>
+
+  <div class="view" id="viewShelf"></div>
+  <div class="view hidden" id="viewFilebox"></div>
+  <div class="view hidden" id="viewPages"></div>
+
+  <footer class="lib-footer">
+    <span><span class="footer-dot"></span>系统运行中</span>
+    <span id="footStat"></span>
+  </footer>
+
+  <!-- 浮动机器人问答助手 -->
+  <div class="robot-fab" id="robotFab" title="档案助手">
+    <div class="rb-antenna"></div>
+    <div class="rb-head"><div class="rb-eye l"></div><div class="rb-eye r"></div><div class="rb-mouth"></div></div>
+  </div>
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-head">
+      <div class="chat-avatar"></div>
+      <div class="chat-id"><b>档案助手</b><small>文档定位 · 知识问答</small></div>
+      <button class="chat-close" id="chatClose">×</button>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-quicks">
+      <button class="quick" data-k="0">📍 动员会纪要在哪里？</button>
+      <button class="quick" data-k="1">💡 舆情预警怎么做的？</button>
+    </div>
+    <div class="chat-input"><input id="chatInput" placeholder="问我：某文档在哪 / 某事怎么规定的" autocomplete="off"><button id="chatSend">发送</button></div>
+  </div>
+
+  <script>
+    const FB_COLORS = [
+      {c:'#d0453f',hi:'#e5766f',lo:'#9c2c27'},
+      {c:'#2e6fd0',hi:'#6f9ce6',lo:'#1f4c95'},
+      {c:'#2e9e63',hi:'#6cc793',lo:'#1f6f45'},
+      {c:'#d99a2b',hi:'#eabf6d',lo:'#a06f18'},
+      {c:'#8455c9',hi:'#a985e0',lo:'#5d3891'},
+    ];
+    const DATA = [
+      { name:'活动安保类', color:'var(--cyan)', intro:'涵盖会议安保方案、动员纪要、评审决议、现场部署与应急预案等全过程归档材料', folders:[
+        { name:'大型会议保障动员会', date:'2026-09-15', info:'方案草案、会议纪要、决议文书等 6 页', pages:[
+          { title:'方案草案 v1.4', lines:['一、总则：为确保大型会议安全有序召开，特制定本安保方案。','二、组织架构：成立安保指挥部，下设 X/Y/Z/E/F/G 六个作战组。','三、人员部署：核心区域每50米设一岗点，外围巡逻线覆盖半径2公里。','四、通信保障：双链路加密通信，备用卫星电话 4 部。']},
+          { title:'会议纪要', lines:['时间：2026年9月15日 09:00-11:30','地点：指挥中心三楼会议室','主持人：张主任','参会人员：6位核心负责人','决议：通过总体安保方案 v1.4；采纳4条优化建议；明确各组职责分工。']},
+          { title:'发言摘要', lines:['张主任：强调"预防为主、快速响应"，要求各组9月20日前完成部署。','李组长：建议夜间巡查由每2小时调整为每1小时一次。','王专家：建议引入AI舆情预警系统，提前识别风险。']},
+          { title:'建议采纳清单', lines:['✓ 采纳：增加夜间巡查频次（李组长）','✓ 采纳：引入AI舆情预警（王专家）','✓ 修改后采纳：外围封控提前至会前48小时','✓ 采纳：建立跨组即时通报机制','○ 稍后处理：增设临时医疗点']},
+          { title:'签到记录', lines:['张XX 主任   09:00 ✓','李XX 组长   09:02 ✓','王XX 专家   09:00 ✓','赵XX 副组长 09:05 ✓','陈XX 主任   08:58 ✓']},
+          { title:'决议文书', lines:['经全体参会人员审议，形成以下决议：','一、原则通过总体安保方案 v1.4，由方案组9月16日前完成修订。','二、各作战组立即启动准备，9月18日前完成人员到位。','三、建立每日例会制度，会议期间每日17:00汇报进展。']}
+        ]},
+        { name:'安保评审会', date:'2026-09-10', info:'评审标准、评分记录与评审结论 3 页', pages:[
+          { title:'评审标准文件', lines:['评审维度：','1. 方案完整性（25分）','2. 人员配置合理性（20分）','3. 应急响应能力（25分）','4. 技术支撑水平（15分）','5. 预算可控性（15分）','总分100分，80分以上为合格。']},
+          { title:'评分记录表', lines:['方案完整性：23/25','人员配置合理性：18/20','应急响应能力：22/25','技术支撑水平：14/15','预算可控性：13/15','总分：90/100  结论：通过']},
+          { title:'评审决议', lines:['评审委员会一致认为：该方案架构完整、职责清晰、技术路线可行，同意通过。','建议补充极端天气应急预案，并在正式执行前进行一次全流程演练。']}
+        ]},
+        { name:'筹备协调会', date:'2026-08-28', info:'筹备方案与任务分工 2 页', pages:[
+          { title:'筹备方案', lines:['一、筹备目标：完成会议保障全部前期准备工作。','二、时间节点：','8月30日前确定场地','9月5日前完成设备调试','9月10日前完成人员培训','9月15日正式动员']},
+          { title:'任务分工表', lines:['场地组：负责主会场及备用场地','设备组：通信设备、监控系统','后勤组：交通、餐饮、住宿','宣传组：对外口径、新闻发布','安全组：人员审核、现场安保']}
+        ]},
+        { name:'现场安保部署', date:'2026-09-19', info:'岗位部署、巡查路线与应急预案 3 页', pages:[
+          { title:'岗位部署表', lines:['核心区：12个固定岗 + 4个流动岗','管控区：8个出入口检查点','外围区：6条巡逻线路','制高点：4个观察哨','交通岗：10个关键路口']},
+          { title:'巡查路线图', lines:['A线：主场馆外围（1.2km/圈）','B线：驻地至会场沿线（2.5km）','C线：备用疏散路线（3条）','每线巡查间隔：1小时']},
+          { title:'应急预案', lines:['一级响应（爆炸/火灾）：立即疏散 + 119/110联动','二级响应（人员冲突）：就近隔离 + 医疗待命','三级响应（设备故障）：备用系统切换 + 技术组到场']}
+        ]},
+      ]},
+      { name:'数据科学类', color:'var(--green)', intro:'舆情分析、风险评估、人员审核等数据模型与分析报告存档', folders:[
+        { name:'舆情数据分析', date:'2026-09-18', info:'采集方案、模型说明与趋势预测 3 页', pages:[
+          { title:'数据采集方案', lines:['数据源：微博、微信、抖音、新闻门户','采集频率：每15分钟增量抓取','关键词库：会议相关120+关键词','情感分析：三分类（正/中/负）','输出格式：JSON + 可视化看板']},
+          { title:'分析模型说明', lines:['采用BERT预训练模型进行情感分类，结合LSTM时序模型进行趋势预测。','模型准确率：92.3%（测试集）','预警阈值：负面情感占比>30%触发']},
+          { title:'趋势预测报告', lines:['当前态势：整体平稳，正面占比68%','关注点：交通管控相关讨论升温','预测：会前48小时可能迎来讨论高峰','建议：提前准备官方回应口径']}
+        ]},
+        { name:'风险评估数据集', date:'2026-09-12', info:'指标体系、历史数据与等级划分 3 页', pages:[
+          { title:'评估指标体系', lines:['一级指标：人员风险、场地风险、舆情风险、天气风险','二级指标：各一级下设3-5项','评分标准：1-5级（低→极高）']},
+          { title:'历史数据汇总', lines:['近3年同类会议共12场','发生安全事件：3起（均为三级以下）','最高风险时段：开幕前2小时','高频风险类型：人员聚集、交通拥堵']},
+          { title:'风险等级划分', lines:['红色（极高）：需立即处置','橙色（高）：加强监控+预案准备','黄色（中）：常规关注','当前评估：整体为蓝色低风险']}
+        ]},
+        { name:'人员审核模型', date:'2026-09-20', info:'算法文档与准确率测试 2 页', pages:[
+          { title:'审核算法文档', lines:['基于图神经网络构建人员关系图谱，结合规则引擎进行多标签分类。','输入：基础信息+历史行为+关联图谱','输出：风险等级（5档）+ 标签集合','平均处理时间：2.3秒/人']},
+          { title:'准确率测试报告', lines:['测试样本：5000人标注数据','高风险识别率：96.1%','误报率：3.2%  漏报率：0.7%','结论：满足实战要求，建议持续优化']}
+        ]},
+      ]},
+      { name:'经济类', color:'var(--amber)', intro:'安保预算、物资采购、供应商比价与合同等经费档案', folders:[
+        { name:'安保预算方案', date:'2026-09-05', info:'预算明细、资源分配与效益分析 3 页', pages:[
+          { title:'预算明细表', lines:['人员费用：120万（含加班补贴）','设备采购：85万（监控+通信）','场地租赁：30万','交通保障：25万','应急储备：20万','合计：280万元']},
+          { title:'资源分配方案', lines:['核心区：40%资源投入','管控区：30%','外围区：20%','机动预备：10%','重点保障时段：会前1天至闭幕']},
+          { title:'成本效益分析', lines:['投入产出比：1:8.5（往届平均1:7.2）','主要优化点：AI辅助减少人力投入15%','风险预防节省潜在损失约200万']}
+        ]},
+        { name:'物资采购清单', date:'2026-09-08', info:'采购单、比价表与合同附件 3 页', pages:[
+          { title:'设备采购单', lines:['4K监控摄像头 × 80台','数字加密对讲机 × 200部','金属探测门 × 12台','移动指挥车 × 2辆','侦察无人机 × 6架']},
+          { title:'供应商比价表', lines:['设备A：甲45万 / 乙42万 ✓','设备B：丙18万 / 丁17万 ✓','设备C：戊12万 / 己11.5万 ✓','（✓为选定供应商）']},
+          { title:'合同附件', lines:['合同编号：AQ-CG-2026-091','交付期限：2026年9月12日前','质保期：验收后12个月','违约条款：延迟交付按日0.5%扣款']}
+        ]},
+      ]},
+      { name:'政策法规类', color:'var(--purple)', intro:'安保法规摘录、适用说明、往届案例与会签规范文件', folders:[
+        { name:'安保法规汇编', date:'2026-09-01', info:'条例摘录、适用说明与修订对照 3 页', pages:[
+          { title:'相关条例摘录', lines:['《大型群众性活动安全管理条例》第十二条：承办者应当制定安全工作方案和突发事件应急预案。','第二十条：公安机关应当对活动安全条件进行检查。']},
+          { title:'适用说明文档', lines:['本次适用条款：第12/15/20/25条','不适用说明：第31条（商业演出）','特别规定：涉外地参会人员需提前72小时报备']},
+          { title:'修订对照表', lines:['2024版→2026版主要变化：','1. 新增网络安全条款','2. 无人机管控要求细化','3. 应急响应时间缩短至5分钟','4. 增加AI辅助决策表述']}
+        ]},
+        { name:'往届保障案例', date:'2026-08-15', info:'案例摘要与经验总结 2 页', pages:[
+          { title:'案例摘要', lines:['案例一（2025春季）：成功处置人员聚集事件，响应4分钟。','案例二（2025秋季）：舆情预警提前6小时发现负面信息，及时化解。','案例三（2024）：设备故障致监控盲区15分钟，后续增加冗余链路。']},
+          { title:'经验总结报告', lines:['1. 提前演练至关重要（建议至少2次）','2. 跨部门通信必须双链路保障','3. AI辅助研判可提升效率30%以上','4. 外围封控应预留弹性空间']}
+        ]},
+        { name:'会签规范文件', date:'2026-09-16', info:'会签条文与部门职责 2 页', pages:[
+          { title:'会签条文', lines:['本方案经以下六部门会签通过：','安保部✓ 信息中心✓ 后勤部✓','法制办✓ 外联部✓ 财务部✓','会签编号：AQ-20260916-007','生效日期：2026年9月16日']},
+          { title:'部门职责说明', lines:['安保部：总体方案制定与执行','信息中心：技术系统保障','后勤部：物资与人员生活保障','法制办：合规审查','外联部：对外协调  财务部：预算管控']}
+        ]},
+      ]},
+      { name:'技术研发类', color:'var(--red)', intro:'智能识别系统架构、算法选型、平台需求与AI训练记录', folders:[
+        { name:'智能识别系统', date:'2026-09-10', info:'架构文档、算法选型与测试数据 3 页', pages:[
+          { title:'技术架构文档', lines:['前端：Vue3 + Element Plus','后端：Python微服务集群','AI引擎：PyTorch推理服务','数据层：PostgreSQL + Redis','部署：K8s容器编排','通信：WebSocket实时推送']},
+          { title:'算法选型报告', lines:['人脸检测：RetinaFace（mAP 95.2%）','行为分析：SlowFast（准确率91%）','NLP研判：ChatGLM3-6B微调','图像分类：EfficientNet-B4']},
+          { title:'测试数据', lines:['测试环境：4×A100 GPU','并发能力：200路视频流','识别延迟：<200ms','误识率：0.8%','连续运行72小时稳定性通过']}
+        ]},
+        { name:'指挥平台需求', date:'2026-09-14', info:'需求说明、原型设计与接口文档 3 页', pages:[
+          { title:'需求说明书', lines:['核心功能：','1. 实时态势感知大屏','2. 任务分发与进度追踪','3. 多部门协同会签','4. AI辅助决策建议','5. 全过程记录与回溯']},
+          { title:'原型设计稿', lines:['页面1：会议讨论（实时记录+AI助手）','页面2：统稿确认（修订对照）','页面3：联合会签','页面4：任务部署  页面5：小组作战','页面6：态势大屏']},
+          { title:'接口文档', lines:['GET /api/sessions/:id - 获取会议数据','PATCH /api/sessions/:id - 更新状态','WS /ws/realtime - 实时事件推送','POST /api/tasks/dispatch - 任务下发']}
+        ]},
+        { name:'AI助手训练', date:'2026-09-20', info:'语料集说明与模型评估 2 页', pages:[
+          { title:'语料集说明', lines:['来源：历史会议纪要、安保方案、法规文件、培训材料','总量：12000条高质量标注样本','格式：instruction-response对','增强：同义改写+对抗样本','训练配置：lr=2e-5, epochs=3']},
+          { title:'模型评估报告', lines:['任务：会议记录整理+建议识别','准确率：F1=89.7%','建议识别召回率：94.2%','误报率：5.1%','人工复核满意度：4.3/5','结论：达到辅助水平，持续迭代']}
+        ]},
+      ]},
+      { name:'舆情宣传类', color:'var(--blue)', intro:'舆情监测通报、宣传口径与媒体接待方案等宣传归档材料', folders:[
+        { name:'舆情周报', date:'2026-09-19', info:'舆情监测表与风险处置建议 2 页', pages:[
+          { title:'舆情监测表', lines:['监测周期：9月12日-9月19日','信息总量：8,642 条','正面占比：68%  中性：24%  负面：8%','热点话题：交通管控、安保措施、场馆服务']},
+          { title:'风险处置建议', lines:['1. 针对"出行绕行"话题发布便民指南','2. 联合交管部门实时发布路况信息','3. 对不实信息48小时内完成辟谣回应']}
+        ]},
+        { name:'宣传口径方案', date:'2026-09-11', info:'统一口径与新闻发布计划 2 页', pages:[
+          { title:'统一口径文件', lines:['宣传主题：平安办会、规范保障','核心口径：突出安保人性化措施','禁语清单：涉兵力部署、内部系统细节','发布渠道：官网、政务新媒体、通稿']},
+          { title:'媒体接待计划', lines:['注册媒体：32家 记者 86人','设置媒体通稿区与采访区','每日10:00举行新闻通气会','安保素材专区提供公开画面']}
+        ]},
+      ]},
+    ];
+
+    const views = { shelf:document.getElementById('viewShelf'), filebox:document.getElementById('viewFilebox'), pages:document.getElementById('viewPages') };
+    const bcEl = document.getElementById('breadcrumb');
+    let state = { level:0, boxIdx:-1, folderIdx:-1 };
+
+    let tF=0,tP=0; DATA.forEach(b=>b.folders.forEach(f=>{tF++;tP+=f.pages.length}));
+    document.getElementById('footStat').textContent = `共 ${DATA.length} 箱 · ${tF} 盒 · ${tP} 页档案`;
+
+    function showView(level){
+      Object.values(views).forEach(v=>v.classList.add('hidden'));
+      [views.shelf,views.filebox,views.pages][level].classList.remove('hidden');
+      state.level=level; renderBreadcrumb();
+    }
+    function renderBreadcrumb(){
+      let h=`<span class="bc-item ${state.level===0?'active':''}" onclick="navTo(0)">档案架</span>`;
+      if(state.level>=1) h+=`<span class="bc-sep">›</span><span class="bc-item ${state.level===1?'active':''}" onclick="navTo(1)">${DATA[state.boxIdx].name}</span>`;
+      if(state.level>=2) h+=`<span class="bc-sep">›</span><span class="bc-item active">${DATA[state.boxIdx].folders[state.folderIdx].name}</span>`;
+      bcEl.innerHTML=h;
+    }
+    function navTo(level,rec=true){ if(level===0){state.boxIdx=-1;state.folderIdx=-1;} if(level===1){state.folderIdx=-1;} showView(level); if(rec)recordHist(); }
+
+    /* ===== 第一层：档案架 + 六箱（两行×三盒） ===== */
+    function renderShelf(){
+      const rows=[DATA.slice(0,3),DATA.slice(3)];
+      views.shelf.innerHTML=`
+        <div class="shelf-unit">
+          ${rows.map(row=>`
+            <div class="shelf-row">
+              ${row.map(b=>{
+                const i=DATA.indexOf(b);
+                const n=Math.max(b.folders.length,3);
+                const peek=Array.from({length:Math.min(n,5)},(_,k)=>`<i style="--c:${FB_COLORS[k%FB_COLORS.length].c}"></i>`).join('');
+                return `
+                <div class="kbox" style="--sc:${b.color}" onclick="clickBox(${i},this)">
+                  <div class="kbox-shadow"></div>
+                  <div class="kbox-inside"></div>
+                  <div class="kbox-peek">${peek}</div>
+                  <div class="kbox-lid"></div>
+                  <div class="kbox-front">
+                    <div class="kbox-stamp">档案</div>
+                    <div class="kbox-cat">${b.name}</div>
+                    <div class="kbox-desc">${b.intro}</div>
+                    <div class="kbox-hint">${b.folders.length} 盒 · ${b.folders.reduce((s,f)=>s+f.pages.length,0)} 页</div>
+                  </div>
+                </div>`;
+              }).join('')}
+              <div class="plank"></div>
+            </div>
+          `).join('')}
+        </div>`;
+    }
+    function clickBox(i,el){
+      if(el.classList.contains('opening'))return;
+      el.classList.add('opening');
+      setTimeout(()=>{el.classList.remove('opening');openFileboxes(i);},550);
+    }
+
+    /* ===== 第二层：俯视箱内 · 文件盒侧面书脊 ===== */
+    function openFileboxes(i,rec=true){
+      state.boxIdx=i;
+      const box=DATA[i];
+      views.filebox.innerHTML=`
+        <div class="fb-scene">
+          <div class="fb-head">
+            <div class="fb-title" style="color:${box.color}">${box.name}<br><small>${box.intro}</small></div>
+            <button class="back-btn" onclick="navTo(0)">← 返回档案架</button>
+          </div>
+          <div class="td-plane">
+            <div class="td-box">
+              <div class="td-flap td-flap-n"></div>
+              <div class="td-flap td-flap-s"></div>
+              <div class="td-flap td-flap-w"></div>
+              <div class="td-flap td-flap-e"></div>
+              <div class="td-walls"></div>
+              <div class="td-bottom"></div>
+              <div class="td-inner">
+                ${box.folders.map((f,fi)=>{
+                  const col=FB_COLORS[fi%FB_COLORS.length];
+                  return `
+                  <div class="spine" style="--fc:${col.c};--fc-hi:${col.hi};--fc-lo:${col.lo}" onclick="clickSpine(${fi},this)" title="${f.name}">
+                    <div class="s3d s3d-back"></div>
+                    <div class="s3d s3d-side-l"></div>
+                    <div class="s3d s3d-side-r"></div>
+                    <div class="s3d s3d-top"></div>
+                    <div class="s3d s3d-front">
+                      <div class="spine-txt">${f.name}</div>
+                    </div>
+                    <div class="spine-meta">${f.date} · ${f.pages.length}页</div>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      showView(1);
+      if(rec)recordHist();
+    }
+    function clickSpine(fi,el){
+      if(el.classList.contains('taking'))return;
+      el.classList.add('taking');
+      setTimeout(()=>openPages(fi),320);
+    }
+
+    /* ===== 第三层：档案页铺平 · 每版面3页 · 翻页 ===== */
+    let pageIdx=0;
+    function openPages(fi,rec=true){
+      state.folderIdx=fi;
+      pageIdx=0;
+      const box=DATA[state.boxIdx], folder=box.folders[fi];
+      const total=folder.pages.length, pages=Math.ceil(total/3);
+      const col=FB_COLORS[fi%FB_COLORS.length];
+      views.pages.innerHTML=`
+        <div class="takeout" id="takeout">
+          <div class="to-box" id="toBox" style="--fc:${col.c};--fc-hi:${col.hi};--fc-lo:${col.lo}">
+            <div class="to-inner"><div class="to-pages"></div></div>
+            <div class="to-cover"><div class="to-spine"></div><div class="to-label">${folder.name}<small>${folder.date} · 共 ${total} 页</small></div></div>
+          </div>
+        </div>
+        <div class="pg-main" id="pgMain">
+          <div class="pg-bar">
+            <div class="pg-title" style="color:${box.color}">${folder.name}<small>${box.name} · ${folder.date} · 共 ${total} 页</small></div>
+            <button class="back-btn" onclick="openFileboxes(${state.boxIdx})">← 返回文件盒</button>
+          </div>
+          <div class="spread-wrap">
+            <button class="pg-btn" id="pvPrev" title="上一页"><span class="pg-arr">&#8249;</span>上一页</button>
+            <div class="spread" id="spread"></div>
+            <button class="pg-btn" id="pvNext" title="下一页">下一页<span class="pg-arr">&#8250;</span></button>
+          </div>
+          <div class="pager">
+            <div class="pg-dots" id="pgDots">${Array.from({length:pages},(_,k)=>`<i data-k="${k}" onclick="flipTo(${k})"></i>`).join('')}</div>
+            <div class="pg-ind" id="pgInd"></div>
+          </div>
+        </div>`;
+      views.pages._folder=folder;
+      views.pages._ready=false;
+      document.getElementById('pvPrev').onclick=()=>flipTo(pageIdx-1);
+      document.getElementById('pvNext').onclick=()=>flipTo(pageIdx+1);
+      showView(2);
+      if(rec)recordHist();
+      // 直接展示正面(0.3s) → 翻书式开盖(0.5s) → 盒体退场、档案页铺平
+      const to=document.getElementById('takeout'), tob=document.getElementById('toBox'), main=document.getElementById('pgMain');
+      setTimeout(()=>tob.classList.add('opened'),380);
+      setTimeout(()=>{
+        to.classList.add('out');
+        main.style.opacity=1;
+        renderSpread(0);
+        views.pages._ready=true;
+      },950);
+      setTimeout(()=>to.remove(),1500);
+    }
+    function renderSpread(k){
+      const folder=views.pages._folder;
+      const slice=folder.pages.slice(k*3,k*3+3);
+      const sp=document.getElementById('spread');
+      sp.innerHTML=slice.map((p,pi)=>{
+        const no=k*3+pi+1;
+        return `
+        <div class="page-sheet" style="transition-delay:${pi*110}ms">
+          <div class="page-holes"><i></i><i></i><i></i></div>
+          <div class="page-stamp">归 档</div>
+          <div class="page-title">${p.title}</div>
+          ${p.lines.map(l=>`<div class="page-line">${l}</div>`).join('')}
+          <div class="page-no">第 ${no} 页 · 共 ${folder.pages.length} 页</div>
+        </div>`;
+      }).join('');
+      const pages=Math.ceil(folder.pages.length/3);
+      document.getElementById('pgInd').textContent=`版面 ${k+1} / ${pages} · 第 ${k*3+1}–${Math.min(k*3+3,folder.pages.length)} 页`;
+      document.querySelectorAll('#pgDots i').forEach((d,di)=>d.classList.toggle('on',di===k));
+      document.getElementById('pvPrev').disabled=k<=0;
+      document.getElementById('pvNext').disabled=k>=pages-1;
+      // 档案页铺平动画
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        sp.querySelectorAll('.page-sheet').forEach(el=>el.classList.add('show'));
+      }));
+    }
+    function flipTo(k){
+      if(!views.pages._ready)return;
+      const folder=views.pages._folder;
+      const pages=Math.ceil(folder.pages.length/3);
+      if(k<0||k>=pages||k===pageIdx)return;
+      const dir=k>pageIdx?'l':'r';
+      const sp=document.getElementById('spread');
+      sp.classList.add('flip-out-'+dir);
+      setTimeout(()=>{
+        pageIdx=k; renderSpread(k);
+        sp.classList.remove('flip-out-'+dir);
+        sp.classList.add('flip-in');
+        requestAnimationFrame(()=>requestAnimationFrame(()=>sp.classList.remove('flip-in')));
+      },280);
+    }
+
+    /* ===== 前进/后退导航历史 ===== */
+    const hist=[{level:0,boxIdx:-1,folderIdx:-1}];
+    let histPos=0;
+    const btnBack=document.getElementById('btnBack'), btnFwd=document.getElementById('btnFwd');
+    function recordHist(){
+      const cur=hist[histPos], st={level:state.level,boxIdx:state.boxIdx,folderIdx:state.folderIdx};
+      if(cur.level===st.level&&cur.boxIdx===st.boxIdx&&cur.folderIdx===st.folderIdx)return;
+      hist.splice(histPos+1);
+      hist.push(st); histPos=hist.length-1;
+      updateNavBtns();
+    }
+    function applyHist(st){
+      if(st.level===0)navTo(0,false);
+      else if(st.level===1)openFileboxes(st.boxIdx,false);
+      else openPages(st.folderIdx,false);
+    }
+    function goBack(){ if(histPos>0){histPos--;applyHist(hist[histPos]);updateNavBtns();} }
+    function goForward(){ if(histPos<hist.length-1){histPos++;applyHist(hist[histPos]);updateNavBtns();} }
+    function updateNavBtns(){ btnBack.disabled=histPos<=0; btnFwd.disabled=histPos>=hist.length-1; }
+    btnBack.addEventListener('click',goBack);
+    btnFwd.addEventListener('click',goForward);
+    document.addEventListener('keydown',e=>{
+      if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();goBack();}
+      if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();goForward();}
+      if(state.level===2&&!e.altKey){
+        if(e.key==='ArrowLeft')flipTo(pageIdx-1);
+        if(e.key==='ArrowRight')flipTo(pageIdx+1);
+      }
+    });
+
+    /* ===== 机器人问答助手 ===== */
+    const INDEX=[];
+    DATA.forEach((b,bi)=>b.folders.forEach((f,fi)=>f.pages.forEach((p,pi)=>INDEX.push({bi,fi,pi,cat:b.name,folder:f.name,date:f.date,title:p.title,text:p.lines.join(' ')}))));
+    function bigrams(s){s=(s||'').replace(/[？?！!，,。.:：、；;"'\s（）()《》]+/g,'');const g=[];for(let i=0;i<s.length-1;i++)g.push(s.substr(i,2));return [...new Set(g)]}
+    function esc(s){return String(s).replace(/</g,'&lt;')}
+
+    function answer(q){
+      const locateW=['在哪','哪里','哪个','位置','找','存放','归档','几页'];
+      const isLoc=locateW.some(w=>q.includes(w));
+      const qg=bigrams(q);
+      // 1) 文档定位：命中档案袋名/页名
+      const hits=[];
+      INDEX.forEach(it=>{
+        let sc=0;
+        if(q.includes(it.folder))sc+=6;
+        if(q.includes(it.title))sc+=6;
+        qg.forEach(g=>{if(it.folder.includes(g)||it.title.includes(g))sc+=1});
+        if(sc>0)hits.push({...it,sc});
+      });
+      hits.sort((a,b)=>b.sc-a.sc);
+      const strong=hits.filter(h=>h.sc>=5);
+      if(isLoc&&strong.length){
+        const h=strong[0];
+        return `📍 已定位：<span class="loc">${h.cat}</span> 档案箱 › <span class="loc">${h.folder}</span> 档案盒 › 第 ${h.pi+1} 页《<span class="loc">${h.title}</span>》（${h.date}）<br><button class="qa-open" onclick="jumpTo(${h.bi},${h.fi})">打开该档案盒</button>`;
+      }
+      // 2) 内容问答：二元组对页正文打分
+      const scored=INDEX.map(it=>{
+        let sc=0;
+        qg.forEach(g=>{
+          if(it.title.includes(g))sc+=2;
+          if(it.folder.includes(g))sc+=1.5;
+          if(it.cat.includes(g))sc+=1;
+          it.text.split(/[。；、]/).forEach(seg=>{if(seg.includes(g))sc+=1});
+        });
+        return {...it,sc};
+      }).filter(h=>h.sc>=3).sort((a,b)=>b.sc-a.sc).slice(0,2);
+      if(!scored.length){
+        return `没有找到相关内容。你可以试试：<br>· 文档定位：“大型会议保障动员会的会议纪要在哪里？”<br>· 知识问答：“舆情预警怎么做的？”<br><button class="qa-open" onclick="useQuick(0)">📍 试问定位问题</button><button class="qa-open" onclick="useQuick(1)">💡 试问知识问题</button>`;
+      }
+      let html=`📚 从归档材料中找到相关内容：<br>`;
+      scored.forEach(h=>{
+        const segs=h.text.split(' ').filter(l=>qg.some(g=>l.includes(g))).slice(0,2);
+        html+=`▍<span class="loc">${h.cat} › ${h.folder}</span> 第 ${h.pi+1} 页《${h.title}》<br>`+(segs.length?segs.map(s=>`「${esc(s)}」`).join('<br>'):'详见原文页')+'<br>';
+      });
+      const t=scored[0];
+      html+=`<button class="qa-open" onclick="jumpTo(${t.bi},${t.fi})">打开原文查看</button>`;
+      return html;
+    }
+    function jumpTo(bi,fi){state.boxIdx=bi;openPages(fi,true);}
+
+    const fab=document.getElementById('robotFab'),panel=document.getElementById('chatPanel'),msgs=document.getElementById('chatMsgs'),inp=document.getElementById('chatInput');
+    function addMsg(role,html){const d=document.createElement('div');d.className='msg '+role;d.innerHTML=html;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight}
+    function ask(q){addMsg('user',esc(q));setTimeout(()=>addMsg('bot',answer(q)),380)}
+    const QUICKS=['大型会议保障动员会的会议纪要在哪里？','舆情预警怎么做的？'];
+    function useQuick(k){ask(QUICKS[k])}
+    fab.addEventListener('click',()=>{
+      panel.classList.add('open');fab.style.opacity=0;fab.style.pointerEvents='none';
+      if(!msgs.dataset.init){addMsg('bot','您好，我是<b>档案助手</b> 🤖<br>我可以：① 查询档案文档位置并直接打开；② 基于归档沉淀内容回答提问<br>点击下方快捷键可模拟提问');msgs.dataset.init=1}
+    });
+    document.getElementById('chatClose').addEventListener('click',()=>{
+      panel.classList.remove('open');fab.style.opacity='';fab.style.pointerEvents='';
+    });
+    document.getElementById('chatSend').addEventListener('click',sendMsg);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
+    function sendMsg(){const q=inp.value.trim();if(!q)return;inp.value='';ask(q)}
+    document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>useQuick(+b.dataset.k)));
+
+    renderShelf();
+    showView(0);
+    updateNavBtns();
+  </script>
+</body>
+</html>

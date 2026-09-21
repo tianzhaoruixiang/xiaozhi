@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小智 · 总结材料生成工作台</title>
+  <style>
+    /* ===================== 小智工作台色板（与 tokens.css 一致：深海水蓝底 × 浅色玻璃面板 × 信号青 × 香槟铜） ===================== */
+    :root {
+      color-scheme: light;
+      --color-abyss: #06141f;
+      --color-steel: #0f2a3d;
+      --color-signal: #2ec4d6;
+      --color-brass: #c9a86c;
+      --color-mist: #e7f0f6;
+      --color-ink: #14283a;
+      --color-ink-muted: #5a7084;
+      --color-accent: #1a7a92;
+      --color-cyan: #6ad4e4;
+      --color-gold-soft: #e6d4a8;
+      --color-success: #2f7d5a;
+      --color-danger: #a84848;
+      --color-line: rgba(20, 40, 58, 0.1);
+      --color-line-bright: rgba(46, 196, 214, 0.42);
+      --panel-deep: rgba(255, 255, 255, 0.7);
+      --font-display: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+      --font-body: 'Sora', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+      --shadow-soft: 0 22px 56px rgba(6, 20, 31, 0.14);
+      --shadow-glow: 0 0 36px rgba(46, 196, 214, 0.16);
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-soft: cubic-bezier(0.33, 0.1, 0.25, 1);
+      --dur-fast: 220ms;
+      --dur-mid: 380ms;
+      --dur-slow: 620ms;
+      --dur-enter: 780ms;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-body);
+      min-width: 1100px;
+      color: var(--color-ink);
+      /* 与 /personal/task 的 .workbench 浅色底完全一致 */
+      background:
+        radial-gradient(1200px 620px at 6% -10%, rgba(46, 196, 214, 0.2), transparent 58%),
+        radial-gradient(920px 540px at 96% 0%, rgba(201, 168, 108, 0.14), transparent 50%),
+        radial-gradient(780px 420px at 48% 110%, rgba(26, 122, 146, 0.14), transparent 55%),
+        linear-gradient(168deg, #c5d8e6 0%, #e7f0f6 42%, #eef4f8 78%, #e9eef3 100%);
+      background-attachment: fixed;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---- 氛围层：光斑 + 淡网格（参数与 PersonalWorkbench .atmosphere 一致） ---- */
+    .atmosphere { pointer-events: none; position: fixed; inset: 0; z-index: 0; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(44px); opacity: 0.75; animation: float-orb 16s ease-in-out infinite; }
+    .orb-a { width: 340px; height: 340px; top: 6%; left: -5%; background: radial-gradient(circle, rgba(46, 196, 214, 0.38), transparent 70%); }
+    .orb-b { width: 280px; height: 280px; top: 10%; right: -3%; background: radial-gradient(circle, rgba(201, 168, 108, 0.3), transparent 70%); animation-duration: 19s; animation-delay: -5s; }
+    .orb-c { width: 400px; height: 240px; bottom: 4%; left: 26%; background: radial-gradient(circle, rgba(26, 122, 146, 0.2), transparent 70%); animation-duration: 22s; animation-delay: -9s; }
+    .grid-layer {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(20, 40, 58, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20, 40, 58, 0.04) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 78% 68% at 50% 26%, black, transparent 78%);
+      -webkit-mask-image: radial-gradient(ellipse 78% 68% at 50% 26%, black, transparent 78%);
+      animation: grid-drift 32s linear infinite;
+      opacity: 0.8;
+    }
+    @keyframes float-orb {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(10px, -14px, 0) scale(1.03); }
+    }
+    @keyframes grid-drift {
+      0% { background-position: 0 0, 0 0; }
+      100% { background-position: 56px 56px, 56px 56px; }
+    }
+    @keyframes page-rise {
+      from { opacity: 0; transform: translate3d(0, 12px, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+    @keyframes soft-fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes live-pulse {
+      70% { box-shadow: 0 0 0 8px rgba(46, 196, 214, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(46, 196, 214, 0); }
+    }
+    @keyframes blink { 50% { opacity: 0.25; } }
+
+    /* ---- 细滚动条（与工作台一致） ---- */
+    body, .messages, .doc-body, .expert-detail { scrollbar-width: thin; scrollbar-color: rgba(46, 196, 214, 0.22) transparent; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(90, 128, 148, 0.28); border-radius: 999px;
+      border: 1px solid transparent; background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(46, 196, 214, 0.45); }
+
+    /* ===================== 外壳与顶栏（对齐 /personal/task topbar） ===================== */
+    .shell {
+      position: relative; z-index: 1;
+      height: 100%; display: flex; flex-direction: column; gap: 12px;
+      padding: 16px 22px 20px; max-width: 1680px; margin: 0 auto;
+      animation: page-rise var(--dur-enter) var(--ease-out) 120ms both;
+    }
+    .topbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; flex-shrink: 0; }
+    .back {
+      display: inline-flex; align-items: baseline; gap: 8px;
+      border: 1px solid rgba(20, 40, 58, 0.12); background: rgba(255, 255, 255, 0.62);
+      border-radius: 999px; padding: 7px 16px; cursor: pointer; color: var(--color-ink);
+      transition: background 160ms ease, border-color 160ms ease;
+    }
+    .back:hover { background: rgba(255, 255, 255, 0.9); border-color: rgba(46, 196, 214, 0.35); }
+    .back-mark {
+      font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; letter-spacing: 0.08em;
+      background: linear-gradient(125deg, var(--color-abyss) 8%, #1a7a92 46%, var(--color-signal) 72%, var(--color-brass) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .back-hint { font-size: 0.74rem; color: var(--color-ink-muted); }
+    .top-meta { min-width: 0; }
+    .top-meta .kind { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-accent); margin-bottom: 4px; }
+    .top-meta h1 {
+      margin: 0; font-family: var(--font-display);
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem); font-weight: 600;
+      color: var(--color-ink); letter-spacing: 0.02em;
+    }
+    .top-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .stat-chip {
+      display: inline-flex; align-items: baseline; gap: 5px;
+      padding: 6px 12px; border-radius: 10px;
+      border: 1px solid rgba(20, 40, 58, 0.1); background: rgba(255, 255, 255, 0.7);
+    }
+    .stat-chip b { font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; color: var(--color-accent); min-width: 2.2em; text-align: right; }
+    .stat-chip i { font-style: normal; font-size: 0.7rem; color: var(--color-ink-muted); }
+
+    /* ===================== 布局：初始单栏对话，正文生成后切换左右双栏 ===================== */
+    .work-grid {
+      flex: 1; min-height: 0;
+      display: grid; grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      transition: grid-template-columns var(--dur-slow) var(--ease-soft);
+    }
+    .work-grid .doc-col { display: none; }
+    .work-grid.split { grid-template-columns: minmax(400px, 0.9fr) minmax(0, 1.1fr); }
+    .work-grid.split .doc-col { display: flex; }
+    .dialog {
+      display: flex; flex-direction: column; min-height: 0; min-width: 0;
+      border-radius: calc(var(--radius-lg) + 2px);
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(240, 248, 252, 0.52)),
+        rgba(255, 255, 255, 0.34);
+      backdrop-filter: blur(18px) saturate(1.2);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      overflow: hidden;
+      animation: page-rise var(--dur-slow) var(--ease-out) both;
+    }
+    .dialog-head {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start;
+      gap: 12px 18px; padding: 14px 18px 12px;
+      border-bottom: 1px solid rgba(20, 40, 58, 0.08); flex-shrink: 0;
+    }
+    .dialog-title { min-width: 0; }
+    .eyebrow { margin: 0 0 4px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-accent); letter-spacing: 0.14em; }
+    .dialog-head h2 { margin: 0; font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; color: var(--color-ink); }
+    .hint { margin: 6px 0 0; font-size: 0.84rem; color: var(--color-ink-muted); }
+    .orch { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+    .orch label { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: var(--color-ink-muted); }
+    .orch select {
+      min-width: 110px; border-radius: 8px;
+      border: 1px solid rgba(20, 40, 58, 0.12); background: rgba(255, 255, 255, 0.7);
+      padding: 6px 8px; font-size: 0.82rem; color: var(--color-ink);
+    }
+
+    /* ===================== 左栏：历史对话 ===================== */
+    .messages {
+      flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
+      overscroll-behavior: contain; padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .bubble {
+      max-width: 92%; padding: 12px 14px; border-radius: 14px;
+      background: rgba(255, 255, 255, 0.88); border: 1px solid rgba(20, 40, 58, 0.08);
+      color: var(--color-ink); animation: page-rise 0.45s var(--ease-out) both;
+    }
+    .bubble[data-role='assistant'] { align-self: stretch; max-width: 100%; color: #14304a; background: rgba(255, 255, 255, 0.94); }
+    .bubble[data-role='user'] {
+      align-self: flex-end; background: rgba(46, 196, 214, 0.14);
+      border-color: rgba(46, 196, 214, 0.22); color: var(--color-ink);
+    }
+    .bubble[data-role='system'] {
+      align-self: stretch; max-width: 100%; background: rgba(6, 20, 31, 0.03);
+      color: var(--color-ink-muted); font-size: 0.9rem;
+    }
+    .bubble-meta { margin-bottom: 6px; font-family: var(--font-mono); font-size: 0.68rem; color: var(--color-ink-muted); }
+    .bubble-meta .who-xz { color: var(--color-ink-muted); }
+    .plain { margin: 0; white-space: pre-wrap; line-height: 1.55; font-size: 0.92rem; color: var(--color-ink); }
+    .plain.muted { color: var(--color-ink-muted); }
+    .plain .hl { color: var(--color-accent); font-weight: 600; }
+    .bubble.typing-bubble .plain::after {
+      content: ''; display: inline-block; width: 1em; margin-left: 4px;
+      animation: dots 1.2s steps(3, end) infinite;
+    }
+    @keyframes dots { 0% { content: ''; } 25% { content: '·'; } 50% { content: '··'; } 75% { content: '···'; } }
+
+    /* ---- 多专家协同过程卡（对齐 PersonalCollabProcess 浅色玻璃样式） ---- */
+    .process {
+      margin: 0 0 10px; border-radius: 12px;
+      border: 1px solid rgba(26, 122, 146, 0.22);
+      background: linear-gradient(160deg, rgba(46, 196, 214, 0.08), rgba(255, 255, 255, 0.55));
+      overflow: hidden;
+    }
+    .process[data-done='1'] { border-color: rgba(20, 40, 58, 0.1); background: rgba(6, 20, 31, 0.03); }
+    .process-toggle {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 10px 12px; border: 0; background: transparent;
+      cursor: pointer; color: inherit; text-align: left;
+    }
+    .toggle-left, .toggle-right { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: rgba(20, 40, 58, 0.25); flex-shrink: 0; }
+    .pulse.live { background: var(--color-accent); box-shadow: 0 0 0 0 rgba(46, 196, 214, 0.45); animation: live-pulse 1.4s ease-out infinite; }
+    .toggle-left strong { font-size: 0.88rem; color: #14304a; }
+    .toggle-left em {
+      font-style: normal; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em;
+      padding: 2px 7px; border-radius: 999px; color: var(--color-accent);
+      background: rgba(46, 196, 214, 0.12); border: 1px solid rgba(46, 196, 214, 0.25);
+    }
+    .process[data-done='1'] .toggle-left em { color: var(--color-ink-muted); background: rgba(20, 40, 58, 0.05); border-color: rgba(20, 40, 58, 0.1); }
+    .count { font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-ink-muted); }
+    .chevron { font-size: 0.78rem; color: var(--color-accent); }
+    .collapsed-hint {
+      margin: 0; padding: 0 12px 10px; font-size: 0.82rem; line-height: 1.45;
+      color: var(--color-ink-muted); display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .process-body { padding: 0 12px 12px; border-top: 1px solid rgba(20, 40, 58, 0.06); }
+    .experts { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .expert {
+      border-radius: 10px; border: 1px solid rgba(20, 40, 58, 0.08);
+      background: rgba(255, 255, 255, 0.72); overflow: hidden;
+    }
+    .expert[data-status='running'] { border-color: rgba(46, 196, 214, 0.35); }
+    .expert[data-status='done'] { border-color: rgba(26, 122, 146, 0.2); }
+    .expert-top {
+      width: 100%; display: grid; grid-template-columns: auto 1fr auto auto;
+      gap: 8px; align-items: center; padding: 8px 10px; border: 0;
+      background: transparent; cursor: pointer; text-align: left; color: inherit;
+    }
+    .step-no {
+      width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%;
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+      color: var(--color-ink-muted); background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(20, 40, 58, 0.08); flex-shrink: 0;
+    }
+    .expert[data-status='running'] .step-no {
+      color: var(--color-accent); background: rgba(26, 122, 146, 0.1); border-color: rgba(46, 196, 214, 0.28);
+    }
+    .expert[data-status='done'] .step-no {
+      color: #1a7a5c; background: rgba(26, 122, 92, 0.08); border-color: rgba(26, 122, 92, 0.22);
+    }
+    .meta { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .meta strong { font-size: 0.86rem; color: #14304a; }
+    .meta em {
+      font-style: normal; font-size: 0.72rem; color: var(--color-ink-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .badge {
+      font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.04em;
+      padding: 2px 7px; border-radius: 6px; color: var(--color-ink-muted);
+      background: rgba(20, 40, 58, 0.04); border: 1px solid rgba(20, 40, 58, 0.08);
+    }
+    .expert[data-status='running'] .badge { color: var(--color-accent); background: rgba(26, 122, 146, 0.1); border-color: rgba(46, 196, 214, 0.28); }
+    .expert[data-status='done'] .badge { color: #1a7a5c; background: rgba(26, 122, 92, 0.08); border-color: rgba(26, 122, 92, 0.22); }
+    .exp-chevron { font-size: 0.78rem; color: var(--color-ink-muted); }
+    .expert-detail { padding: 0 10px 10px; border-top: 1px dashed rgba(20, 40, 58, 0.08); }
+    .objective { margin: 8px 0 0; font-size: 0.8rem; line-height: 1.45; color: var(--color-ink-muted); }
+    .exp-avatar { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 0.68rem; font-weight: 600; color: #fff; background: #1a7a92; flex-shrink: 0; box-shadow: 0 2px 6px rgba(6, 20, 31, 0.18); }
+    .dispatch-note { margin: 8px 0 0; font-size: 0.76rem; line-height: 1.55; color: var(--color-accent); font-family: var(--font-mono); }
+    .mat-src { font-family: var(--font-mono); font-size: 0.6rem; color: var(--color-ink-muted); border: 1px solid rgba(20, 40, 58, 0.1); border-radius: 999px; padding: 1px 6px; background: rgba(255, 255, 255, 0.7); flex-shrink: 0; }
+    .bubble-meta .who-exp { display: inline-flex; align-items: center; gap: 6px; color: var(--color-ink); font-weight: 600; font-family: var(--font-body); font-size: 0.74rem; }
+    .bubble-meta .who-exp i { font-style: normal; padding: 1px 7px; border-radius: 999px; font-size: 0.62rem; color: #fff; }
+
+    /* ---- 阶段中间产物（对话内展示） ---- */
+    .mat-list { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+    .mat-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 9px; border-radius: 9px;
+      background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(20, 40, 58, 0.08);
+      opacity: 0; transform: translateX(-10px);
+      transition: opacity 0.35s ease, transform 0.35s var(--ease-out), border-color 0.3s ease;
+    }
+    .mat-row.show { opacity: 1; transform: translateX(0); }
+    .mat-row.matched { border-color: rgba(46, 196, 214, 0.42); }
+    .mat-ico { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: rgba(46, 196, 214, 0.12); flex-shrink: 0; }
+    .mat-ico svg { width: 12px; height: 12px; }
+    .mat-name { flex: 1; min-width: 0; font-size: 0.76rem; font-weight: 600; color: #14304a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mat-meta { font-family: var(--font-mono); font-size: 0.62rem; color: var(--color-ink-muted); flex-shrink: 0; }
+    .mat-check { width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%; background: rgba(26, 122, 92, 0.12); opacity: 0; transform: scale(0.5); transition: all 0.3s var(--ease-out); flex-shrink: 0; }
+    .mat-check svg { width: 9px; height: 9px; color: #1a7a5c; }
+    .mat-row.matched .mat-check { opacity: 1; transform: scale(1); }
+    .dim-line { margin-top: 8px; font-size: 0.76rem; color: var(--color-ink-muted); line-height: 1.6; }
+    .dim-line strong { color: var(--color-accent); font-family: var(--font-mono); }
+
+    .ol-tree { margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+    .ol-line { font-size: 0.78rem; padding: 3px 7px; border-radius: 6px; opacity: 0; transform: translateY(5px); transition: opacity 0.35s ease, transform 0.35s var(--ease-out); }
+    .ol-line.show { opacity: 1; transform: translateY(0); }
+    .ol-line.l1 { font-family: var(--font-display); font-weight: 600; color: #14304a; border-left: 3px solid var(--color-brass); background: rgba(201, 168, 108, 0.12); }
+    .ol-line.l2 { margin-left: 18px; color: var(--color-accent); }
+    .ol-line.l3 { margin-left: 36px; color: var(--color-ink-muted); font-size: 0.72rem; }
+    .ol-tag {
+      display: none; margin-left: 7px; padding: 1px 7px; border-radius: 999px;
+      font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.05em;
+      color: var(--color-accent); background: rgba(46, 196, 214, 0.12); border: 1px solid rgba(46, 196, 214, 0.25);
+    }
+    .ol-tag.show { display: inline-block; animation: soft-fade 0.4s ease both; }
+
+    .typing-note { margin-top: 8px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--color-accent); }
+    .typing-note .cursor { display: inline-block; width: 2px; height: 0.9em; vertical-align: -1px; background: var(--color-accent); animation: blink 0.9s step-end infinite; }
+
+    .vf-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .vf-row {
+      display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 9px;
+      background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(20, 40, 58, 0.08);
+      opacity: 0; transform: translateY(5px);
+      transition: opacity 0.35s ease, transform 0.35s var(--ease-out), border-color 0.35s ease;
+    }
+    .vf-row.show { opacity: 1; transform: translateY(0); }
+    .vf-row.pass { border-color: rgba(26, 122, 92, 0.28); }
+    .vf-ico { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: rgba(26, 122, 92, 0.1); color: #1a7a5c; flex-shrink: 0; }
+    .vf-ico svg { width: 10px; height: 10px; }
+    .vf-text { flex: 1; font-size: 0.74rem; color: #14304a; }
+    .vf-status { font-family: var(--font-mono); font-size: 0.64rem; color: #b87a35; letter-spacing: 0.04em; }
+    .vf-row.pass .vf-status { color: #1a7a5c; }
+
+    /* ---- 生成成果卡（对话内） ---- */
+    .report-card {
+      margin-top: 10px; padding: 13px 15px; border-radius: 13px;
+      background: linear-gradient(145deg, rgba(201, 168, 108, 0.16), rgba(46, 196, 214, 0.1));
+      border: 1px solid rgba(201, 168, 108, 0.5);
+      animation: page-rise 0.5s var(--ease-out) both;
+    }
+    .rc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .rc-head strong { font-size: 0.84rem; letter-spacing: 0.08em; color: #8a6a2e; font-family: var(--font-display); }
+    .rc-head em { font-style: normal; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; color: var(--color-accent); }
+    .rc-title { font-size: 0.95rem; font-weight: 600; color: var(--color-ink); margin-bottom: 4px; font-family: var(--font-display); }
+    .rc-meta { font-size: 0.72rem; color: var(--color-ink-muted); font-family: var(--font-mono); margin-bottom: 10px; }
+    .rc-actions { display: flex; gap: 8px; }
+    .rc-actions button {
+      border: 1px solid rgba(20, 40, 58, 0.12); background: rgba(255, 255, 255, 0.78);
+      color: var(--color-ink); border-radius: 10px; padding: 6px 13px; cursor: pointer; font-size: 0.76rem;
+      transition: background var(--dur-fast) var(--ease-soft), border-color var(--dur-fast) var(--ease-soft);
+    }
+    .rc-actions button:hover { border-color: rgba(46, 196, 214, 0.4); background: rgba(255, 255, 255, 0.95); }
+    .rc-actions button.gold {
+      border: 0; color: #fff; font-weight: 600;
+      background: linear-gradient(160deg, #1f8ea8, #176f84);
+    }
+    .rc-actions button.gold:hover { filter: brightness(1.06); }
+
+    /* ---- 输入坞（对齐 /personal/task dock） ---- */
+    .dock {
+      position: relative; padding: 12px 16px 16px; flex-shrink: 0;
+      border-top: 1px solid rgba(20, 40, 58, 0.08); background: rgba(255, 255, 255, 0.35);
+    }
+    .dock-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .picker-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid rgba(20, 40, 58, 0.12); background: rgba(255, 255, 255, 0.78);
+      border-radius: 999px; padding: 6px 14px; font-size: 0.84rem;
+      color: var(--color-ink); cursor: pointer;
+      transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms var(--ease-out);
+    }
+    .picker-btn:hover:not(:disabled) { color: var(--color-accent); border-color: rgba(46, 196, 214, 0.4); background: rgba(255, 255, 255, 0.95); transform: translate3d(0, -1px, 0); }
+    .picker-btn.chip-gold:hover:not(:disabled) { color: #8a6a2e; border-color: rgba(201, 168, 108, 0.45); }
+    .picker-btn.pulse-hint { animation: chip-hint 2.4s ease-in-out infinite; border-color: rgba(201, 168, 108, 0.45); }
+    @keyframes chip-hint {
+      0%, 100% { box-shadow: 0 0 0 rgba(201, 168, 108, 0); }
+      50% { box-shadow: 0 0 16px rgba(201, 168, 108, 0.3); }
+    }
+    .picker-btn:disabled, .composer button:disabled, .composer textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+    .composer { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+    .composer textarea {
+      resize: none; border-radius: 12px; padding: 10px 12px; min-height: 64px;
+      border: 1px solid rgba(20, 40, 58, 0.12); background: rgba(255, 255, 255, 0.84);
+      font: inherit; font-size: 0.92rem; color: var(--color-ink); line-height: 1.5; outline: none;
+      transition: border-color var(--dur-mid) var(--ease-soft), box-shadow var(--dur-mid) var(--ease-soft);
+    }
+    .composer textarea::placeholder { color: var(--color-ink-muted); }
+    .composer textarea:focus { border-color: rgba(46, 196, 214, 0.42); box-shadow: 0 0 0 3px rgba(46, 196, 214, 0.14); }
+    .composer button[type='submit'] {
+      border: 0; border-radius: 12px; padding: 12px 20px; align-self: end;
+      background: linear-gradient(160deg, #1f8ea8, #176f84);
+      color: #fff; font-weight: 600; cursor: pointer;
+      transition: opacity 160ms ease, transform 160ms var(--ease-out);
+    }
+    .composer button[type='submit']:hover:not(:disabled) { transform: translate3d(0, -2px, 0); filter: brightness(1.05); }
+    .composer button[type='submit']:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ===================== 右栏：正文预览 ===================== */
+    .doc-actions { display: flex; align-items: center; gap: 8px; align-self: center; }
+    .tool-btn {
+      border: 1px solid rgba(20, 40, 58, 0.12); border-radius: 10px;
+      background: rgba(255, 255, 255, 0.78); color: var(--color-ink);
+      padding: 7px 14px; font-size: 0.78rem; cursor: pointer; letter-spacing: 0.03em;
+      transition: background var(--dur-fast) var(--ease-soft), border-color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease-out);
+    }
+    .tool-btn:hover:not(:disabled) { border-color: rgba(46, 196, 214, 0.4); background: rgba(255, 255, 255, 0.95); transform: translate3d(0, -1px, 0); }
+    .tool-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tool-btn.primary {
+      border: 0; color: #fff; font-weight: 600;
+      background: linear-gradient(160deg, #1f8ea8, #176f84);
+    }
+    .tool-btn.primary:hover:not(:disabled) { filter: brightness(1.05); background: linear-gradient(160deg, #1f8ea8, #176f84); }
+    .doc-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 26px; background: rgba(6, 20, 31, 0.02); }
+    .doc-empty {
+      margin: 12% auto 0; padding: 34px 26px; text-align: center; max-width: 430px;
+      color: var(--color-ink-muted); border: 1px dashed rgba(20, 40, 58, 0.14);
+      border-radius: 16px; background: rgba(255, 255, 255, 0.6);
+    }
+    .doc-empty strong { display: block; margin-bottom: 8px; color: var(--color-ink); font-family: var(--font-display); font-size: 1rem; }
+    .doc-empty p { font-size: 0.86rem; line-height: 1.65; }
+    .gw-preview-page {
+      background: #f7f2e8; color: #1c2733; border-radius: 6px; padding: 42px 56px 34px;
+      max-width: 780px; margin: 0 auto;
+      box-shadow: 0 18px 42px rgba(6, 20, 31, 0.28);
+      font-family: '仿宋', FangSong, '仿宋_GB2312', serif;
+      animation: page-rise 0.6s var(--ease-out) both;
+    }
+    .gw-p-org { font-family: '华文中宋', SimSun, serif; font-size: 26px; color: #c0272d; letter-spacing: 0.15em; font-weight: bold; text-align: center; margin-bottom: 4px; }
+    .gw-p-doctype { font-family: '方正小标宋', '华文中宋', SimSun, serif; font-size: 21px; text-align: center; letter-spacing: 0.1em; margin-bottom: 6px; }
+    .gw-p-redline { height: 2px; background: #c0272d; margin: 4px 0 14px; }
+    .gw-p-num { text-align: center; font-size: 15px; margin-bottom: 16px; }
+    .gw-p-title { font-family: '方正小标宋', '华文中宋', SimSun, serif; font-size: 21px; font-weight: bold; text-align: center; line-height: 34px; margin-bottom: 18px; }
+    .gw-p-recipient { font-size: 16px; margin-bottom: 6px; }
+    .gw-preview-page h4 { font-family: '黑体', SimHei, sans-serif; font-size: 16px; font-weight: bold; text-indent: 2em; line-height: 28px; margin: 10px 0 2px; }
+    .gw-preview-page p { font-size: 16px; line-height: 28px; text-indent: 2em; text-align: justify; margin-bottom: 4px; }
+    .gw-preview-page .data-highlight { font-family: '黑体', SimHei, sans-serif; font-weight: bold; color: #8a2b2b; }
+    .gw-p-end { margin-top: 10px; }
+    .gw-p-sig { text-align: right; margin-top: 22px; line-height: 28px; }
+    .gw-p-footline { margin-top: 24px; border-top: 1px solid #556; padding-top: 6px; display: flex; justify-content: space-between; font-size: 11px; color: #445; }
+    .doc-body .typing-cursor { display: inline-block; width: 2px; height: 1em; vertical-align: -2px; background: #c0272d; animation: blink 0.9s step-end infinite; }
+    .doc-col.flash { animation: doc-flash 1.2s ease both; }
+    @keyframes doc-flash {
+      0%, 100% { box-shadow: var(--shadow-soft); }
+      30% { box-shadow: 0 0 0 3px rgba(46, 196, 214, 0.45); }
+    }
+
+    /* ---- 档案馆沉淀提示 ---- */
+    .archive-link {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 10px;
+      padding: 8px 14px; border-radius: 10px; text-decoration: none;
+      border: 1px solid rgba(46, 196, 214, 0.38); background: rgba(46, 196, 214, 0.14);
+      color: var(--color-accent); font-size: 0.82rem; font-weight: 600;
+      transition: background var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease-out);
+    }
+    .archive-link:hover { background: rgba(46, 196, 214, 0.24); transform: translate3d(0, -1px, 0); }
+    .archive-link em { font-style: normal; font-family: var(--font-mono); font-size: 0.68rem; color: var(--color-ink-muted); }
+    .archive-link svg { width: 15px; height: 15px; }
+
+    @media (max-width: 1280px) {
+      .work-grid.split { grid-template-columns: minmax(400px, 0.85fr) minmax(0, 1.15fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true">
+    <span class="orb orb-a"></span><span class="orb orb-b"></span><span class="orb orb-c"></span>
+    <span class="grid-layer"></span>
+  </div>
+
+  <div class="shell">
+    <!-- 顶栏：与 /personal/task 一致，仅保留返回胶囊 -->
+    <header class="topbar">
+      <button type="button" class="back" id="backBtn" title="返回工作台">
+        <span class="back-mark">小智</span>
+        <span class="back-hint">返回工作台</span>
+      </button>
+    </header>
+
+    <main class="work-grid" id="workGrid">
+      <!-- 左：历史对话 -->
+      <section class="dialog chat-col" aria-label="历史对话">
+        <header class="dialog-head">
+          <div class="dialog-title">
+            <p class="eyebrow">任务协作</p>
+            <h2>与小智对话</h2>
+            <p class="hint" id="headStatus">点击指令或直接输入，小智即刻开始生成总结报告。</p>
+          </div>
+          <div class="orch">
+            <label>专家团
+              <select id="selTeam"><option value="">智能识别</option><option>公文写作专家团</option></select>
+            </label>
+            <label>工作流
+              <select id="selWorkflow"><option value="">智能识别</option><option selected>总结材料生成</option></select>
+            </label>
+            <label>模式
+              <select id="selMode"><option value="hybrid">混合</option><option value="config">仅配置</option><option value="dynamic">仅动态</option></select>
+            </label>
+          </div>
+        </header>
+        <div class="messages" id="messages"></div>
+        <div class="dock">
+          <div class="dock-tools" id="shortcuts"></div>
+          <form class="composer" id="composer">
+            <textarea id="draftInput" rows="2" placeholder="输入指令，例如：当前任务已完成，请生成一份总结报告…"></textarea>
+            <button type="submit" id="sendBtn" disabled>发送</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 右：正文预览 -->
+      <section class="dialog doc-col" id="docCol" aria-label="正文预览">
+        <header class="dialog-head">
+          <div class="dialog-title">
+            <p class="eyebrow">生成成果</p>
+            <h2>正文预览</h2>
+            <p class="hint" id="docHint">对话生成的正文将以公文样式呈现在这里。</p>
+          </div>
+          <div class="doc-actions">
+            <span class="stat-chip"><b id="statMat">0</b><i>份素材</i></span>
+            <span class="stat-chip"><b id="statWords">0</b><i>字</i></span>
+            <button type="button" class="tool-btn" id="btnRegen" disabled>重新生成</button>
+            <button type="button" class="tool-btn primary" id="btnExportPdf2" disabled>导出 PDF</button>
+          </div>
+        </header>
+        <div class="doc-body" id="docBody">
+          <div class="doc-empty" id="docEmpty">
+            <strong>等待正文生成</strong>
+            <p>在左侧对话中点击下方指令「当前任务已完成，请生成一份总结报告」，正文将在生成过程中实时呈现于此。</p>
+          </div>
+          <div class="gw-preview-page" id="gwPreviewPage" hidden>
+            <div id="gwPreviewInner"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ===================== 数据（md 文件加载，失败时用内置兜底） =====================
+    let materials = [];
+    let matchCards = [];
+    let outlineData = [];
+    let draftParagraphs = [];
+    let verifyItems = [];
+    let finalParagraphs = [];
+    let metaData = {};
+
+    function parseListItems(text) {
+      return text.split('\n')
+        .filter(l => l.trim().startsWith('- '))
+        .map(l => {
+          const obj = {};
+          l.trim().slice(2).split(' | ').forEach(part => {
+            const colonIdx = part.indexOf(':');
+            if (colonIdx > 0) obj[part.slice(0, colonIdx).trim()] = part.slice(colonIdx + 1).trim();
+          });
+          return obj;
+        });
+    }
+
+    function parseMeta(text) {
+      const obj = {};
+      text.split('\n')
+        .filter(l => l.trim().startsWith('- '))
+        .forEach(l => {
+          const content = l.trim().slice(2);
+          const colonIdx = content.indexOf(':');
+          if (colonIdx > 0) obj[content.slice(0, colonIdx).trim()] = content.slice(colonIdx + 1).trim();
+        });
+      return obj;
+    }
+
+    function parseDraft(text) {
+      const paragraphs = [];
+      let current = null;
+      text.split('\n').forEach(line => {
+        if (line.startsWith('## ')) {
+          if (current) paragraphs.push(current);
+          current = { heading: line.slice(3).trim(), body: '' };
+        } else if (current && line.trim()) {
+          current.body += line.trim();
+        }
+      });
+      if (current) paragraphs.push(current);
+      return paragraphs;
+    }
+
+    async function loadData() {
+      const base = 'mdData/';
+      // 404 / SPA 兜底 HTML 都要抛错，才能回退到内置数据（应用内 public/ 下无 mdData 目录）
+      const fetchText = u => fetch(u).then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      }).then(t => {
+        if (/^\s*<(\!doctype|html)/i.test(t)) throw new Error('SPA fallback HTML');
+        return t;
+      });
+      try {
+        const [metaRaw, matRaw, outRaw, draftRaw, verifyRaw, finalRaw] = await Promise.all([
+          fetchText(base + 'meta.md'),
+          fetchText(base + 'materials.md'),
+          fetchText(base + 'outline.md'),
+          fetchText(base + 'draft.md'),
+          fetchText(base + 'verify.md'),
+          fetchText(base + 'final.md'),
+        ]);
+        metaData = parseMeta(metaRaw);
+        const matSections = matRaw.split('\n## ');
+        const matListSection = matSections.find(s => s.startsWith('素材列表'));
+        const matCardsSection = matSections.find(s => s.startsWith('匹配分类'));
+        materials = parseListItems(matListSection || '').map(m => ({ name: m.name, meta: m.meta, color: m.color, icon: m.icon }));
+        matchCards = parseListItems(matCardsSection || '').map(c => ({ title: c.title, desc: c.desc }));
+        outlineData = parseListItems(outRaw).map(o => ({ level: parseInt(o.level), text: o.text, tag: o.tag || '' }));
+        draftParagraphs = parseDraft(draftRaw);
+        verifyItems = parseListItems(verifyRaw).map(v => ({ text: v.text }));
+        finalParagraphs = parseDraft(finalRaw);
+      } catch (e) {
+        console.warn('md文件加载失败，使用内置数据', e);
+        loadFallbackData();
+      }
+    }
+
+    function loadFallbackData() {
+      metaData = { orgName:'安保工作领导小组', docType:'工 作 总 结', docNumber:'安保领组发〔2026〕18号', title:'关于XX学校大型集会活动安保的总结报告', recipient:'学校安保工作领导小组各成员单位', signatureOrg:'安保工作领导小组', signatureDate:'2026年9月21日', footerLeft:'安保工作领导小组办公室', footerRight:'2026年9月21日印发', totalWords:'2,860', chapters:'4', dataRefs:'8' };
+      materials = [
+        { name:'大型会议保障动员会纪要', meta:'2026-09-15 · 会议纪要', color:'cyan', icon:'doc' },
+        { name:'安保评审会评分记录', meta:'2026-09-10 · 评审材料', color:'green', icon:'doc' },
+        { name:'现场安保部署方案', meta:'2026-09-19 · 部署文件', color:'cyan', icon:'shield' },
+        { name:'安保预算明细表', meta:'2026-09-05 · 财务数据', color:'amber', icon:'economy' },
+        { name:'安保法规适用说明', meta:'2026-09-01 · 法规文件', color:'purple', icon:'law' },
+        { name:'智能识别系统测试报告', meta:'2026-09-10 · 技术文档', color:'red', icon:'tech' },
+        { name:'舆情数据分析报告', meta:'2026-09-18 · 分析报告', color:'green', icon:'data' },
+        { name:'往届保障经验总结', meta:'2026-08-15 · 案例材料', color:'purple', icon:'doc' },
+      ];
+      matchCards = [
+        { title:'会议决策类', desc:'动员会纪要、评审记录等 3 份材料，涵盖关键决策节点' },
+        { title:'部署执行类', desc:'岗位部署表、巡查路线图等 2 份，覆盖现场执行全流程' },
+        { title:'财务预算类', desc:'预算明细、采购清单等 1 份，提供经费使用数据支撑' },
+        { title:'技术保障类', desc:'智能识别测试报告、AI训练数据等 2 份，量化技术指标' },
+      ];
+      outlineData = [
+        { level:1, text:'一、工作概述', tag:'' },
+        { level:2, text:'1.1 年度安保工作总体情况', tag:'素材×3' },
+        { level:2, text:'1.2 关键指标完成情况', tag:'数据×5' },
+        { level:3, text:'出勤人次、事件处置数、满意度', tag:'' },
+        { level:1, text:'二、重点任务回顾', tag:'' },
+        { level:2, text:'2.1 大型会议保障', tag:'素材×2' },
+        { level:3, text:'动员部署、岗位安排、现场执行', tag:'' },
+        { level:2, text:'2.2 智能安防系统建设', tag:'素材×2' },
+        { level:3, text:'系统选型、测试验证、上线运行', tag:'' },
+        { level:1, text:'三、经验与不足', tag:'' },
+        { level:2, text:'3.1 成功经验总结', tag:'素材×2' },
+        { level:2, text:'3.2 存在问题与改进方向', tag:'素材×1' },
+        { level:1, text:'四、下一步工作计划', tag:'' },
+        { level:2, text:'4.1 制度建设', tag:'' },
+        { level:2, text:'4.2 技术升级', tag:'' },
+        { level:2, text:'4.3 人员培训', tag:'' },
+      ];
+      draftParagraphs = [
+        { heading:'一、工作概述', body:'2026年度，安保部门在上级领导的统一部署下，紧紧围绕“安全第一、预防为主”的工作方针，全面推进安保各项工作。全年累计出动安保人员12,860人次，处置各类安全事件327起，安全满意度达到96.8%，较上年提升2.3个百分点。' },
+        { heading:'二、重点任务回顾', body:'在大型会议保障方面，全年共完成重大会议保障任务18次，其中“2026深圳国际经济合作大会”等特大型活动3次。通过提前动员部署、科学设置岗位、优化巡查路线，实现了“零事故、零差错”的保障目标。在智能安防系统建设方面，完成了AI智能识别系统的选型、部署与上线，系统准确率达到98.6%，日均处理视频流1,200路。' },
+        { heading:'三、经验与不足', body:'回顾全年工作，我们积累了宝贵经验：一是坚持制度先行，修订完善了12项安保管理制度；二是强化科技赋能，智能安防系统的应用显著提升了预警能力；三是注重队伍建设，全年开展专业培训48场次。同时也存在部分应急预案更新不及时、跨部门协同效率有待提升等问题。' },
+        { heading:'四、下一步工作计划', body:'2027年度，我们将重点推进三项工作：一是完成安保管理制度的全面修订，建立标准化操作流程；二是实施智能安防二期升级，引入行为分析算法和边缘计算架构；三是开展全员技能轮训，重点提升应急处置和智能设备操作能力。' },
+      ];
+      verifyItems = [
+        { text:'出勤人次 12,860 — 与人事系统数据一致' },
+        { text:'事件处置数 327 起 — 与指挥中心台账吻合' },
+        { text:'满意度 96.8% — 与第三方调查报告一致' },
+        { text:'会议保障 18 次 — 与办公室记录核对无误' },
+        { text:'AI系统准确率 98.6% — 与测试报告数据一致' },
+        { text:'培训 48 场次 — 与人力资源部记录吻合' },
+        { text:'引用法规条文 — 与现行有效版本核对一致' },
+        { text:'预算执行数据 — 与财务系统对账完成' },
+      ];
+      finalParagraphs = [
+        { heading:'一、工作概述', body:'XX学校大型集会活动于2026年9月15日至19日在学校中心校区举行，累计到场规模达<span class="data-highlight">8,600</span>人次。在校党委和行政的统一部署下，安保指挥部紧紧围绕“安全第一、预防为主”的工作方针，实现了“零事故、零伤人、零投诉”的保障目标。活动期间累计出动安保力量<span class="data-highlight">1,260</span>人次，妥善处置各类突发情况<span class="data-highlight">12</span>起，现场秩序井然，安保任务圆满完成。' },
+        { heading:'二、安保组织实施', body:'活动筹备阶段，提前一周制定安保工作方案和应急预案，设置安检点位<span class="data-highlight">6</span>处、硬隔离设施<span class="data-highlight">480</span>米，完成场地风险评估<span class="data-highlight">3</span>轮。入口处实行“外圈分流、内圈验证、分区引导”分级管控，高峰期单人通行时长控制在<span class="data-highlight">8</span>秒以内；现场采用“定点值守+机动巡逻+视频巡查”立体防控模式，累计巡查<span class="data-highlight">96</span>班次，做到重点部位全覆盖、无死角。' },
+        { heading:'三、经验与不足', body:'回顾本次活动保障工作，主要经验：一是警校联动、提前部署，与属地公安、交通、消防等部门建立联合指挥机制；二是科技赋能，智能人流密度预警系统在峰值时段发出预警<span class="data-highlight">5</span>次，全部及时处置；三是演练验证，活动前组织全流程综合演练<span class="data-highlight">1</span>次、岗位分项训练<span class="data-highlight">3</span>场次。同时也存在入场高峰时段部分通道拥堵、外围交通疏导压力集中等问题。' },
+        { heading:'四、下一步工作改进', body:'下一步，我们将重点做好三项工作：一是修订完善《校园大型集会活动安保工作操作指引》，建立标准化岗位流程；二是推进智能人流预警平台建设，引入行为分析和边缘计算能力，提升峰值时段疏导效率；三是针对本次暴露的问题组织专题复盘，开展校园安保力量应急处突轮训，持续提升校园大型集会活动安保保障能力水平。' },
+      ];
+    }
+
+    // ===================== SVG 图标 / 颜色 =====================
+    const ICONS = {
+      doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+      shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+      economy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      law: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+      tech: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+      data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+    };
+    const colorMap = { cyan: '#1a7a92', green: '#2f7d5a', amber: '#b87a35', purple: '#7c5bad', red: '#a84848' };
+
+    // ===================== DOM 引用 / 状态 =====================
+    const $ = id => document.getElementById(id);
+    const messagesEl = $('messages'), shortcutsEl = $('shortcuts');
+    const draftInput = $('draftInput'), sendBtn = $('sendBtn'), composer = $('composer');
+    const headStatus = $('headStatus'), docHint = $('docHint'), docBody = $('docBody');
+
+    const CHIP_MAIN = '当前任务已完成，请生成一份总结报告';
+    const CHIP_AGAIN = '重新生成总结报告';
+    const state = { running: false, done: false };
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // ===================== 对话（历史对话 = 左侧栏） =====================
+    function scrollChat() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+    function userSay(text) {
+      const el = document.createElement('article');
+      el.className = 'bubble';
+      el.dataset.role = 'user';
+      el.innerHTML = '<header class="bubble-meta">我</header><p class="plain"></p>';
+      el.querySelector('.plain').textContent = text;
+      messagesEl.appendChild(el);
+      scrollChat();
+    }
+
+    function sysSay(text) {
+      const el = document.createElement('article');
+      el.className = 'bubble';
+      el.dataset.role = 'system';
+      el.innerHTML = '<p class="plain"></p>';
+      el.querySelector('.plain').textContent = text;
+      messagesEl.appendChild(el);
+      scrollChat();
+    }
+
+    function xzSay(html) {
+      const el = document.createElement('article');
+      el.className = 'bubble';
+      el.dataset.role = 'assistant';
+      el.innerHTML = `<header class="bubble-meta"><span class="who-xz">小智</span></header><div class="plain">${html}</div>`;
+      messagesEl.appendChild(el);
+      scrollChat();
+      return el;
+    }
+
+    /** 专家角色发言气泡（带头像标识） */
+    function expertSay(key, html) {
+      const e = EXPERTS[key];
+      const el = document.createElement('article');
+      el.className = 'bubble';
+      el.dataset.role = 'assistant';
+      el.innerHTML = `<header class="bubble-meta"><span class="who-exp"><i style="background:${e.color}">${e.mark}</i>${e.name}</span></header><div class="plain">${html}</div>`;
+      messagesEl.appendChild(el);
+      scrollChat();
+      return el;
+    }
+
+    async function xzThinkThen(html, delay = 700) {
+      const t = document.createElement('article');
+      t.className = 'bubble typing-bubble';
+      t.dataset.role = 'assistant';
+      t.innerHTML = '<header class="bubble-meta"><span class="who-xz">小智</span></header><p class="plain muted">正在处理您的指令…</p>';
+      messagesEl.appendChild(t);
+      scrollChat();
+      await sleep(delay);
+      t.remove();
+      return xzSay(html);
+    }
+
+    // ===================== 多专家协同：角色定义 =====================
+    const EXPERTS = {
+      chief:  { name: '工作总结专家', mark: '总结', color: '#b87a35' },
+      writer: { name: '报告写作专家', mark: '写作', color: '#1a7a92' },
+      m1: { name: '会议保障组组长', mark: '会务', color: '#1f8ea8' },
+      m2: { name: '现场部署组组长', mark: '部署', color: '#2f7d5a' },
+      m3: { name: '财务预算组组长', mark: '财务', color: '#a8873f' },
+      m4: { name: '技术保障组组长', mark: '技术', color: '#7c5bad' },
+    };
+    const LEADER_ORDER = ['m1', 'm2', 'm3', 'm4'];
+    const LEADER_OF_ICON = { doc: 'm1', law: 'm1', shield: 'm2', economy: 'm3', tech: 'm4', data: 'm4' };
+    const leaderOf = m => LEADER_OF_ICON[m.icon] || 'm1';
+    const materialsOf = key => materials.filter(m => leaderOf(m) === key);
+
+    // ===================== 多专家协同过程卡（中间生成内容 · 对话内展示） =====================
+    const STEP_DEFS = [
+      { exp: 'chief',  name: '工作总结专家 · 统筹调度', title: '调度各组组长推送材料 · 汇总匹配', desc: '向各组组长发出材料推送指令，对回收材料进行主题匹配与去重。' },
+      { exp: 'm1', name: '会议保障组组长 · 材料推送', title: '会议纪要 / 评审记录 / 经验案例', desc: '推送本组过程材料：动员会纪要、评审记录、往届经验等。' },
+      { exp: 'm2', name: '现场部署组组长 · 材料推送', title: '部署方案 / 岗位与巡查安排', desc: '推送本组过程材料：现场安保部署方案等。' },
+      { exp: 'm3', name: '财务预算组组长 · 材料推送', title: '预算明细 / 经费使用', desc: '推送本组过程材料：安保预算明细表等。' },
+      { exp: 'm4', name: '技术保障组组长 · 材料推送', title: '智能识别 / 数据分析', desc: '推送本组过程材料：系统测试报告、舆情数据分析等。' },
+      { exp: 'writer', name: '报告写作专家 · 提纲生成', title: '章节结构 · 要点编排', desc: '基于各组推送的素材归纳报告章节结构与各级要点。' },
+      { exp: 'writer', name: '报告写作专家 · 报告撰写', title: '公文语体 · 逐段撰写', desc: '按提纲逐段撰写正文，撰写过程实时同步到右侧预览。' },
+      { exp: 'chief', name: '工作总结专家 · 数据校核', title: '逐条核对 · 数据对账', desc: '对正文中的数据引用逐条核对来源台账。' },
+      { exp: 'writer', name: '报告写作专家 · 终稿预览', title: '公文版式 · 随时导出', desc: '按公文版式合成终稿，可预览正文或导出 PDF。' },
+    ];
+    const statusText = { queued: '待命', running: '执行中', done: '已完成' };
+    let proc = null;
+
+    function createProcess() {
+      const bubble = xzSay('');
+      bubble.querySelector('.plain').innerHTML = '收到指示。本次报告由<span class="hl">工作总结专家</span>统筹：调度各组组长推送总结材料，再交<span class="hl">报告写作专家</span>提纲拟稿与撰写，协同过程如下：';
+      const root = document.createElement('div');
+      root.className = 'process';
+      root.dataset.open = '1';
+      root.dataset.done = '0';
+      root.innerHTML = `
+        <button type="button" class="process-toggle">
+          <span class="toggle-left"><span class="pulse live"></span><strong>小智 · 多专家协同过程</strong><em class="phase">准备中</em></span>
+          <span class="toggle-right"><span class="count">0/${STEP_DEFS.length}</span><span class="chevron">收起</span></span>
+        </button>
+        <p class="collapsed-hint" hidden></p>
+        <div class="process-body"><ol class="experts"></ol></div>`;
+      const list = root.querySelector('.experts');
+      const steps = STEP_DEFS.map((d, i) => {
+        const li = document.createElement('li');
+        li.className = 'expert';
+        li.dataset.status = 'queued';
+        li.innerHTML = `
+          <button type="button" class="expert-top">
+            <span class="exp-avatar" style="background:${EXPERTS[d.exp].color}">${EXPERTS[d.exp].mark}</span>
+            <span class="meta"><strong>${d.name}</strong><em>${d.title}</em></span>
+            <span class="badge">${statusText.queued}</span>
+            <span class="exp-chevron">▸</span>
+          </button>
+          <div class="expert-detail" hidden><p class="objective">${d.desc}</p></div>`;
+        const detail = li.querySelector('.expert-detail');
+        const chevron = li.querySelector('.exp-chevron');
+        li.querySelector('.expert-top').addEventListener('click', () => {
+          detail.hidden = !detail.hidden;
+          chevron.textContent = detail.hidden ? '▸' : '▾';
+        });
+        list.appendChild(li);
+        return { li, detail, chevron, badge: li.querySelector('.badge') };
+      });
+
+      let manualOpen = null;
+      const toggleEl = root.querySelector('.process-toggle');
+      const bodyEl = root.querySelector('.process-body');
+      const hintEl = root.querySelector('.collapsed-hint');
+      const applyOpen = () => {
+        const open = manualOpen === null ? root.dataset.done !== '1' : manualOpen;
+        root.dataset.open = open ? '1' : '0';
+        bodyEl.style.display = open ? '' : 'none';
+        hintEl.hidden = open;
+        toggleEl.querySelector('.chevron').textContent = open ? '收起' : '展开';
+      };
+      toggleEl.addEventListener('click', () => { manualOpen = root.dataset.open !== '1'; applyOpen(); });
+
+      bubble.insertBefore(root, bubble.querySelector('.plain').nextSibling);
+      proc = {
+        root, steps, applyOpen,
+        phaseEl: root.querySelector('.phase'),
+        countEl: root.querySelector('.count'),
+        pulseEl: root.querySelector('.pulse'),
+        hintEl,
+      };
+      scrollChat();
+    }
+
+    function setPhase(text) { if (proc) proc.phaseEl.textContent = text; }
+
+    function setStepStatus(i, status) {
+      const s = proc.steps[i];
+      s.li.dataset.status = status;
+      s.badge.textContent = statusText[status];
+      if (status === 'running') {
+        s.detail.hidden = false;
+        s.chevron.textContent = '▾';
+        s.li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      const doneCount = proc.steps.filter(x => x.li.dataset.status === 'done').length;
+      proc.countEl.textContent = `${doneCount}/${STEP_DEFS.length}`;
+    }
+
+    function finishProcessCard(summary) {
+      proc.root.dataset.done = '1';
+      proc.pulseEl.classList.remove('live');
+      proc.phaseEl.textContent = '协同完成';
+      proc.hintEl.textContent = summary;
+      proc.applyOpen();
+    }
+
+    // ===================== 右侧正文预览 =====================
+    function clearDoc() {
+      $('docEmpty').hidden = false;
+      const page = $('gwPreviewPage');
+      page.hidden = true;
+      $('gwPreviewInner').innerHTML = '';
+      $('statMat').textContent = '0';
+      $('statWords').textContent = '0';
+      $('btnExportPdf2').disabled = true;
+      $('btnRegen').disabled = true;
+      docHint.textContent = '对话生成的正文将以公文样式呈现在这里。';
+    }
+
+    function beginDocSkeleton() {
+      /* 正文开始生成：由单栏对话切换为左对话 / 右正文双栏 */
+      $('workGrid').classList.add('split');
+      $('docEmpty').hidden = true;
+      const page = $('gwPreviewPage');
+      page.hidden = false;
+      const m = metaData;
+      $('gwPreviewInner').innerHTML = `
+        <div class="gw-p-org">${m.orgName || ''}</div>
+        <div class="gw-p-doctype">${m.docType || ''}</div>
+        <div class="gw-p-redline"></div>
+        <div class="gw-p-num">${m.docNumber || ''}</div>
+        <div class="gw-p-title">${m.title || ''}</div>
+        <div class="gw-p-recipient">${m.recipient || ''}：</div>
+        <div id="docTyped"></div>`;
+      docHint.textContent = '正文撰写中，内容将逐段实时呈现…';
+    }
+
+    function renderFinalDoc() {
+      const m = metaData;
+      $('gwPreviewInner').innerHTML = `
+        <div class="gw-p-org">${m.orgName || ''}</div>
+        <div class="gw-p-doctype">${m.docType || ''}</div>
+        <div class="gw-p-redline"></div>
+        <div class="gw-p-num">${m.docNumber || ''}</div>
+        <div class="gw-p-title">${m.title || ''}</div>
+        <div class="gw-p-recipient">${m.recipient || ''}：</div>
+        ${finalParagraphs.map(p => `<h4>${p.heading.replace(/<[^>]*>/g, '')}</h4><p>${p.body}</p>`).join('')}
+        <p class="gw-p-end">特此报告。</p>
+        <div class="gw-p-sig"><p>${m.signatureOrg || ''}</p><p>${m.signatureDate || ''}</p></div>
+        <div class="gw-p-footline"><span>${m.footerLeft || ''}</span><span>${m.footerRight || ''}</span></div>`;
+    }
+
+    function focusDoc() {
+      const col = $('docCol');
+      col.classList.remove('flash');
+      void col.offsetWidth;
+      col.classList.add('flash');
+      docBody.scrollTop = 0;
+    }
+    // ===================== 协同阶段动画（中间产物在对话内过程卡中展示） =====================
+    async function animateStage0Dispatch() {
+      // 工作总结专家统筹调度 → 各组组长逐一推送材料 → 汇总匹配
+      setPhase('工作总结专家 · 调度中');
+      setStepStatus(0, 'running');
+      const chiefDetail = proc.steps[0].detail;
+      const dispatch = document.createElement('p');
+      dispatch.className = 'dispatch-note';
+      dispatch.innerHTML = `▸ 已向 <strong>${LEADER_ORDER.length}</strong> 位组组长发出指令：请推送本组 2026 年度总结材料`;
+      chiefDetail.appendChild(dispatch);
+      expertSay('chief', `本次总结报告由我统筹。已向<span class="hl">会议保障、现场部署、财务预算、技术保障</span>四个组组长发出材料推送指令。`);
+      await sleep(600);
+
+      let received = 0;
+      for (let li = 0; li < LEADER_ORDER.length; li++) {
+        const key = LEADER_ORDER[li];
+        const stepIdx = 1 + li;
+        const mats = materialsOf(key);
+        setPhase(`${EXPERTS[key].name} · 推送材料`);
+        setStepStatus(stepIdx, 'running');
+        const detail = proc.steps[stepIdx].detail;
+        const list = document.createElement('div');
+        list.className = 'mat-list';
+        detail.appendChild(list);
+        for (const m of mats) {
+          const row = document.createElement('div');
+          row.className = 'mat-row';
+          row.innerHTML = `
+            <span class="mat-ico" style="color:${colorMap[m.color] || '#1a7a92'}">${ICONS[m.icon] || ICONS.doc}</span>
+            <span class="mat-name">${m.name}</span>
+            <span class="mat-src">${EXPERTS[key].mark}组</span>
+            <span class="mat-meta">${m.meta}</span>
+            <span class="mat-check">${ICONS.check}</span>`;
+          list.appendChild(row);
+          row.classList.add('show');
+          await sleep(190);
+          row.classList.add('matched');
+          received++;
+          $('statMat').textContent = String(received);
+          await sleep(100);
+        }
+        if (!mats.length) list.innerHTML = '<p class="dim-line">本组暂无待推送材料</p>';
+        setStepStatus(stepIdx, 'done');
+        expertSay(key, `我们组推送的 <strong>${mats.length}</strong> 份材料已提交工作总结专家：${mats.map(m => m.name).slice(0, 2).join('、')}${mats.length > 2 ? ' 等' : ''}。`);
+        await sleep(320);
+      }
+
+      setPhase('工作总结专家 · 汇总匹配');
+      await sleep(400);
+      const dim = document.createElement('p');
+      dim.className = 'dim-line';
+      dim.innerHTML = `材料齐备：共收到 <strong>${received}</strong> 份 · 来自 <strong>${LEADER_ORDER.length}</strong> 个组 · 归入 <strong>${matchCards.length}</strong> 个主题维度（${matchCards.map(c => c.title).join('、')}）`;
+      chiefDetail.appendChild(dim);
+      await sleep(400);
+      setStepStatus(0, 'done');
+    }
+
+    async function animateStage1Outline() {
+      setPhase('报告写作专家 · 提纲生成');
+      setStepStatus(5, 'running');
+      expertSay('writer', '各组材料已收到。我先梳理报告提纲：按「工作概述 → 重点任务回顾 → 经验与不足 → 下一步计划」组织章节。');
+      await sleep(500);
+      const detail = proc.steps[5].detail;
+      const tree = document.createElement('div');
+      tree.className = 'ol-tree';
+      tree.innerHTML = outlineData.map(o => `
+        <div class="ol-line l${o.level}">${o.level === 1 ? '' : '└ '}${o.text}${o.tag ? `<span class="ol-tag">${o.tag}</span>` : ''}</div>`).join('');
+      detail.appendChild(tree);
+      for (const n of tree.querySelectorAll('.ol-line')) {
+        n.classList.add('show');
+        const tag = n.querySelector('.ol-tag');
+        if (tag) tag.classList.add('show');
+        await sleep(85);
+      }
+      await sleep(300);
+      setStepStatus(5, 'done');
+    }
+
+    async function animateStage2Draft() {
+      setPhase('报告写作专家 · 报告撰写');
+      setStepStatus(6, 'running');
+      const detail = proc.steps[6].detail;
+      const note = document.createElement('p');
+      note.className = 'typing-note';
+      note.innerHTML = '正在右侧预览区逐段撰写正文… <span class="cnt">0</span> 字<span class="cursor"></span>';
+      detail.appendChild(note);
+      beginDocSkeleton();
+      const typed = $('docTyped');
+      const cursor = document.createElement('span');
+      cursor.className = 'typing-cursor';
+      let totalChars = 0;
+      const CHAR_INTERVAL = 16;
+      for (const para of draftParagraphs) {
+        const h = document.createElement('h4');
+        h.textContent = para.heading;
+        typed.appendChild(h);
+        await sleep(110);
+        const p = document.createElement('p');
+        typed.appendChild(p);
+        p.appendChild(cursor);
+        const chars = para.body.split('');
+        let buf = '';
+        for (let ci = 0; ci < chars.length; ci++) {
+          buf += chars[ci];
+          totalChars++;
+          if (buf.length >= 6 || ci === chars.length - 1) {
+            cursor.before(document.createTextNode(buf));
+            buf = '';
+            $('statWords').textContent = String(totalChars);
+            note.querySelector('.cnt').textContent = String(totalChars);
+            docBody.scrollTop = docBody.scrollHeight;
+          }
+          if (ci % 4 === 0) await sleep(CHAR_INTERVAL * 4);
+        }
+        cursor.remove();
+        await sleep(240);
+      }
+      note.innerHTML = `初稿完成 · 共 <span class="cnt">${totalChars}</span> 字，提交工作总结专家校核…`;
+      setStepStatus(6, 'done');
+      return totalChars;
+    }
+
+    async function animateStage3Verify() {
+      setPhase('工作总结专家 · 数据校核');
+      setStepStatus(7, 'running');
+      expertSay('chief', '写作专家已交稿。我对正文中的数据引用逐条对账来源台账，确保与各组推送材料一致。');
+      await sleep(400);
+      const detail = proc.steps[7].detail;
+      const list = document.createElement('div');
+      list.className = 'vf-list';
+      list.innerHTML = verifyItems.map(v => `
+        <div class="vf-row">
+          <span class="vf-ico">${ICONS.check}</span>
+          <span class="vf-text">${v.text}</span>
+          <span class="vf-status">待校验</span>
+        </div>`).join('');
+      detail.appendChild(list);
+      const rows = list.querySelectorAll('.vf-row');
+      for (const el of rows) {
+        el.classList.add('show');
+        await sleep(200);
+        el.classList.add('pass');
+        el.querySelector('.vf-status').textContent = '✓ 通过';
+        await sleep(70);
+      }
+      await sleep(200);
+      setStepStatus(7, 'done');
+    }
+
+    // ===================== 完整生成流程 =====================
+    function makeArchiveLink() {
+      const a = document.createElement('a');
+      a.className = 'archive-link';
+      a.href = '/library.html';
+      a.innerHTML = `${ICONS.doc} 前往档案馆`;
+      return a;
+    }
+
+    async function runFullFlow() {
+      setRunningUi(true);
+      clearDoc();
+      let totalChars = 0;
+      try {
+        createProcess();
+        await sleep(400);
+        await animateStage0Dispatch();
+        await animateStage1Outline();
+        totalChars = await animateStage2Draft();
+        await animateStage3Verify();
+        setPhase('报告写作专家 · 终稿预览');
+        setStepStatus(8, 'running');
+        await sleep(300);
+        renderFinalDoc();
+        const m = metaData;
+        $('statWords').textContent = m.totalWords || String(totalChars);
+        docHint.textContent = `${m.docNumber || ''} · 全文 ${m.totalWords || totalChars} 字 · ${verifyItems.length} 项校核通过`;
+        $('btnExportPdf2').disabled = false;
+        $('btnRegen').disabled = false;
+        setStepStatus(8, 'done');
+        finishProcessCard(`${m.title || '总结报告'} · ${materials.length} 份素材（${LEADER_ORDER.length} 个组推送）· ${outlineData.filter(o => o.level === 1).length} 个章节 · ${verifyItems.length} 项数据校核全部通过`);
+        state.done = true;
+        headStatus.textContent = '总结报告已生成并沉淀至档案馆，右侧可预览正文或导出 PDF。';
+        await sleep(320);
+        const card = xzSay(
+          `领导，本次<span class="hl">总结报告</span>已由多专家协同完成：工作总结专家统筹 <span class="hl">${LEADER_ORDER.length}</span> 个组共 <span class="hl">${materials.length}</span> 份材料，报告写作专家撰写全稿，${verifyItems.length} 处数据引用校核通过，正文已在右侧展示。`,
+        );
+        const rc = document.createElement('div');
+        rc.className = 'report-card';
+        rc.innerHTML = `
+          <div class="rc-head"><strong>生成成果</strong><em>协同完成</em></div>
+          <div class="rc-title">${m.title || '总结报告'}</div>
+          <div class="rc-meta">工作总结专家 统筹 · 报告写作专家 撰写 · ${materials.length} 份素材 / ${LEADER_ORDER.length} 个组 · 全文 ${m.totalWords || totalChars} 字 · ${verifyItems.length} 项校核通过</div>
+          <div class="rc-actions">
+            <button type="button" data-act="view">查看正文</button>
+            <button type="button" class="gold" data-act="pdf">导出 PDF</button>
+          </div>`;
+        card.appendChild(rc);
+        rc.querySelector('[data-act="view"]').addEventListener('click', focusDoc);
+        rc.querySelector('[data-act="pdf"]').addEventListener('click', () => exportPdfViaPrint());
+        scrollChat();
+        // 正文沉淀至档案馆，提供跳转
+        await sleep(280);
+        const ab = xzSay(`本次生成的<span class="hl">《${m.title || '总结报告'}》</span>已自动沉淀至「档案馆」，与历史归档材料统一管理，可随时回溯与再次导出。`);
+        ab.querySelector('.plain').appendChild(makeArchiveLink());
+        scrollChat();
+      } catch (err) {
+        xzSay(`生成过程中出现异常：${err.message || err}`);
+      } finally {
+        setRunningUi(false);
+      }
+    }
+
+    // ===================== 快捷指令 / 运行态 UI =====================
+    function renderShortcuts() {
+      const chips = state.done
+        ? [{ text: CHIP_AGAIN, gold: true }, { text: '查看正文' }, { text: '导出 PDF' }]
+        : [{ text: CHIP_MAIN, gold: true, hint: true }];
+      shortcutsEl.innerHTML = '';
+      chips.forEach(c => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'picker-btn' + (c.gold ? ' chip-gold' : '');
+        btn.textContent = c.text;
+        btn.disabled = state.running;
+        if (c.hint && !state.running) btn.classList.add('pulse-hint');
+        btn.addEventListener('click', () => handleSend(c.text));
+        shortcutsEl.appendChild(btn);
+      });
+    }
+
+    function setRunningUi(running) {
+      state.running = running;
+      draftInput.disabled = running;
+      sendBtn.disabled = running || !draftInput.value.trim();
+      $('selTeam').disabled = running;
+      $('selWorkflow').disabled = running;
+      $('selMode').disabled = running;
+      headStatus.textContent = running
+        ? '小智正在生成总结报告，请稍候…'
+        : (state.done ? '报告已生成并沉淀至档案馆，可预览正文、导出 PDF 或前往档案馆。' : '点击指令或直接输入，小智即刻开始生成总结报告。');
+      renderShortcuts();
+    }
+
+    // ===================== 意图路由（纯对话驱动） =====================
+    async function handleSend(raw) {
+      const text = (raw || '').trim();
+      if (!text || state.running) return;
+      userSay(text);
+      draftInput.value = '';
+      sendBtn.disabled = true;
+
+      if (/重新|再来|再生成|重做/.test(text)) {
+        await xzThinkThen('好的，正在重新启动<span class="hl">完整生成流程</span>，历史对话会保留，右侧正文将更新为新版…', 600);
+        await runFullFlow();
+        return;
+      }
+      if (/(生成|总结|报告)/.test(text)) {
+        await xzThinkThen('收到指示。工作总结专家将统筹调度各组组长推送材料，报告写作专家负责撰写，协同过程在对话中展开，正文实时同步到右侧预览。', 800);
+        await runFullFlow();
+        return;
+      }
+      if (/导出|下载|pdf|PDF/.test(text)) {
+        if (state.done) {
+          await xzThinkThen('正在打开打印导出窗口，可在系统对话框中选择<span class="hl">“另存为 PDF”</span>。', 400);
+          exportPdfViaPrint();
+        } else {
+          await xzThinkThen('报告尚未生成。点击指令「当前任务已完成，请生成一份总结报告」即可开始。', 400);
+        }
+        return;
+      }
+      if (/查看|预览|正文/.test(text)) {
+        if (state.done) {
+          await xzThinkThen('已为您定位到右侧<span class="hl">正文预览</span>。', 350);
+          focusDoc();
+        } else {
+          await xzThinkThen('正文还未生成，请先让小智启动生成流程。', 350);
+        }
+        return;
+      }
+      if (/档案|归档|回溯|沉淀/.test(text)) {
+        const b = await xzThinkThen(state.done
+          ? '本次正文已沉淀至<span class="hl">档案馆</span>，点击下方按钮即可跳转查看。'
+          : '报告生成完成后会自动沉淀至<span class="hl">档案馆</span>，届时可点击跳转查看。', 500);
+        b.querySelector('.plain').appendChild(makeArchiveLink());
+        return;
+      }
+      await xzThinkThen('这个问题小智先记下了。当前工作台专注总结报告生成——点击下方指令即可一键开始。', 600);
+    }
+
+    // ===================== PDF 导出（浏览器打印 → 另存为 PDF） =====================
+    function exportPdfViaPrint() {
+      const m = metaData;
+      const bodyHTML = `
+        <div style="font-family:'华文中宋',SimSun,serif;font-size:26pt;color:#e00000;letter-spacing:0.15em;font-weight:bold;text-align:center;margin-bottom:0.3cm;">${m.orgName||''}</div>
+        <div style="font-family:'方正小标宋','华文中宋',SimSun,serif;font-size:22pt;text-align:center;letter-spacing:0.1em;margin-bottom:0.1cm;">${m.docType||''}</div>
+        <div style="height:2px;background:#e00000;margin:0.2cm 0 0.5cm;"></div>
+        <div style="font-size:16pt;text-align:center;margin-bottom:0.6cm;">${m.docNumber||''}</div>
+        <div style="font-family:'方正小标宋','华文中宋',SimSun,serif;font-size:22pt;font-weight:bold;text-align:center;line-height:36pt;margin-bottom:0.5cm;">${m.title||''}</div>
+        <div style="font-size:16pt;margin-bottom:0.3cm;">${m.recipient||''}：</div>
+        ${finalParagraphs.map(p=>`<h4 style="font-family:'黑体',SimHei,sans-serif;font-size:16pt;font-weight:bold;text-indent:2em;line-height:28pt;margin:0.3cm 0 0.1cm 0;">${p.heading.replace(/<[^>]*>/g,'')}</h4><p style="text-indent:2em;text-align:justify;line-height:28pt;margin:0;">${p.body}</p>`).join('')}
+        <p style="text-indent:2em;line-height:28pt;margin-top:0.5cm;">特此报告。</p>
+        <div style="text-align:right;margin-top:1cm;font-size:16pt;line-height:28pt;"><p style="margin:0;text-indent:0;">${m.signatureOrg||''}</p><p style="margin:0;text-indent:0;">${m.signatureDate||''}</p></div>
+        <div style="margin-top:1cm;border-top:1px solid #000;padding-top:0.1cm;font-size:10pt;color:#333;display:flex;justify-content:space-between;"><span>${m.footerLeft||''}</span><span>${m.footerRight||''}</span></div>`;
+      const printWin = window.open('', '_blank', 'width=800,height=900');
+      if (!printWin) { alert('请允许弹出窗口以导出 PDF'); return; }
+      printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${m.title||'文档'}</title>
+        <style>
+          @page { size: A4; margin: 3.7cm 2.6cm 3.5cm 2.8cm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: '仿宋', FangSong, '仿宋_GB2312', serif; font-size: 16pt; line-height: 28pt; color: #000; }
+          .data-highlight { font-family: '黑体', SimHei, sans-serif; font-weight: bold; }
+        </style></head><body>${bodyHTML}</body></html>`);
+      printWin.document.close();
+      printWin.onload = () => {
+        setTimeout(() => { printWin.focus(); printWin.print(); printWin.close(); }, 500);
+      };
+    }
+
+    // ===================== 事件绑定 =====================
+    composer.addEventListener('submit', e => { e.preventDefault(); handleSend(draftInput.value); });
+    draftInput.addEventListener('input', () => {
+      sendBtn.disabled = state.running || !draftInput.value.trim();
+    });
+    draftInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend(draftInput.value);
+      }
+    });
+    $('btnExportPdf2').addEventListener('click', () => { if (state.done && !state.running) exportPdfViaPrint(); });
+    $('btnRegen').addEventListener('click', () => { if (!state.running) handleSend('重新生成总结报告'); });
+    $('backBtn').addEventListener('click', () => {
+      // 应用内嵌（/command/task）时回到高总工作台首页；独立打开时走浏览器历史
+      if (window.top !== window.self) { window.top.location.href = '/command'; return; }
+      if (history.length > 1) history.back();
+    });
+
+    // ===================== 启动 =====================
+    async function init() {
+      clearDoc();
+      renderShortcuts();
+      await loadData();
+      sysSay('已进入工作台「总结材料生成」。确认指令后点击发送，小智即刻开始执行。');
+      await sleep(500);
+      xzSay('领导好，我是小智。本次专项任务已经完成，相关过程素材（会议纪要、部署方案、评审与数据报告等）均已归档。');
+      await sleep(900);
+      xzSay('如需形成正式总结材料，点击下方指令，或直接对我说「生成总结报告」。<span class="hl">工作总结专家</span>将统筹调度各组组长推送总结材料，<span class="hl">报告写作专家</span>负责提纲与撰写，经数据校核后生成终稿，进入正文生成后会自动展开右侧预览区。');
+      // 工作台首页输入的对话通过 ?q= 透传进来，自动作为首条指令执行
+      const qParam = new URLSearchParams(location.search).get('q');
+      if (qParam) { await sleep(600); handleSend(qParam); };
+    }
+    init();
+  </script>
+</body>
+</html>

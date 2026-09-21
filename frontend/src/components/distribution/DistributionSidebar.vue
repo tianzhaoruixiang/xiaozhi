@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Connection } from '@element-plus/icons-vue'
 import type { DistributionGroup, DistributionTask } from '../../types/distribution'
+import { groupIconFor } from '../../utils/groupIcons'
 
 const props = defineProps<{
   groups: DistributionGroup[]
@@ -36,7 +37,7 @@ const groupProgress = (groupId: string) => {
         :style="{ '--group-color': group.color }"
         @click="$emit('select', group.id)"
       >
-        <span class="group-code">{{ group.name.slice(0, 1) }}</span>
+        <span class="group-code" aria-hidden="true"><el-icon><component :is="groupIconFor(group.id)" /></el-icon></span>
         <span class="group-copy"><strong>{{ group.name }}</strong><small>{{ group.responsibility }}</small></span>
         <span class="group-progress"><b>{{ groupProgress(group.id) }}%</b><i><em :style="{ width: `${groupProgress(group.id)}%` }" /></i></span>
       </button>
