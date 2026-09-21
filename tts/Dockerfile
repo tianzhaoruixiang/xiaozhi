@@ -1,4 +1,6 @@
-ARG PYTHON_IMAGE=docker.m.daocloud.io/library/python:3.11-slim-bookworm
+# 直连 Docker Hub；国内若超时可覆盖：
+#   docker compose build --build-arg PYTHON_IMAGE=<mirror>/library/python:3.11-slim-bookworm
+ARG PYTHON_IMAGE=python:3.11-slim-bookworm
 
 FROM ${PYTHON_IMAGE}
 

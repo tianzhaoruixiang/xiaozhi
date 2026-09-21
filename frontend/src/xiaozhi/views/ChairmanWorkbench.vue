@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { mockPlans, mockTodos, mockFocusWork, mockReminders } from '../data/mockPlans'
 import { useAssistantChat } from '../composables/useAssistantChat'
 import { useAgentCatalog } from '../composables/useAgentCatalog'
@@ -192,7 +193,11 @@ const onModeChange = (mode: string) => {
     </div>
 
     <div class="shell">
-      <WorkbenchHeader />
+      <WorkbenchHeader>
+        <template #actions>
+          <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
+        </template>
+      </WorkbenchHeader>
       <WorkbenchBoards :panels="boardPanels" label="今日工作台" />
     </div>
 
@@ -264,8 +269,8 @@ const onModeChange = (mode: string) => {
 <style scoped>
 .workbench {
   position: relative;
-  min-height: 100vh;
-  overflow: hidden;
+  min-height: 100%;
+  overflow: visible;
   background:
     radial-gradient(1200px 620px at 6% -10%, rgba(46, 196, 214, 0.2), transparent 58%),
     radial-gradient(920px 540px at 96% 0%, rgba(201, 168, 108, 0.14), transparent 50%),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { usePersonalTasks } from '../data/personalTasks'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
 import WorkbenchBoards from '../components/WorkbenchBoards.vue'
@@ -128,6 +128,7 @@ const panels = computed<WorkbenchPanel[]>(() => [
         tagline="个人助手 · 协同工作台"
       >
         <template #actions>
+          <RouterLink class="desk-link" to="/leader">领导工作台</RouterLink>
           <button type="button" class="group-entry" @click="enterWorkGroup">
             <span class="group-entry-mark" aria-hidden="true"><i /><i /></span>
             <span><small>当前任务已接收</small><strong>进入工作组</strong></span>

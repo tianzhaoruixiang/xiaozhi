@@ -3,7 +3,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory('/'),
   routes: [
-    { path: '/', redirect: '/personal' },
+    {
+      path: '/',
+      name: 'home',
+      component: () => import('../xiaozhi/views/DeskGateView.vue'),
+      meta: { title: '小智 · 选择工作台' },
+    },
     {
       path: '/personal/:pathMatch(.*)*',
       name: 'personal',
@@ -34,13 +39,15 @@ const router = createRouter({
       component: () => import('../views/DashboardView.vue'),
       meta: { title: '指挥态势大屏' },
     },
-    { path: '/:pathMatch(.*)*', redirect: '/personal' },
+    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior: () => ({ top: 0 }),
 })
 
 router.afterEach((to) => {
   document.title = typeof to.meta.title === 'string' ? to.meta.title : '安保协同指挥'
+  const xiaozhiDesk = to.name === 'home' || to.name === 'leader' || to.name === 'personal'
+  document.documentElement.classList.toggle('xiaozhi-desk', xiaozhiDesk)
 })
 
 export default router

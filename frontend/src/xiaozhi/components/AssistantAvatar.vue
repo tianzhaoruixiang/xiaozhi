@@ -143,6 +143,7 @@ const cueText = computed(() => {
     :style="breathStyle"
     @click="$emit('toggle')"
   >
+    <span class="avatar-stack">
     <span class="field" aria-hidden="true">
       <span class="wave w1" />
       <span class="wave w2" />
@@ -182,6 +183,7 @@ const cueText = computed(() => {
     <span v-if="awaitingCommand" class="cue" role="status">
       {{ cueText }}
     </span>
+    </span>
   </button>
 </template>
 
@@ -193,21 +195,31 @@ const cueText = computed(() => {
   --breath-glow: 0px;
   --breath-lvl: 0;
   --breath-period: 1.6s;
+  appearance: none;
+  -webkit-appearance: none;
   position: fixed;
   right: clamp(14px, 2.5vw, 28px);
   bottom: clamp(14px, 2.5vw, 28px);
   z-index: 40;
   width: 168px;
+  height: auto;
+  min-height: calc(var(--rig) + 56px);
   border: 0;
   background: transparent;
   cursor: pointer;
-  display: grid;
-  justify-items: center;
-  gap: 8px;
+  display: block;
   padding: 0;
   color: var(--color-bg-deep);
   -webkit-tap-highlight-color: transparent;
   transition: z-index 0s;
+  overflow: visible;
+}
+
+.avatar-stack {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 .avatar[data-phase='awaiting'] {

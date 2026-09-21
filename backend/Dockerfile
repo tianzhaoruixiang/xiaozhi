@@ -1,5 +1,5 @@
-# 国内网络直连 Docker Hub 易超时，使用 DaoCloud 代理拉取官方镜像
-ARG NODE_IMAGE=docker.m.daocloud.io/library/node:22-bookworm-slim
+# 直连 Docker Hub；国内若超时可覆盖 NODE_IMAGE
+ARG NODE_IMAGE=node:22-bookworm-slim
 
 # build stage
 FROM ${NODE_IMAGE} AS build

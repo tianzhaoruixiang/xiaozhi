@@ -304,6 +304,8 @@ watch(
 .layer {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100dvh;
   z-index: 50;
   pointer-events: none;
 }
@@ -328,15 +330,14 @@ watch(
 
 .workspace {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  bottom: 10px;
-  left: 10px;
-  width: auto;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0;
-  border-radius: 24px;
+  border-radius: 0;
   background:
     radial-gradient(900px 420px at 10% -10%, rgba(42, 180, 210, 0.14), transparent 55%),
     radial-gradient(700px 360px at 100% 0%, rgba(196, 163, 90, 0.1), transparent 50%),
@@ -388,6 +389,21 @@ watch(
   position: absolute;
   inset: 0;
   z-index: 2;
+  grid-area: 1 / 1 / -1 / -1;
+}
+
+.workspace-head {
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid rgba(94, 200, 232, 0.12);
+  background: linear-gradient(180deg, rgba(94, 200, 232, 0.05), transparent);
 }
 
 .hud-frame .c {
@@ -414,18 +430,6 @@ watch(
     transparent
   );
   animation: panel-scan 5.5s ease-in-out infinite;
-}
-
-.workspace-head {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  padding: 22px 24px 16px;
-  border-bottom: 1px solid rgba(94, 200, 232, 0.12);
-  background: linear-gradient(180deg, rgba(94, 200, 232, 0.05), transparent);
 }
 
 .eyebrow {
@@ -557,6 +561,8 @@ watch(
   position: relative;
   z-index: 1;
   min-height: 0;
+  grid-column: 1 / -1;
+  grid-row: 2;
   display: grid;
   grid-template-columns: minmax(420px, 1.15fr) minmax(360px, 0.95fr);
   gap: 0;

@@ -78,9 +78,12 @@ onUnmounted(() => {
         <span class="divider" aria-hidden="true" />
         <span class="sys-meta">{{ sysMeta }}</span>
       </div>
-      <div class="clock" aria-label="本地时间">
-        <span class="clock-label">此刻</span>
-        <span class="clock-value">{{ clock }}</span>
+      <div class="hud-right">
+        <slot name="actions" />
+        <div class="clock" aria-label="本地时间">
+          <span class="clock-label">此刻</span>
+          <span class="clock-value">{{ clock }}</span>
+        </div>
       </div>
     </div>
 
@@ -214,6 +217,40 @@ onUnmounted(() => {
 .sys-meta {
   font-size: 0.78rem;
   color: rgba(230, 212, 168, 0.78);
+}
+
+.hud-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+:slotted(.desk-link) {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(46, 196, 214, 0.32);
+  color: #c9edf3;
+  text-decoration: none;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  background: rgba(6, 20, 31, 0.28);
+}
+
+:slotted(.desk-link:hover) {
+  border-color: rgba(46, 196, 214, 0.55);
+  color: #fff;
+}
+
+.header.compact :slotted(.desk-link) {
+  color: var(--color-ink);
+  border-color: rgba(20, 40, 58, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.header.compact :slotted(.desk-link:hover) {
+  color: var(--color-accent);
+  border-color: rgba(26, 122, 146, 0.35);
 }
 
 .clock {
