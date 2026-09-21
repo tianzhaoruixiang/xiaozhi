@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PanelFrame title="协同情况通报">
     <template #extra>
       <span class="panel-badge">实时推送</span>
@@ -50,7 +50,7 @@ function levelText(level: CollabItem['level']) {
   border-left: 2px solid var(--blue);
 }
 
-.collab-item.warn { border-left-color: var(--warn); }
+.collab-item.warn { border-left-color: var(--amber); }
 .collab-item.urgent { border-left-color: var(--danger); background: oklch(0.67 0.21 25 / .06); }
 
 .top {
@@ -59,7 +59,7 @@ function levelText(level: CollabItem['level']) {
   gap: 8px;
   margin-bottom: 4px;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
 }
 
 .from {

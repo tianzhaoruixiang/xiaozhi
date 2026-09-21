@@ -68,7 +68,7 @@ const enterDashboard = async () => {
 </script>
 
 <template>
-  <div class="app-shell operation-mode">
+  <div class="app-shell operation-mode meeting-shell">
     <OperationsHeader
       :group="operations.activeGroup"
       :overall-progress="operations.overallProgress"

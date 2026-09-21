@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChatDotRound, User } from '@element-plus/icons-vue'
 import type { OperationGroup } from '../../types/operations'
+import { groupIconFor } from '../../utils/groupIcons'
 
 defineProps<{
   groups: OperationGroup[]
@@ -27,7 +28,7 @@ defineEmits<{ select: [groupId: string] }>()
         :style="{ '--group-color': group.color }"
         @click="$emit('select', group.id)"
       >
-        <span class="operations-group-code">{{ group.name.slice(0, 1) }}</span>
+        <span class="operations-group-code" aria-hidden="true"><el-icon><component :is="groupIconFor(group.id)" /></el-icon></span>
         <span class="operations-group-copy">
           <span><strong>{{ group.name }}</strong><em v-if="group.unread">{{ group.unread }}</em></span>
           <small>{{ group.responsibility }}</small>

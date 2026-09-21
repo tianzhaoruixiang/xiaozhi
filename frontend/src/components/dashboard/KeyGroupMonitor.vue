@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PanelFrame title="重点群体动态监测">
     <template #extra>
       <span class="panel-badge">预警 {{ totalWarning }} · 人员 {{ keyPersons.length }}</span>
@@ -46,9 +46,9 @@
 
       <div
         class="person-grid"
-        :style="expanded ? { gridTemplateRows: `repeat(${gridRows}, minmax(0, 1fr))` } : undefined"
+        :style="expanded ? { gridTemplateRows: `repeat(${gridRows}, minmax(104px, 1fr))` } : undefined"
       >
-        <article v-for="p in pagedPersons" :key="p.id" class="person-card">
+        <article v-for="p in pagedPersons" :key="p.id" class="person-card" :data-type="p.type">
           <div class="photo" :data-type="p.type">
             <div class="photo-inner">
               <span class="surname">{{ p.name.slice(0, 1) }}</span>
@@ -132,7 +132,7 @@ const pagedPersons = computed(() => {
 })
 
 const gridRows = computed(() =>
-  Math.max(1, Math.ceil(pagedPersons.value.length / 4)),
+  Math.max(1, Math.ceil(pagedPersons.value.length / 3)),
 )
 
 watch(
@@ -212,7 +212,7 @@ function resetFilters() {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--muted);
   margin-top: 2px;
 }
 
@@ -265,7 +265,7 @@ function resetFilters() {
   padding: 0 12px;
   border: 1px solid var(--line);
   background: oklch(0.24 0.08 242 / .42);
-  color: var(--text-dim);
+  color: var(--muted);
 }
 
 .reset:hover {
@@ -276,7 +276,7 @@ function resetFilters() {
 .result {
   margin-left: auto;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
   letter-spacing: 0.04em;
 }
 
@@ -285,35 +285,65 @@ function resetFilters() {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-auto-rows: minmax(78px, auto);
+  grid-auto-rows: minmax(88px, auto);
   gap: 8px;
   overflow: auto;
   align-content: start;
 }
 
 .groups-layout.expanded .person-grid {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: unset;
   align-content: stretch;
-  overflow: hidden;
+  overflow: auto;
 }
 
-.groups-layout.expanded .person-card {
-  min-height: 0;
-  height: 100%;
-  align-items: center;
-}
+.groups-layout.expanded .person-card { align-items: center; }
+
+/* 展开模式 3 列窄卡：照片缩小，给姓名与字段留足空间 */
+.groups-layout.expanded .person-card { grid-template-columns: 44px 1fr; }
+.groups-layout.expanded .photo { width: 44px; height: 54px; }
+.groups-layout.expanded .surname { font-size: 18px; }
 
 .person-card {
+  position: relative;
   display: grid;
   grid-template-columns: 56px 1fr;
   gap: 8px;
-  padding: 6px;
+  padding: 8px 8px 8px 11px;
   background:
     linear-gradient(135deg, oklch(0.34 0.08 228 / .22), oklch(0.18 0.06 249 / .55)),
     oklch(0.19 0.065 248 / .54);
   border: 1px solid var(--line);
+  border-radius: 6px;
   box-shadow: inset 0 0 12px oklch(0.62 0.15 225 / .07);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+/* 类型色条：青蓝明度阶梯，与类型徽章同源 */
+.person-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: oklch(0.62 0.14 210);
+  opacity: .9;
+}
+
+.person-card[data-type='B']::before { background: oklch(0.52 0.12 216); }
+.person-card[data-type='C']::before { background: oklch(0.43 0.1 224); }
+.person-card[data-type='D']::before { background: oklch(0.35 0.08 232); }
+
+.person-card:hover {
+  transform: translateY(-2px);
+  border-color: oklch(0.84 0.145 207 / .65);
+  background:
+    linear-gradient(135deg, oklch(0.36 0.09 228 / .3), oklch(0.2 0.065 249 / .62)),
+    oklch(0.21 0.07 248 / .6);
+  box-shadow: inset 0 0 14px oklch(0.62 0.15 225 / .12), 0 4px 14px oklch(0.84 0.145 207 / .18);
 }
 
 .photo {
@@ -322,6 +352,7 @@ function resetFilters() {
   height: 70px;
   padding: 2px;
   border: 1px solid oklch(0.84 0.145 207 / .46);
+  border-radius: 4px;
   background: oklch(0.17 0.06 250 / .9);
   box-shadow: 0 0 8px oklch(0.84 0.145 207 / .14);
   flex-shrink: 0;
@@ -334,33 +365,21 @@ function resetFilters() {
   display: grid;
   place-items: center;
   overflow: hidden;
+  border-radius: 2px;
   background:
-    radial-gradient(ellipse at 50% 30%, rgba(120, 180, 255, 0.22), transparent 55%),
-    linear-gradient(180deg, #1a3a6a 0%, #0a1a3a 100%);
+    radial-gradient(ellipse at 50% 30%, rgba(94, 200, 232, 0.22), transparent 55%),
+    linear-gradient(180deg, #16304e 0%, #0a1830 100%);
 }
 
-.photo[data-type='A'] .photo-inner {
-  background:
-    radial-gradient(ellipse at 50% 30%, rgba(46, 230, 166, 0.25), transparent 55%),
-    linear-gradient(180deg, #164a3a 0%, #0a1a2a 100%);
-}
-
-.photo[data-type='B'] .photo-inner {
-  background:
-    radial-gradient(ellipse at 50% 30%, rgba(255, 159, 26, 0.25), transparent 55%),
-    linear-gradient(180deg, #4a3a16 0%, #1a1208 100%);
-}
-
-.photo[data-type='C'] .photo-inner {
-  background:
-    radial-gradient(ellipse at 50% 30%, rgba(167, 139, 250, 0.28), transparent 55%),
-    linear-gradient(180deg, #2e2450 0%, #120a28 100%);
-}
-
-.photo[data-type='D'] .photo-inner {
-  background:
-    radial-gradient(ellipse at 50% 30%, rgba(61, 155, 255, 0.28), transparent 55%),
-    linear-gradient(180deg, #163a5a 0%, #081828 100%);
+/* 底部青色扫描光线 */
+.photo-inner::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, oklch(0.84 0.145 207 / .6), transparent);
 }
 
 .surname {
@@ -390,9 +409,14 @@ function resetFilters() {
 }
 
 .name-row strong {
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   color: #fff;
   white-space: nowrap;
+  letter-spacing: 0.02em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badge {
@@ -404,32 +428,35 @@ function resetFilters() {
   border: none;
 }
 
-.badge.type[data-type='A'] { background: oklch(0.57 0.13 162); }
-.badge.type[data-type='B'] { background: oklch(0.62 0.13 83); }
-.badge.type[data-type='C'] { background: #7a5fd0; }
-.badge.type[data-type='D'] { background: oklch(0.52 0.17 254); }
+/* 状态徽章靠右，与姓名拉开层级 */
+.badge.status { margin-left: auto; }
+
+.badge.type[data-type='A'] { background: oklch(0.62 0.14 210); }
+.badge.type[data-type='B'] { background: oklch(0.52 0.12 216); }
+.badge.type[data-type='C'] { background: oklch(0.43 0.1 224); }
+.badge.type[data-type='D'] { background: oklch(0.35 0.08 232); }
 
 .badge.status[data-status='在控'] { background: var(--blue); }
-.badge.status[data-status='核处中'] { background: var(--amber); color: var(--bg-deep); }
-.badge.status[data-status='轨迹异常'] { background: var(--danger); }
+.badge.status[data-status='核处中'] { background: var(--amber); color: var(--bg-deep); box-shadow: 0 0 8px oklch(0.82 0.16 83 / .35); }
+.badge.status[data-status='轨迹异常'] { background: var(--danger); box-shadow: 0 0 8px oklch(0.67 0.21 25 / .4); }
 .badge.status[data-status='已核查'] { background: var(--green); color: var(--bg-deep); }
 
 .field {
   display: grid;
-  grid-template-columns: 28px 1fr;
-  gap: 4px;
+  grid-template-columns: 30px 1fr;
+  gap: 5px;
   align-items: baseline;
   font-size: 11px;
-  line-height: 1.35;
+  line-height: 1.4;
   min-width: 0;
 }
 
 .field label {
-  color: var(--cyan);
+  color: var(--quiet);
 }
 
 .field span {
-  color: var(--text-dim);
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -442,7 +469,7 @@ function resetFilters() {
   gap: 14px;
   flex-shrink: 0;
   font-size: 13px;
-  color: var(--text-dim);
+  color: var(--muted);
 }
 
 .pager button {
