@@ -1,7 +1,10 @@
 services:
   api:
+    image: ${API_IMAGE:-xiaozhi-api:local}
     build:
       context: ./backend
+      dockerfile: Dockerfile
+      target: app
     env_file:
       - .env
     environment:
@@ -11,7 +14,11 @@ services:
       XIAOZHI_ORCHESTRATION: hybrid
       XIAOZHI_DEFAULT_TEAM: personnel-dispatch
       XIAOZHI_DEFAULT_WORKFLOW: personnel-dispatch
-      TTS_URL: http://tts:8090
+      # 语音模型在宿主机固定运行，容器经 host.docker.internal 访问
+      TTS_URL: ${TTS_URL_DOCKER:-http://host.docker.internal:8090}
+      TTS_SPEECH_URL: ${TTS_SPEECH_URL_DOCKER:-http://host.docker.internal:8091}
+      TTS_MODEL: ${TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice}
+      TTS_VOICE: ${TTS_VOICE:-vivian}
       LLM_TIMEOUT_MS: "45000"
       HRBP_REPORT_DIR: /data/hrbp-reports
     extra_hosts:
@@ -21,9 +28,6 @@ services:
       - ./.claude:/app/.claude:ro
     expose:
       - "3000"
-    depends_on:
-      tts:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -38,28 +42,75 @@ services:
       start_period: 25s
     restart: unless-stopped
 
+  vllm-omni:
+    profiles: ["vllm-omni"]
+    image: ${VLLM_OMNI_IMAGE:-vllm/vllm-omni-rocm:v0.28.0}
+    ipc: host
+    shm_size: "8gb"
+    group_add:
+      - video
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    devices:
+      # Docker Desktop / WSL2 上 AMD 不走 NVIDIA runtime，GPU 入口是 /dev/dxg
+      - /dev/dxg
+    ports:
+      - "${VLLM_OMNI_PORT:-8091}:8091"
+    volumes:
+      - ./data/models/hf-home:/root/.cache/huggingface
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+    environment:
+      HF_HOME: /root/.cache/huggingface
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      LD_LIBRARY_PATH: /usr/lib/wsl/lib
+      HSA_ENABLE_DXG_DETECTION: "1"
+    # ROCm 镜像入口已是 vllm serve，参数从 --model 开始
+    command:
+      - --model
+      - ${TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice}
+      - --omni
+      - --port
+      - "8091"
+      - --trust-remote-code
+      - --enforce-eager
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/v1/models')",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    restart: unless-stopped
+
   tts:
+    profiles: ["container-tts"]
     build:
       context: ./tts
-      args:
-        TTS_TORCH: ${TTS_TORCH:-cpu}
-        INSTALL_NVIDIA_LIBS: ${TTS_INSTALL_NVIDIA_LIBS:-0}
     environment:
-      TTS_MODEL_ID: k2-fsa/OmniVoice
-      TTS_MODEL_DIR: /data/models/OmniVoice
-      HF_HOME: /data/models/.hf
+      TTS_MODEL_DIR: /data/models/HiggsAudio-V2/generation-3B-base
+      TTS_TOKENIZER_DIR: /data/models/HiggsAudio-V2/tokenizer
       ASR_MODEL_DIR: /data/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17
+      ASR_NUM_THREADS: "6"
+      ASR_PROVIDER: cpu
+      HF_HOME: /data/models/hf-home
+      HF_ENDPOINT: https://hf-mirror.com
       TTS_NUM_THREADS: "4"
       TTS_SPEED: "1.0"
-      TTS_PAUSE_SEC: "0.22"
-      TTS_DEVICE: cuda
-      TTS_INFERENCE_STEPS: "16"
-      TTS_VOICE_PROMPT: 女，青年
+      TTS_DEVICE: auto
+      TTS_VOICE_PROMPT: "feminine, young Chinese woman, clear Mandarin"
+      TTS_TEMPERATURE: "0.3"
     volumes:
       - ./data:/data
     expose:
       - "8090"
-    gpus: all
     healthcheck:
       test:
         [
@@ -75,13 +126,14 @@ services:
     restart: unless-stopped
 
   web:
+    image: ${WEB_IMAGE:-xiaozhi-web:local}
     build:
       context: ./frontend
+      dockerfile: Dockerfile
+      target: app
     ports:
       - "8080:80"
     depends_on:
       api:
-        condition: service_healthy
-      tts:
         condition: service_healthy
     restart: unless-stopped

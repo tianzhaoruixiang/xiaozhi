@@ -11,7 +11,7 @@ import { RouterLink } from 'vue-router'
     </div>
 
     <main class="panel">
-      <p class="kicker">小智</p>
+      <p class="kicker">智枢</p>
       <h1>选择工作台</h1>
       <p class="hint">领导和执行人员使用不同的台面，互不混用。</p>
 

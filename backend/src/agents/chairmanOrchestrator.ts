@@ -59,7 +59,7 @@ async function emitPlan(plan: DynamicPlan, onEvent: (payload: SsePayload) => voi
     type: 'plan_done',
     goal: plan.goal,
     total: plan.experts.length,
-    message: `小智已生成 ${plan.experts.length} 位专家（含并行分支）：${plan.experts.map((e) => e.name).join('、')}`,
+    message: `智枢已生成 ${plan.experts.length} 位专家（含并行分支）：${plan.experts.map((e) => e.name).join('、')}`,
   })
   for (let i = 0; i < plan.experts.length; i += 1) {
     const expert = plan.experts[i]
@@ -95,7 +95,7 @@ async function runClaudeOrchestrator(options: {
 
   options.onEvent({
     type: 'plan_start',
-    message: '小智正在识别意图并选择协作方式…',
+    message: '智枢正在识别意图并选择协作方式…',
   })
 
   const picked = pickPlanSource({
@@ -108,7 +108,7 @@ async function runClaudeOrchestrator(options: {
   options.onEvent({
     type: 'agent_progress',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     summary: picked.routeLabel
       ? `意图：${picked.intentText} · ${picked.routeLabel}`
       : `意图：${picked.intentText}`,
@@ -129,7 +129,7 @@ async function runClaudeOrchestrator(options: {
     options.onEvent({
       type: 'agent_progress',
       agentId: 'xiaozhi',
-      agentName: '小智',
+      agentName: '智枢',
       summary: `使用配置工作流（${picked.reason}）`,
     })
   } else if (picked.mode === 'config') {
@@ -165,7 +165,7 @@ async function runClaudeOrchestrator(options: {
   const enableOral = options.enableOralReport !== false
   const prompt = `${contextBlock}
 
-【小智本轮调度的专家】
+【智枢本轮调度的专家】
 ${rosterText}
 
 总目标：${plan.goal}
@@ -178,9 +178,9 @@ ${rosterText}
 - 挂 knowledge 的专家须使用知识库工具并输出《xxx会议资料》；挂 rooms 的须查询并预定会议室并输出《xxx会议议程》；挂 schedule 的须查询并安排厅长日程；挂 huixun 的须使用汇讯工具，发出前须等领导人确认，再把议程与会议资料发给全体参会人（含领导人）
 ${
   enableOral
-    ? `- 全部完成后，由你（小智）输出书面纪要，并包含【口述汇报】段落
+    ? `- 全部完成后，由你（智枢）输出书面纪要，并包含【口述汇报】段落
 - 【口述汇报】必须依据本轮真实结论现写，禁止套固定「人员调度会时间/地点/参会人」模板，禁止编造未出现的信息`
-    : `- 全部完成后，由你（小智）输出书面纪要（Markdown）
+    : `- 全部完成后，由你（智枢）输出书面纪要（Markdown）
 - 不要撰写「【口述汇报】」或任何口述/语音稿段落`
 }`
 
@@ -284,20 +284,20 @@ ${
   options.onEvent({
     type: 'agent_progress',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     summary:
       source === 'section'
         ? '已从汇报正文提取口述稿'
         : source === 'llm'
-          ? '已由小智生成口述汇报'
+          ? '已由智枢生成口述汇报'
           : '模型暂不可用，已据本轮结论压缩口述稿',
   })
   options.onEvent({
     type: 'oral_report',
     agentId: 'xiaozhi',
-    agentName: '小智',
+    agentName: '智枢',
     text: oral,
-    summary: '小智开始向领导语音汇报',
+    summary: '智枢开始向领导语音汇报',
   })
 
   return finalText

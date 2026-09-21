@@ -2,7 +2,7 @@
 import SignoffAssistantPanel from '../components/signoff/SignoffAssistantPanel.vue'
 import SignoffDocumentPanel from '../components/signoff/SignoffDocumentPanel.vue'
 import SignoffSidebar from '../components/signoff/SignoffSidebar.vue'
-import type { SignoffActivity, SignoffAssistantTask, SignoffClause, SignoffDepartment, SignoffMaterial, SignoffOpinion } from '../types/signoff'
+import type { SignoffActivity, SignoffAssistantTask, SignoffClause, SignoffDepartment, SignoffMaterial } from '../types/signoff'
 
 defineProps<{
   version: string
@@ -11,7 +11,6 @@ defineProps<{
   departments: SignoffDepartment[]
   selectedDepartmentId: string
   selectedDepartment?: SignoffDepartment
-  selectedOpinion: SignoffOpinion | null
   activities: SignoffActivity[]
   currentTask: SignoffAssistantTask
   materials: SignoffMaterial[]
@@ -23,7 +22,6 @@ defineProps<{
 
 defineEmits<{
   select: [departmentId: string]
-  resolve: [opinionId: string]
   sign: [departmentId: string]
   remind: [departmentId: string]
   'select-material': [materialId: string]
@@ -43,9 +41,7 @@ defineEmits<{
       :version="version"
       :source-change-count="sourceChangeCount"
       :department="selectedDepartment"
-      :opinion="selectedOpinion"
       :clauses="clauses"
-      @resolve="$emit('resolve', $event)"
       @sign="$emit('sign', $event)"
     />
     <SignoffAssistantPanel
@@ -54,7 +50,6 @@ defineEmits<{
       :selected-material-id="selectedMaterialId"
       :selected-material="selectedMaterial"
       :activities="activities"
-      :opinion="selectedOpinion"
       :department="selectedDepartment"
       :signed-count="signedCount"
       :total-count="departments.length"

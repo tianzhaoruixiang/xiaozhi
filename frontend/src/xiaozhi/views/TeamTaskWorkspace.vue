@@ -27,7 +27,7 @@ const applyResult = ref<{
   saturation: number
 } | null>(null)
 
-/** ?task= 指向的任务：待分配走任务分解，其它状态直接问小智 */
+/** ?task= 指向的任务：待分配走任务分解，其它状态直接问智枢 */
 const taskId = computed(() =>
   typeof route.query.task === 'string' ? route.query.task : '',
 )
@@ -113,7 +113,7 @@ const backToTeam = () => {
     <div class="shell">
       <header class="topbar">
         <button type="button" class="back" @click="backToTeam">
-          <span class="back-mark">小智</span>
+          <span class="back-mark">智枢</span>
           <span class="back-hint">返回王处工作台</span>
         </button>
         <div class="top-meta">
@@ -126,13 +126,13 @@ const backToTeam = () => {
         <header class="dialog-head">
           <div>
             <p class="eyebrow">{{ isDecompose ? '任务分解' : '任务问询' }}</p>
-            <h2>{{ isDecompose ? '把小智交办的工作拆成任务项' : '由小智结合本组台账回答' }}</h2>
+            <h2>{{ isDecompose ? '把智枢交办的工作拆成任务项' : '由智枢结合本组台账回答' }}</h2>
             <p v-if="isDecompose" class="hint">
-              小智已调度<strong>任务分解专家</strong>，把「{{ targetTask?.title || '推荐算法专家寻访' }}」拆成任务项并给出负责人建议；
+              智枢已调度<strong>任务分解专家</strong>，把「{{ targetTask?.title || '推荐算法专家寻访' }}」拆成任务项并给出负责人建议；
               完成后点击下方按钮回到王处工作台。
             </p>
             <p v-else class="hint">
-              小智正在结合本组台账与成员进度回答「{{ targetTask?.title }}」的问题；
+              智枢正在结合本组台账与成员进度回答「{{ targetTask?.title }}」的问题；
               完成后点击下方按钮回到王处工作台。
             </p>
           </div>
@@ -156,7 +156,7 @@ const backToTeam = () => {
             :data-role="msg.role"
           >
             <header v-if="msg.role !== 'system'" class="bubble-meta">
-              <span>{{ msg.role === 'user' ? '王处' : '小智' }}</span>
+              <span>{{ msg.role === 'user' ? '王处' : '智枢' }}</span>
             </header>
 
             <PersonalCollabProcess

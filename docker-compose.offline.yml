@@ -1,0 +1,16 @@
+# 内网发布：只叠 dist，FROM 已导入的底包（xiaozhi-*:base）
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.overlay
+      target: app
+      args:
+        BASE_IMAGE: ${API_BASE_IMAGE:-xiaozhi-api:base}
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.overlay
+      target: app
+      args:
+        BASE_IMAGE: ${WEB_BASE_IMAGE:-xiaozhi-web:base}

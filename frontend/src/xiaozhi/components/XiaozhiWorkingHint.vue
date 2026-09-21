@@ -70,7 +70,7 @@ onUnmounted(stopFlip)
   <div class="working" :data-tone="tone" role="status" aria-live="polite">
     <span class="rig">
       <span class="orbit" aria-hidden="true" />
-      <AgentAvatar agent-id="xiaozhi" name="小智" status="running" :size="46" />
+      <AgentAvatar agent-id="xiaozhi" name="智枢" status="running" :size="46" />
     </span>
     <span class="copy">
       <strong>

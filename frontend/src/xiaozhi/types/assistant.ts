@@ -68,7 +68,7 @@ export interface ChatMessage {
   content: string
   steps?: CollabStep[]
   taskPlan?: TaskPlan
-  /** 小智向领导口述的语音稿 */
+  /** 智枢向领导口述的语音稿 */
   oralReport?: string
   /** 发出汇讯前的领导人确认 */
   dispatchConfirm?: DispatchConfirm

@@ -26,7 +26,7 @@ function splitSpeakUnits(text: string): string[] {
 }
 
 /**
- * 本地神经 TTS（OmniVoice 中国女性音色，唯一优先通道）。
+ * 本地 vLLM-Omni TTS（Qwen3-TTS CustomVoice，女声 vivian / yuxiaoyun_v3.1）。
  * 分句流水线：首句合成完即播，边播边预取下一句，缩短「写完 → 开声」等待。
  */
 export function useSpeechReport() {
@@ -249,7 +249,7 @@ export function useSpeechReport() {
       if (seq !== speakSeq) return
       if (speaking.value && engine.value === 'local') return
       const tip = err instanceof Error ? err.message : '未知错误'
-      error.value = `本地神经语音失败，已切换系统音色（${tip.slice(0, 80)}）`
+      error.value = `云端语音失败，已切换系统音色（${tip.slice(0, 80)}）`
     }
 
     if (seq !== speakSeq) return

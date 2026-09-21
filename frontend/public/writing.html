@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>小智 · 总结材料生成工作台</title>
+  <title>智枢 · 总结材料生成工作台</title>
   <style>
-    /* ===================== 小智工作台色板（与 tokens.css 一致：深海水蓝底 × 浅色玻璃面板 × 信号青 × 香槟铜） ===================== */
+    /* ===================== 智枢工作台色板（与 tokens.css 一致：深海水蓝底 × 浅色玻璃面板 × 信号青 × 香槟铜） ===================== */
     :root {
       color-scheme: light;
       --color-abyss: #06141f;
@@ -598,7 +598,7 @@
     <!-- 顶栏：与 /personal/task 一致，仅保留返回胶囊 -->
     <header class="topbar">
       <button type="button" class="back" id="backBtn" title="返回工作台">
-        <span class="back-mark">小智</span>
+        <span class="back-mark">智枢</span>
         <span class="back-hint">返回工作台</span>
       </button>
     </header>
@@ -609,8 +609,8 @@
         <header class="dialog-head">
           <div class="dialog-title">
             <p class="eyebrow">任务协作</p>
-            <h2>与小智对话</h2>
-            <p class="hint" id="headStatus">点击指令或直接输入，小智即刻开始生成总结报告。</p>
+            <h2>与智枢对话</h2>
+            <p class="hint" id="headStatus">点击指令或直接输入，智枢即刻开始生成总结报告。</p>
           </div>
           <div class="orch">
             <label>专家团
@@ -826,7 +826,7 @@
       const el = document.createElement('article');
       el.className = 'bubble';
       el.dataset.role = 'assistant';
-      el.innerHTML = `<header class="bubble-meta"><span class="who-xz">小智</span></header><div class="plain">${html}</div>`;
+      el.innerHTML = `<header class="bubble-meta"><span class="who-xz">智枢</span></header><div class="plain">${html}</div>`;
       messagesEl.appendChild(el);
       scrollChat();
       return el;
@@ -848,7 +848,7 @@
       const t = document.createElement('article');
       t.className = 'bubble typing-bubble';
       t.dataset.role = 'assistant';
-      t.innerHTML = '<header class="bubble-meta"><span class="who-xz">小智</span></header><p class="plain muted">正在处理您的指令…</p>';
+      t.innerHTML = '<header class="bubble-meta"><span class="who-xz">智枢</span></header><p class="plain muted">正在处理您的指令…</p>';
       messagesEl.appendChild(t);
       scrollChat();
       await sleep(delay);
@@ -892,7 +892,7 @@
       root.dataset.done = '0';
       root.innerHTML = `
         <button type="button" class="process-toggle">
-          <span class="toggle-left"><span class="pulse live"></span><strong>小智 · 多专家协同过程</strong><em class="phase">准备中</em></span>
+          <span class="toggle-left"><span class="pulse live"></span><strong>智枢 · 多专家协同过程</strong><em class="phase">准备中</em></span>
           <span class="toggle-right"><span class="count">0/${STEP_DEFS.length}</span><span class="chevron">收起</span></span>
         </button>
         <p class="collapsed-hint" hidden></p>
@@ -1318,8 +1318,8 @@
       $('selWorkflow').disabled = running;
       $('selMode').disabled = running;
       headStatus.textContent = running
-        ? '小智正在生成总结报告，请稍候…'
-        : (state.done ? '报告已生成并沉淀至档案馆，可导出 PDF 或前往档案馆。' : '点击指令或直接输入，小智即刻开始生成总结报告。');
+        ? '智枢正在生成总结报告，请稍候…'
+        : (state.done ? '报告已生成并沉淀至档案馆，可导出 PDF 或前往档案馆。' : '点击指令或直接输入，智枢即刻开始生成总结报告。');
       renderShortcuts();
     }
 
@@ -1353,7 +1353,7 @@
           await xzThinkThen('已为您定位到右侧<span class="hl">正文预览</span>。', 350);
           focusDoc();
         } else {
-          await xzThinkThen('正文还未生成，请先让小智启动生成流程。', 350);
+          await xzThinkThen('正文还未生成，请先让智枢启动生成流程。', 350);
         }
         return;
       }
@@ -1364,7 +1364,7 @@
         b.querySelector('.plain').appendChild(makeArchiveLink());
         return;
       }
-      await xzThinkThen('这个问题小智先记下了。当前工作台专注总结报告生成——点击下方指令即可一键开始。', 600);
+      await xzThinkThen('这个问题智枢先记下了。当前工作台专注总结报告生成——点击下方指令即可一键开始。', 600);
     }
 
     // ===================== PDF 导出（纯 CSS 打印方案） =====================
@@ -1439,7 +1439,7 @@
       clearDoc();
       renderShortcuts();
       await loadData();
-      sysSay('已进入工作台「总结材料生成」。确认指令后点击发送，小智即刻开始执行。');
+      sysSay('已进入工作台「总结材料生成」。确认指令后点击发送，智枢即刻开始执行。');
       // 工作台首页输入的对话通过 ?q= 透传进来，自动作为首条指令执行
       const qParam = new URLSearchParams(location.search).get('q');
       if (qParam) { await sleep(600); handleSend(qParam); };

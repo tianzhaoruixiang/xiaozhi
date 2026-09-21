@@ -1,28 +1,18 @@
 import { Hono } from 'hono'
+import { getQwenTtsConfig, qwenTtsHealth, synthesizeQwenSpeech } from '../lib/qwenTts.js'
 
-const TTS_URL = (process.env.TTS_URL || 'http://127.0.0.1:8090').replace(/\/$/, '')
+const ASR_URL = (process.env.TTS_URL || 'http://127.0.0.1:8090').replace(/\/$/, '')
 
 export const ttsRoute = new Hono()
 
 ttsRoute.get('/health', async (c) => {
-  try {
-    const res = await fetch(`${TTS_URL}/health`)
-    const data = await res.json()
-    return c.json({ ok: res.ok, upstream: data })
-  } catch (err) {
-    return c.json(
-      {
-        ok: false,
-        error: err instanceof Error ? err.message : 'TTS 不可达',
-      },
-      503,
-    )
-  }
+  const data = await qwenTtsHealth()
+  return c.json(data, data.ok ? 200 : 503)
 })
 
 ttsRoute.get('/asr/health', async (c) => {
   try {
-    const res = await fetch(`${TTS_URL}/asr/health`)
+    const res = await fetch(`${ASR_URL}/asr/health`)
     const data = await res.json()
     return c.json(data, res.ok ? 200 : 503)
   } catch (err) {
@@ -37,7 +27,7 @@ ttsRoute.get('/asr/health', async (c) => {
   }
 })
 
-/** 代理本地神经 TTS（OmniVoice），返回 wav */
+/** 代理本地 vLLM-Omni（Qwen3-TTS CustomVoice），返回 wav */
 ttsRoute.post('/speak', async (c) => {
   let body: {
     text?: string
@@ -54,27 +44,23 @@ ttsRoute.post('/speak', async (c) => {
   const text = body.text?.trim()
   if (!text) return c.json({ error: 'text 不能为空' }, 400)
 
+  const rate =
+    typeof body.speed === 'number' && Number.isFinite(body.speed)
+      ? Math.min(2, Math.max(0.5, body.speed))
+      : undefined
+
   try {
-    const res = await fetch(`${TTS_URL}/speak`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        speed: body.speed,
-        speaker_id: body.speaker_id,
-        voice_prompt: body.voice_prompt,
-        seed: body.seed,
-      }),
+    const buf = await synthesizeQwenSpeech({
+      text,
+      voice: body.voice_prompt,
+      rate,
     })
-    if (!res.ok) {
-      const msg = await res.text()
-      return c.json({ error: msg || 'TTS 合成失败' }, 502)
-    }
-    const buf = await res.arrayBuffer()
+    const { model } = getQwenTtsConfig()
     return c.newResponse(buf, {
       headers: {
         'Content-Type': 'audio/wav',
         'Cache-Control': 'no-store',
+        'X-TTS-Engine': model,
       },
     })
   } catch (err) {
@@ -82,7 +68,7 @@ ttsRoute.post('/speak', async (c) => {
       {
         error: err instanceof Error ? err.message : 'TTS 服务不可用',
       },
-      503,
+      502,
     )
   }
 })
@@ -96,7 +82,7 @@ ttsRoute.post('/asr', async (c) => {
     if (!file) return c.json({ error: '缺少 file' }, 400)
     upstream.append('file', file)
 
-    const res = await fetch(`${TTS_URL}/asr`, {
+    const res = await fetch(`${ASR_URL}/asr`, {
       method: 'POST',
       body: upstream,
     })

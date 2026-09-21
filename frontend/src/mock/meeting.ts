@@ -48,6 +48,13 @@ export const agendaPhases: AgendaPhase[] = [
       {
         speakerId: 'zhou',
         content: '情报阵地方面，建议按三级预警标准分级推送情报产品，红色预警直接联动现场指挥部，确保第一时间锁定处置窗口。',
+        suggestion: {
+          title: '情报三级预警分级推送',
+          content: '按黄、橙、红三级预警标准分级推送情报产品，红色预警直连现场指挥部。',
+          chapter: '第五章 情报研判与预警',
+          references: 3,
+          tags: ['情报预警', '联动机制'],
+        },
       },
       {
         speakerId: 'chen',
@@ -81,14 +88,35 @@ export const agendaPhases: AgendaPhase[] = [
       {
         speakerId: 'zhou',
         content: '建议在市局指挥中心增设跨组联络专席，现场异常由值守人员一键上报，并同步通知相关作战组。',
+        suggestion: {
+          title: '增设跨组联络专席',
+          content: '在市局指挥中心增设跨组联络专席，现场异常一键上报并同步通知相关作战组。',
+          chapter: '第一章 组织架构与职责',
+          references: 4,
+          tags: ['指挥体系', '联络机制'],
+        },
       },
       {
         speakerId: 'zhao',
         content: '建议围绕周边交通节点和公开参会嘉宾建立关联监测词表，对异常传播链路进行持续研判。',
+        suggestion: {
+          title: '建立关联监测词表',
+          content: '围绕交通节点和公开参会嘉宾建立关联监测词表，对异常传播链路持续研判。',
+          chapter: '第六章 舆情监测与处置',
+          references: 3,
+          tags: ['舆情监测', '词表'],
+        },
       },
       {
         speakerId: 'sun',
         content: '内保方面补充一点，建议在贵宾通道和主入口高峰时段实行双岗查验，安检力量配置方案由内保支队牵头细化。',
+        suggestion: {
+          title: '高峰时段双岗查验',
+          content: '贵宾通道和主入口高峰时段实行双岗查验，安检力量配置方案由内保支队牵头细化。',
+          chapter: '第三章 场馆安全与安检',
+          references: 2,
+          tags: ['内保', '安检'],
+        },
       },
     ],
   },
@@ -114,7 +142,7 @@ export const revisionSpeech: ScriptLine[] = [
   { speakerId: 'zhou', content: '统稿中联席会商频次调整为每日两次的表述，与会上讨论一致，情报支队同意采纳。' },
   { speakerId: 'chen', content: '境外人员审核节点前移的条文表述准确，补充的二次确认流程可执行，出入境管理支队同意写入。' },
   { speakerId: 'wang', content: '缓冲区扩大至 150 米的部署条款没有异议，引导标识和应急通道的补充表述建议一并采纳。' },
-  { speakerId: 'lin', content: '预案目录和值守表调整属于低风险表述，建议批量确认，加快统稿进度。' },
+  { speakerId: 'lin', content: '预案目录和值守表调整属于低风险表述，已按会议决议直接写入定稿，统稿进度符合预期。' },
 ]
 
 /** 联合会签阶段：各单位负责人会签表态 */
@@ -284,7 +312,7 @@ export const planDocument: PlanDocument = {
   ],
   minutes: {
     title: '大型会议保障动员会会议纪要',
-    recorder: '会议助手 · 小智',
+    recorder: '会议助手 · 智枢',
     status: '实时草拟中',
     summary: '会议听取了前期筹备情况，审议总体安保方案，并围绕人员审核、现场安保、场馆检查、舆情监测和应急处置等事项进行了讨论。',
     decisions: [

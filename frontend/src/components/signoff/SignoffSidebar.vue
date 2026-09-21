@@ -11,7 +11,7 @@ const props = defineProps<{
 
 defineEmits<{ select: [departmentId: string] }>()
 
-const statusText = { signed: '已会签', pending: '待会签', objection: '有意见' }
+const statusText = { signed: '已会签', pending: '待会签' }
 const nextPending = computed(() => props.departments.find((department) => department.status !== 'signed'))
 </script>
 

@@ -86,7 +86,7 @@ export function createSdkEventMapper(
       agentRole: roleOf(id),
       title,
       objective: description ?? title,
-      goal: '小智动态调度专家',
+      goal: '智枢动态调度专家',
     })
 
     emit({
@@ -208,12 +208,12 @@ export function createSdkEventMapper(
     planClosed = true
     emit({
       type: 'plan_done',
-      goal: '小智动态调度专家',
+      goal: '智枢动态调度专家',
       total: invoked.size,
       message:
         invoked.size > 0
           ? `本轮实际调用 ${invoked.size} 位专家：${[...invoked.keys()].join(' → ')}`
-          : '本轮未触发子专家（小智直接答复）',
+          : '本轮未触发子专家（智枢直接答复）',
     })
   }
 

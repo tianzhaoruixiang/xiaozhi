@@ -40,7 +40,7 @@ onUnmounted(() => {
   if (reminderTimer) window.clearTimeout(reminderTimer)
 })
 
-/** 底部输入框：进入 /command/task 交给小智办理 */
+/** 底部输入框：进入 /command/task 交给智枢办理 */
 const homeDraft = ref('')
 const startFreeTask = () => {
   const text = homeDraft.value.trim()
@@ -93,7 +93,7 @@ const startFreeTask = () => {
           <textarea
             :value="homeDraft"
             rows="2"
-            placeholder="也可以直接问小智，例如：当前组哪些任务需要我协调资源…"
+            placeholder="也可以直接问智枢，例如：当前组哪些任务需要我协调资源…"
             @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
             @keydown.enter.exact.prevent="startFreeTask"
           />

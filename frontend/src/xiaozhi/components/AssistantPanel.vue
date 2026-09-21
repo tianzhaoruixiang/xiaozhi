@@ -152,7 +152,7 @@ watch(
         :style="voiceBreathStyle"
         role="dialog"
         aria-modal="true"
-        :aria-label="chatOnly ? '与小智对话' : '小智协作台'"
+        :aria-label="chatOnly ? '与智枢对话' : '智枢协作台'"
         aria-live="polite"
       >
         <div class="hud-frame" aria-hidden="true">
@@ -168,11 +168,11 @@ watch(
               {{ voiceActive ? '正在聆听' : chatOnly ? '对话' : '协作进行中' }}
             </p>
             <div class="head-title">
-              <h2>{{ chatOnly ? '小智' : '小智协作台' }}</h2>
+              <h2>{{ chatOnly ? '智枢' : '智枢协作台' }}</h2>
               <p class="status">
                 <template v-if="reportSpeaking">
-                  小智正在向您语音汇报
-                  <span v-if="ttsEngine === 'local'" class="voice-tag">神经语音</span>
+                  智枢正在向您语音汇报
+                  <span v-if="ttsEngine === 'local'" class="voice-tag">云端语音</span>
                   <span v-else-if="ttsEngine === 'browser'" class="voice-tag dim">系统音色</span>
                 </template>
                 <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'planning'">
@@ -187,7 +187,7 @@ watch(
                 </template>
                 <template v-else-if="streaming">{{ chatOnly ? '正在办理…' : '多智能体协作进行中' }}</template>
                 <template v-else-if="voiceAckPlaying">
-                  <span class="listen-live">小智应答「我在，请讲」…</span>
+                  <span class="listen-live">智枢应答「我在，请讲」…</span>
                   <span class="voice-tag">已唤醒</span>
                 </template>
                 <template v-else-if="voiceAwaiting">
@@ -196,11 +196,11 @@ watch(
                 </template>
                 <template v-else-if="voiceRecognizing">正在识别语音…</template>
                 <template v-else-if="voiceListening && voiceSupported">
-                  待命中，说「你好，小智」唤醒
+                  待命中，说「你好，智枢」唤醒
                   <span v-if="voiceMode === 'local-asr'" class="voice-tag">本地唤醒</span>
                 </template>
                 <template v-else>
-                  {{ chatOnly ? '说出需求即可，办完会向您汇报' : '说出需求后，小智会调度专家并完成汇报' }}
+                  {{ chatOnly ? '说出需求即可，办完会向您汇报' : '说出需求后，智枢会调度专家并完成汇报' }}
                 </template>
               </p>
             </div>
@@ -270,7 +270,7 @@ watch(
             />
             <div v-else class="empty-collab">
               <strong>等待您的指示</strong>
-              <p>直接说「你好，小智」唤醒，再口述需求；也可在下方输入。普通问询由小智直接作答，办会任务再调度专家团。</p>
+              <p>直接说「你好，智枢」唤醒，再口述需求；也可在下方输入。普通问询由智枢直接作答，办会任务再调度专家团。</p>
             </div>
           </section>
 
@@ -283,7 +283,7 @@ watch(
                 :data-role="msg.role"
               >
                 <header v-if="msg.role !== 'system'" class="bubble-meta">
-                  <span>{{ msg.role === 'user' ? '领导' : '小智' }}</span>
+                  <span>{{ msg.role === 'user' ? '领导' : '智枢' }}</span>
                 </header>
 
                 <MarkdownView
@@ -300,7 +300,7 @@ watch(
                 />
                 <p v-else-if="msg.role === 'assistant' && streaming" class="plain muted">
                   <template v-if="msg.taskPlan?.phase === 'planning'">
-                    {{ chatOnly ? '正在为您安排办理…' : '小智正在生成多智能体任务规划…' }}
+                    {{ chatOnly ? '正在为您安排办理…' : '智枢正在生成多智能体任务规划…' }}
                   </template>
                   <template v-else-if="msg.taskPlan?.phase === 'awaiting_confirm'">通知已拟好，请您确认是否发出…</template>
                   <template v-else>{{ chatOnly ? '正在办理…' : '正在启动协同流程…' }}</template>
@@ -355,7 +355,7 @@ watch(
                   :placeholder="
                     awaitingConfirm
                       ? '等候确认时，请说「确认发出」或「先不发」…'
-                      : '说「你好，小智」唤醒后口述，或在此输入…'
+                      : '说「你好，智枢」唤醒后口述，或在此输入…'
                   "
                   @keydown.enter.exact.prevent="onSubmit"
                   @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
@@ -381,7 +381,7 @@ watch(
           <header class="collab-dialog-head">
             <div>
               <p class="eyebrow">办理过程</p>
-              <h3>小智正在协调各方</h3>
+              <h3>智枢正在协调各方</h3>
             </div>
             <button type="button" class="icon-btn" aria-label="关闭" @click="collabOpen = false">×</button>
           </header>

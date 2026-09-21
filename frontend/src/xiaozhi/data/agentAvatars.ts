@@ -24,7 +24,7 @@ export interface AgentAvatarPreset {
 export const AGENT_AVATAR_PRESETS: AgentAvatarPreset[] = [
   {
     id: 'xiaozhi',
-    label: '小智',
+    label: '智枢',
     bg: ['#d9f7e8', '#5dcb9a'],
     src: imgCuiwei,
   },
@@ -102,7 +102,7 @@ export const AGENT_AVATAR_PRESETS: AgentAvatarPreset[] = [
   },
 ]
 
-/** 小智固定头像（青绿豆包风妹子） */
+/** 智枢固定头像（青绿豆包风妹子） */
 export const XIAOZHI_AVATAR_ID = 'cuiwei'
 
 /** 已知专家 → 固定头像，保证每次协作视觉稳定 */

@@ -7,45 +7,45 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('../xiaozhi/views/DeskGateView.vue'),
-      meta: { title: '小智 · 选择工作台' },
+      meta: { title: '智枢 · 选择工作台' },
     },
     {
       path: '/personal/:pathMatch(.*)*',
       name: 'personal',
       component: () => import('../xiaozhi/views/PersonalWorkbench.vue'),
-      meta: { title: '小智 · 个人工作台' },
+      meta: { title: '智枢 · 个人工作台' },
     },
     {
       path: '/leader',
       name: 'leader',
       component: () => import('../xiaozhi/views/ChairmanWorkbench.vue'),
-      meta: { title: '小智 · 领导工作台' },
+      meta: { title: '智枢 · 领导工作台' },
     },
     {
       path: '/team',
       name: 'team',
       component: () => import('../xiaozhi/views/TeamWorkbench.vue'),
-      meta: { title: '小智 · 王处工作台' },
+      meta: { title: '智枢 · 王处工作台' },
     },
     {
       path: '/team/task',
       name: 'team-task',
       component: () => import('../xiaozhi/views/TeamTaskWorkspace.vue'),
-      meta: { title: '小智 · 任务执行' },
+      meta: { title: '智枢 · 任务执行' },
     },
     {
       // 高总工作台；/command/task 为「总结材料生成」交互页（参考 writing.html）
       path: '/command/:pathMatch(.*)*',
       name: 'command',
       component: () => import('../xiaozhi/views/CommandWorkbench.vue'),
-      meta: { title: '小智 · 高总工作台' },
+      meta: { title: '智枢 · 高总工作台' },
     },
     {
       // 知识体系档案馆（参考 library.html）
       path: '/library',
       name: 'library',
       component: () => import('../xiaozhi/views/LibraryWorkbench.vue'),
-      meta: { title: '小智 · 知识体系档案馆' },
+      meta: { title: '智枢 · 知识体系档案馆' },
     },
     {
       // 原「安保协同指挥」；个人工作台的「进入会议」按路由名跳转，路径改名不影响调用

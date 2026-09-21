@@ -1,0 +1,4 @@
+# 内网发布：基于已导入的 nginx 底包，只覆盖本轮 dist（不再 npm install）
+ARG BASE_IMAGE=xiaozhi-web:base
+FROM ${BASE_IMAGE} AS app
+COPY dist /usr/share/nginx/html

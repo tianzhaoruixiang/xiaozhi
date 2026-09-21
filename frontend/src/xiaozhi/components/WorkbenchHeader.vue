@@ -12,9 +12,9 @@ withDefaults(
     compact?: boolean
   }>(),
   {
-    brand: '小智',
+    brand: '智枢',
     tagline: '领导助手 · 政务协同工作台',
-    lead: '今日安排已就绪。唤醒小智，即可调度专家团为您办事。',
+    lead: '今日安排已就绪。唤醒智枢，即可调度专家团为您办事。',
     sysLabel: '链路就绪',
     sysMeta: '政务协同通道',
     compact: false,
@@ -99,7 +99,7 @@ onUnmounted(() => {
   animation: page-rise var(--dur-enter) var(--ease-out) both;
 }
 
-/* 紧凑模式：小智在左上角 */
+/* 紧凑模式：智枢在左上角 */
 .header.compact {
   margin-bottom: clamp(18px, 2.6vw, 26px);
 }

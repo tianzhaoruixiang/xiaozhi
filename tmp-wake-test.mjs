@@ -28,12 +28,23 @@ function extractCommand(fullText, wakeKey) {
 }
 
 function looseWake(compact) {
-  const m = /^(你好|您好)[\u4e00-\u9fff]{0,1}小[智至知枝纸只质]/.exec(compact)
+  const m = /^(你好|您好)[\u4e00-\u9fff]{0,1}(智[枢书树舒殊]|小[智至知枝纸只质])/.exec(compact)
   if (!m) return { hit: false, prefixLen: 0 }
   return { hit: true, prefixLen: m[0].length }
 }
 
 const WAKE_ALIASES = [
+  '你好智枢',
+  '您好智枢',
+  '你好智书',
+  '你好智树',
+  '你好知枢',
+  '你好之枢',
+  '你好支枢',
+  '您好智书',
+  '您好智树',
+  'nihaozhishu',
+  'hellozhishu',
   '你好小智',
   '您好小智',
   '你好晓智',
@@ -48,7 +59,7 @@ const WAKE_ALIASES = [
   'nihaoxiaozhi',
   'helloxiaozhi',
 ]
-const WAKE_CANONICAL = ['你好小智', '你好，小智']
+const WAKE_CANONICAL = ['你好智枢', '你好，智枢']
 
 function matchWakePhrase(raw) {
   const text = raw.trim()
@@ -73,14 +84,15 @@ function matchWakePhrase(raw) {
 }
 
 const cases = [
-  ['你好，小智', true, true],
-  ['你好小智', true, true],
-  ['你好小智，明天几点开会', true, false],
-  ['您好小智准备下午会议', true, false],
+  ['你好，智枢', true, true],
+  ['你好智枢', true, true],
+  ['你好智枢，明天几点开会', true, false],
+  ['您好智枢准备下午会议', true, false],
   ['你好晓智', true, true],
-  ['刚才我说了你好小智吗', false, false],
-  ['你好小', false, false],
-  ['小智小智', false, false],
+  ['你好智书准备下午会议', true, false],
+  ['刚才我说了你好智枢吗', false, false],
+  ['你好智', false, false],
+  ['智枢智枢', false, false],
   ['今天天气怎么样', false, false],
 ]
 

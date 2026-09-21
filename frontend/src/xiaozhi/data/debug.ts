@@ -47,6 +47,6 @@ export function installDebugBridge() {
 
   ;(window as unknown as Record<string, unknown>).__xiaozhi = api
   console.log(
-    '[小智] 调试入口就绪：window.__xiaozhi —— 试 __xiaozhi.status()，或 __xiaozhi.reviews.resetReviews()',
+    '[智枢] 调试入口就绪：window.__xiaozhi —— 试 __xiaozhi.status()，或 __xiaozhi.reviews.resetReviews()',
   )
 }

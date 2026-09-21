@@ -1,5 +1,5 @@
 /**
- * 领导意图分流：办会工作流 vs 猎头寻访/沟通 vs 日程问询 vs 小智直接作答
+ * 领导意图分流：办会工作流 vs 猎头寻访/沟通 vs 日程问询 vs 智枢直接作答
  */
 
 export type IntentKind = 'direct' | 'schedule_query' | 'workflow'
@@ -101,11 +101,11 @@ export function matchConfigRoute(message: string): ConfigRouteKind | null {
 export function intentLabel(kind: IntentKind): string {
   switch (kind) {
     case 'schedule_query':
-      return '日程问询（小智答复今日安排）'
+      return '日程问询（智枢答复今日安排）'
     case 'workflow':
       return '协同任务（启用专家团工作流）'
     default:
-      return '普通问题（小智调度执行）'
+      return '普通问题（智枢调度执行）'
   }
 }
 

@@ -1,4 +1,4 @@
-export type RevisionStatus = 'pending' | 'accepted' | 'kept' | 'conflict'
+export type RevisionStatus = 'pending' | 'accepted' | 'kept'
 export type RevisionRisk = 'low' | 'medium' | 'high'
 export type RevisionViewMode = 'compare' | 'merged'
 

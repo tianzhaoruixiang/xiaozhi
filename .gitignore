@@ -8,8 +8,9 @@ __pycache__
 frontend/dist
 backend/dist
 
-# TTS 预下载的 PyTorch wheel（体积大，不入库）
+# TTS 预下载的 PyTorch wheel / 本地克隆（体积大，不入库）
 tts/.wheels/
+tts/.deps/
 
 # 运行时数据（模型体积大，不入库；保留目录占位）
 data/models/**

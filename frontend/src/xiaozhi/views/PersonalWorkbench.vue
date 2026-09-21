@@ -104,7 +104,7 @@ const panels = computed<WorkbenchPanel[]>(() => [
           <textarea
             :value="homeDraft"
             rows="2"
-            placeholder="也可以直接告诉小智要办的事，例如：帮我梳理今天的人选跟进重点…"
+            placeholder="也可以直接告诉智枢要办的事，例如：帮我梳理今天的人选跟进重点…"
             @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
             @keydown.enter.exact.prevent="startFreeTask"
           />

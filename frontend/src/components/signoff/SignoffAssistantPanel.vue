@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import { ArrowRight, Bell, CircleCheck, Document, FolderOpened, MagicStick, WarningFilled } from '@element-plus/icons-vue'
+import { ArrowRight, Bell, CircleCheck, Document, FolderOpened, MagicStick } from '@element-plus/icons-vue'
 import AIAssistantAvatar from '../AIAssistantAvatar.vue'
-import type { SignoffActivity, SignoffAssistantTask, SignoffDepartment, SignoffMaterial, SignoffOpinion } from '../../types/signoff'
+import type { SignoffActivity, SignoffAssistantTask, SignoffDepartment, SignoffMaterial } from '../../types/signoff'
 
 defineProps<{
   currentTask: SignoffAssistantTask
   activities: SignoffActivity[]
-  opinion: SignoffOpinion | null
   department?: SignoffDepartment
   materials: SignoffMaterial[]
   selectedMaterialId: string
@@ -100,12 +99,6 @@ const openMaterial = async (materialId: string) => {
       <p>{{ currentTask.detail }}</p>
       <div class="signoff-meter"><span :style="{ width: `${progress}%` }" /></div>
       <footer><span>会签进度</span><strong>{{ signedCount }} / {{ totalCount }} 单位</strong></footer>
-    </section>
-
-    <section v-if="opinion && opinion.status === 'open'" class="assistant-opinion-summary">
-      <header><span><el-icon><WarningFilled /></el-icon>意见影响分析</span><b>中等影响</b></header>
-      <p>该意见只补充执行触发条件，不改变缓冲区总体部署和作战组职责。</p>
-      <ul><li>影响条文：{{ opinion.section }}</li><li>影响任务：现场安保组外围缓冲区布设</li><li>无需重新发起其他单位会签</li></ul>
     </section>
 
     <section class="signoff-timeline">

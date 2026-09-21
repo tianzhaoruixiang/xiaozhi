@@ -19,7 +19,7 @@ const clip = (text: string, max = 96) => {
   return `${t.slice(0, max - 1)}…`
 }
 
-/** 当前执行中的工具调用 + 近期思考，供小智气泡轮播 */
+/** 当前执行中的工具调用 + 近期思考，供智枢气泡轮播 */
 export function liveCollabActivities(steps: CollabStep[]): LiveActivity[] {
   const live = steps.filter((s) => s.status === 'running' || s.status === 'awaiting')
   const pool = live.length ? live : steps.slice(-2)

@@ -139,7 +139,7 @@ const cueText = computed(() => {
     :data-voice="voiceListening ? '1' : '0'"
     :data-state="state"
     :aria-pressed="active"
-    :aria-label="`打开小智助手，当前${stateLabel}`"
+    :aria-label="`打开智枢助手，当前${stateLabel}`"
     :style="breathStyle"
     @click="$emit('toggle')"
   >
@@ -163,7 +163,7 @@ const cueText = computed(() => {
         <img
           class="face"
           :src="preset.src"
-          alt="小智"
+          alt="智枢"
           draggable="false"
         />
         <span v-if="awaitingCommand" class="listen-badge" aria-hidden="true">
@@ -176,7 +176,7 @@ const cueText = computed(() => {
     </span>
 
     <span class="meta">
-      <span class="name">小智</span>
+      <span class="name">智枢</span>
       <span class="state">{{ stateLabel }}</span>
     </span>
 
