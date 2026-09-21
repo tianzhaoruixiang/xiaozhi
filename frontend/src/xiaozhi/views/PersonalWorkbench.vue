@@ -514,4 +514,122 @@ const panels = computed<WorkbenchPanel[]>(() => [
     grid-template-columns: 1fr;
   }
 }
+
+/* 个人工作台与会议端统一为深色指挥界面。 */
+.workbench {
+  color: var(--color-ink);
+  background:
+    radial-gradient(circle at 68% 14%, oklch(0.5 0.16 240 / 0.2), transparent 32%),
+    radial-gradient(circle at 8% 70%, oklch(0.42 0.15 254 / 0.16), transparent 34%),
+    linear-gradient(145deg, oklch(0.125 0.068 254), var(--color-mist) 48%, oklch(0.15 0.08 244));
+}
+
+.mesh,
+.orb,
+.grid-layer,
+.grain,
+.horizon {
+  display: none;
+}
+
+.vignette {
+  background: linear-gradient(118deg, transparent 12%, oklch(0.56 0.13 225 / 0.05) 48%, transparent 76%);
+}
+
+.shell {
+  max-width: 1320px;
+  padding: 18px clamp(16px, 2.4vw, 30px) 40px;
+}
+
+.home-dock {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, oklch(0.22 0.074 248 / 0.92), oklch(0.17 0.058 251 / 0.94));
+  backdrop-filter: none;
+  box-shadow: inset 0 1px 0 oklch(0.84 0.145 207 / 0.06);
+}
+
+.home-dock textarea {
+  border-color: var(--color-line);
+  border-radius: 8px;
+  color: var(--color-ink);
+  background: oklch(0.145 0.052 251 / 0.9);
+}
+
+.home-dock textarea::placeholder {
+  color: var(--color-ink-muted);
+}
+
+.home-dock button,
+.meeting-button {
+  border: 1px solid var(--color-line-bright);
+  border-radius: 7px;
+  color: oklch(0.12 0.045 245);
+  background: var(--color-cyan);
+  box-shadow: none;
+}
+
+.home-dock button:not(:disabled):hover,
+.meeting-button:hover {
+  background: oklch(0.9 0.13 205);
+}
+
+.group-entry {
+  border-color: var(--color-line-bright);
+  border-radius: 8px;
+  color: var(--color-ink);
+  background: oklch(0.25 0.085 230 / 0.92);
+  box-shadow: none;
+}
+
+.group-entry:hover {
+  border-color: var(--color-cyan);
+  background: oklch(0.29 0.09 228 / 0.96);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+.group-entry small { color: var(--color-ink-muted); }
+.group-entry-mark i { background: var(--color-cyan); }
+.group-entry-mark i + i { background: var(--color-warn); }
+
+:global(.meeting-reminder-overlay) {
+  background: oklch(0.08 0.035 250 / 0.74);
+}
+
+:global(.meeting-reminder-dialog) {
+  border-color: var(--color-line-bright);
+  border-radius: var(--radius-lg);
+  background: oklch(0.18 0.065 250);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 0.36);
+}
+
+.meeting-reminder-card {
+  color: var(--color-ink);
+  background: linear-gradient(145deg, oklch(0.22 0.075 247), oklch(0.16 0.058 251));
+}
+
+.meeting-reminder-card::before {
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-cyan), transparent 82%);
+}
+
+.reminder-status { color: var(--color-cyan); }
+.reminder-status i { background: var(--color-cyan); }
+.meeting-reminder-card h2 { font-family: var(--font-display); }
+.meeting-reminder-card > p,
+.meeting-reminder-card dt { color: var(--color-ink-muted); }
+
+.meeting-reminder-card dl div {
+  border-color: var(--color-line);
+  border-radius: 8px;
+  background: oklch(0.15 0.05 251 / 0.72);
+}
+
+.later-button {
+  border-color: var(--color-line);
+  border-radius: 7px;
+  color: var(--color-ink-muted);
+  background: oklch(0.17 0.055 250);
+}
 </style>

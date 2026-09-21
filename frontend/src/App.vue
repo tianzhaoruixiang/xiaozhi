@@ -14,6 +14,7 @@ import PlanSignoffView from './views/PlanSignoffView.vue'
 import SignoffStatusBar from './components/signoff/SignoffStatusBar.vue'
 import TaskDistributionView from './views/TaskDistributionView.vue'
 import DistributionStatusBar from './components/distribution/DistributionStatusBar.vue'
+import DistributionCompletionDialog from './components/distribution/DistributionCompletionDialog.vue'
 import { useMeetingSimulation } from './composables/useMeetingSimulation'
 import { usePlanRevision } from './composables/usePlanRevision'
 import { usePlanSignoff } from './composables/usePlanSignoff'
@@ -30,8 +31,10 @@ const operations = useOperationsContext()
 const route = useRoute()
 const router = useRouter()
 const currentStep = ref(1)
+const distributionCompleteVisible = ref(false)
 const handoff = ref<MeetingHandoff | null>(null)
 const handoffId = computed(() => typeof route.query.handoffId === 'string' ? route.query.handoffId : 'SEC-20260921-001')
+const recognizedGroup = computed(() => distribution.groups.find((group) => group.id === 'x') ?? distribution.groups[0])
 
 onMounted(async () => {
   handoff.value = await getMeetingHandoff(handoffId.value)
@@ -136,7 +139,7 @@ const finishMeetingAndEnterOperations = async () => {
   meeting.isRunning = false
   operations.prepare(distribution.planVersion, distribution.signoffRecordId, distribution.groups, distribution.tasks, distribution.materials)
   await updateMeetingHandoff(handoffId.value, {
-    status: 'personal_execution',
+    status: 'dispatched',
     planVersion: distribution.planVersion,
     signoffRecordId: distribution.signoffRecordId,
     groups: distribution.groups,
@@ -144,7 +147,29 @@ const finishMeetingAndEnterOperations = async () => {
     materials: distribution.materials,
   })
   ElMessage.success('任务与材料已下发，安保动员会正式结束')
-  await router.push({ name: 'personal', query: { handoffId: handoffId.value } })
+  distributionCompleteVisible.value = true
+}
+
+const openPostMeetingDestination = async (destination: 'workbench' | 'operations' | 'dashboard') => {
+  const status = destination === 'workbench'
+    ? 'personal_execution'
+    : destination === 'operations' ? 'group_execution' : 'commanding'
+  await updateMeetingHandoff(handoffId.value, { status })
+  distributionCompleteVisible.value = false
+
+  if (destination === 'operations') {
+    if (recognizedGroup.value) operations.selectGroup(recognizedGroup.value.id)
+    await router.push({
+      name: 'group-operations',
+      query: { handoffId: handoffId.value, groupId: recognizedGroup.value?.id },
+    })
+    return
+  }
+
+  await router.push({
+    name: destination === 'workbench' ? 'personal' : 'dashboard',
+    query: { handoffId: handoffId.value },
+  })
 }
 </script>
 
@@ -313,6 +338,17 @@ const finishMeetingAndEnterOperations = async () => {
       :dispatched="distribution.dispatched"
       @back="backToSignoff"
       @finish="finishMeetingAndEnterOperations"
+    />
+
+    <DistributionCompletionDialog
+      v-model:visible="distributionCompleteVisible"
+      :group="recognizedGroup"
+      :task-count="distribution.tasks.length"
+      :material-count="distribution.materials.length"
+      :group-count="distribution.groups.length"
+      @workbench="openPostMeetingDestination('workbench')"
+      @operations="openPostMeetingDestination('operations')"
+      @dashboard="openPostMeetingDestination('dashboard')"
     />
   </div>
 </template>

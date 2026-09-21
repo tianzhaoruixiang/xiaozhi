@@ -590,4 +590,56 @@ const reportToHrbp = async () => {
     width: 100vw;
   }
 }
+
+/* 对话中的交付物与深色指挥面板保持一致，文档纸张预览仍保留白底。 */
+.deliverable {
+  border-color: var(--color-line);
+  background: oklch(0.16 0.052 251 / 0.76);
+}
+
+.head h3 {
+  color: var(--color-ink);
+}
+
+.badge,
+.btn.ghost {
+  color: var(--color-ink-muted);
+  border-color: var(--color-line);
+  background: oklch(0.18 0.055 249 / 0.9);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  border-color: var(--color-line-bright);
+  color: var(--color-cyan);
+}
+
+.btn.primary {
+  border: 1px solid var(--color-line-bright);
+  color: oklch(0.12 0.045 245);
+  background: var(--color-cyan);
+}
+
+.drawer {
+  background: linear-gradient(165deg, oklch(0.19 0.065 250), oklch(0.13 0.045 252));
+  border-left-color: var(--color-line-bright);
+}
+
+.drawer-head,
+.drawer-foot {
+  border-color: var(--color-line);
+}
+
+.drawer-head h2 {
+  color: var(--color-ink);
+}
+
+.icon-close {
+  border-color: var(--color-line);
+  color: var(--color-ink);
+  background: oklch(0.18 0.055 249);
+}
+
+.drawer-foot {
+  background: oklch(0.14 0.045 252 / 0.92);
+}
 </style>

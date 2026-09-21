@@ -184,4 +184,54 @@ const onActivate = () => {
     gap: 4px;
   }
 }
+
+.row {
+  border-bottom-color: oklch(0.58 0.12 222 / 0.2);
+}
+
+.when,
+.main h3 {
+  color: var(--color-ink);
+}
+
+.when {
+  color: var(--color-cyan);
+}
+
+.main p {
+  color: var(--color-ink-muted);
+}
+
+.status {
+  color: var(--color-ink-muted);
+  background: oklch(0.16 0.05 250 / 0.66);
+  border-color: var(--color-line);
+}
+
+.row[data-status='doing'] .status {
+  color: var(--color-cyan);
+  background: oklch(0.32 0.085 220 / 0.26);
+  border-color: var(--color-line-bright);
+}
+
+.row[data-variant='reminder'] .when { color: var(--color-danger); }
+.row[data-variant='focus'] .when,
+.mark { color: var(--color-warn); }
+.row[data-variant='key'] .when { color: oklch(0.76 0.15 250); }
+
+.mark {
+  background: oklch(0.34 0.08 83 / 0.24);
+  border-color: oklch(0.82 0.16 83 / 0.36);
+}
+
+.row.clickable:hover,
+.row.clickable:focus-visible {
+  background: oklch(0.27 0.075 235 / 0.42);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+
+.row.clickable.active {
+  background: oklch(0.32 0.085 220 / 0.28);
+  box-shadow: inset 0 0 0 1px var(--color-line-bright);
+}
 </style>

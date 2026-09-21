@@ -205,4 +205,65 @@ const emit = defineEmits<{
     grid-template-columns: 1fr;
   }
 }
+
+/* 会议页同款任务面板材质。 */
+.panel {
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, oklch(0.22 0.074 248 / 0.92), oklch(0.17 0.058 251 / 0.94));
+  backdrop-filter: none;
+  box-shadow: inset 0 1px 0 oklch(0.84 0.145 207 / 0.06);
+}
+
+.panel::before {
+  top: 0;
+  bottom: auto;
+  left: 18px;
+  width: 56px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--color-cyan);
+  box-shadow: 0 0 10px oklch(0.84 0.145 207 / 0.28);
+}
+
+.panel-focus::before { background: var(--color-warn); }
+.panel-key::before { background: var(--color-blue); }
+.panel-reminder::before { background: var(--color-danger); }
+
+.panel-head {
+  margin-bottom: 10px;
+  padding-left: 0;
+}
+
+.panel-head h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--color-ink);
+}
+
+.panel-head p,
+.empty {
+  color: var(--color-ink-muted);
+}
+
+.badge {
+  border-color: var(--color-line);
+  border-radius: 6px;
+  color: var(--color-cyan);
+  background: oklch(0.16 0.05 250 / 0.72);
+}
+
+.badge.warn {
+  color: var(--color-danger);
+  border-color: oklch(0.67 0.21 25 / 0.38);
+  background: oklch(0.3 0.08 25 / 0.22);
+}
+
+.list,
+.empty {
+  padding-left: 0;
+}
 </style>

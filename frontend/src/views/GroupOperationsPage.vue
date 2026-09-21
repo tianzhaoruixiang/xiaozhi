@@ -12,6 +12,7 @@ const operations = useOperationsContext()
 const route = useRoute()
 const router = useRouter()
 const handoffId = typeof route.query.handoffId === 'string' ? route.query.handoffId : 'SEC-20260921-001'
+const initialGroupId = typeof route.query.groupId === 'string' ? route.query.groupId : ''
 
 const syncSession = () => updateMeetingHandoff(handoffId, {
   status: 'group_execution',
@@ -31,6 +32,9 @@ onMounted(async () => {
     operations.prepare(session.planVersion, session.signoffRecordId, session.groups, dispatchedTasks, session.materials)
   } else {
     operations.ensurePrepared()
+  }
+  if (initialGroupId && operations.groups.some((group) => group.id === initialGroupId)) {
+    operations.selectGroup(initialGroupId)
   }
   await syncSession()
 })
