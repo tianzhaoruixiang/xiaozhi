@@ -128,6 +128,7 @@ export const AGENT_AVATAR_BY_ID: Record<string, string> = {
   'offline-invite-scripter': 'taoyao',
   'offline-meetup-coordinator': 'lanxin',
   'offline-plan-synthesizer': 'mozhu',
+  'task-decomposer': 'jinyu',
 }
 
 function hashString(input: string): number {

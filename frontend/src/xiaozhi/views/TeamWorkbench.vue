@@ -1,20 +1,59 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { useGroupTasks } from '../data/groupTasks'
+import { useGroupTasks, type GroupTask } from '../data/groupTasks'
+import { quickCommandsForTask, type QuickCommand } from '../data/quickCommands'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
 import GroupProgressBoard from '../components/GroupProgressBoard.vue'
+import MeetingReminderDialog from '../components/MeetingReminderDialog.vue'
 
-const { groups, summary } = useGroupTasks()
+const { currentGroup } = useGroupTasks()
 const router = useRouter()
 
-/** 底部输入框：继续交给小智办理 */
-const homeDraft = ref('')
+/** 进入本台后弹出「大型会议保障动员会」提醒 */
+const reminderVisible = ref(false)
+let reminderTimer: number | undefined
+
+onMounted(() => {
+  reminderTimer = window.setTimeout(() => {
+    reminderVisible.value = true
+  }, 650)
+})
+
+onUnmounted(() => {
+  if (reminderTimer) window.clearTimeout(reminderTimer)
+})
+
+/** 底部输入框：默认填入任务分解指令，发送后进入 /team/task 执行页 */
+const DECOMPOSE_INSTRUCTION = '将推荐算法专家寻访工作拆分成任务项，分配给合适的成员'
+const homeDraft = ref(DECOMPOSE_INSTRUCTION)
+
+/** 点击任务：任务名进入输入框，并按任务状态生成快捷指令 */
+const selectedTaskId = ref('')
+const selectedTask = computed(
+  () => currentGroup.value?.tasks.find((t) => t.id === selectedTaskId.value) ?? null,
+)
+
+/** 待分配 → 拆分/分配；进行中 → 进展/风险；已完成 → 成果成效 */
+const quickCommands = computed<QuickCommand[]>(() =>
+  quickCommandsForTask(selectedTask.value),
+)
+
+const selectTask = (task: GroupTask) => {
+  selectedTaskId.value = task.id
+  homeDraft.value = task.title
+}
+
+const applyQuickCommand = (command: QuickCommand) => {
+  homeDraft.value = command.text
+}
+
 const startFreeTask = () => {
-  const text = homeDraft.value.trim()
-  if (!text) return
-  homeDraft.value = ''
-  void router.push(`/personal/task?q=${encodeURIComponent(text)}`)
+  const text = homeDraft.value.trim() || DECOMPOSE_INSTRUCTION
+  const taskQuery = selectedTaskId.value
+    ? `&task=${encodeURIComponent(selectedTaskId.value)}`
+    : ''
+  void router.push(`/team/task?q=${encodeURIComponent(text)}${taskQuery}`)
 }
 </script>
 
@@ -32,36 +71,60 @@ const startFreeTask = () => {
     </div>
 
     <div class="shell wide">
-      <WorkbenchHeader compact brand="张处，您好" tagline="专项任务 · 各组任务进展">
-        <template #actions>
+      <WorkbenchHeader compact brand="王处，您好" tagline="专项任务 · 本组各项任务进展" />
+
+      <GroupProgressBoard
+        :group="currentGroup"
+        :selected-id="selectedTaskId"
+        @select="selectTask"
+      >
+        <template #title-action>
           <RouterLink class="group-link" to="/group-operations">
             <span class="group-mark" aria-hidden="true"><i /><i /></span>
             进入工作组
             <b aria-hidden="true">→</b>
           </RouterLink>
         </template>
-      </WorkbenchHeader>
-
-      <GroupProgressBoard :groups="groups" :summary="summary" />
+      </GroupProgressBoard>
 
       <form class="home-dock" @submit.prevent="startFreeTask">
         <textarea
           :value="homeDraft"
           rows="2"
-          placeholder="也可以直接问小智，例如：帮我汇总三个组的寻访进展与受阻事项…"
+          placeholder="点击左侧任务，或直接输入指令"
           @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
           @keydown.enter.exact.prevent="startFreeTask"
         />
         <button type="submit" :disabled="!homeDraft.trim()">发送</button>
+
+        <!-- 点击任务后出现：按任务状态给出快捷指令 -->
+        <div v-if="quickCommands.length" class="quick-bar">
+          <span class="quick-label">
+            {{ selectedTask?.title }} · 快捷指令
+          </span>
+          <button
+            v-for="command in quickCommands"
+            :key="command.id"
+            type="button"
+            class="quick-chip"
+            @click="applyQuickCommand(command)"
+          >
+            {{ command.label }}
+          </button>
+        </div>
       </form>
     </div>
+
+    <MeetingReminderDialog v-model="reminderVisible" />
   </div>
 </template>
 
 <style scoped>
 .workbench {
   position: relative;
-  min-height: 100vh;
+  /* 固定一屏：页面自身不滚动，滚动交给任务 / 成员两栏 */
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
   background:
     radial-gradient(1200px 620px at 6% -10%, rgba(46, 196, 214, 0.2), transparent 58%),
@@ -181,7 +244,14 @@ const startFreeTask = () => {
 }
 
 .shell.wide {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   max-width: 1440px;
+  padding: clamp(16px, 2.4vw, 26px) clamp(16px, 2.6vw, 30px) clamp(12px, 1.8vw, 18px);
+  box-sizing: border-box;
 }
 
 .shell.task {
@@ -194,13 +264,14 @@ const startFreeTask = () => {
   box-sizing: border-box;
 }
 
-/* 四块内容下方的输入框 */
+/* 底部输入框：固定在工作台底部，不参与两栏滚动 */
 .home-dock {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: end;
-  margin-top: 18px;
+  margin-top: 14px;
+  flex-shrink: 0;
   padding: 14px 16px;
   border-radius: calc(var(--radius-lg) + 2px);
   background:
@@ -242,6 +313,43 @@ const startFreeTask = () => {
   cursor: not-allowed;
 }
 
+/* 点击任务后出现在输入框下方的快捷指令 */
+.quick-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+.quick-chip {
+  padding: 5px 13px;
+  border: 1px solid rgba(46, 196, 214, 0.34);
+  border-radius: 999px;
+  background: rgba(46, 196, 214, 0.1);
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms var(--ease-out);
+}
+
+.quick-chip:hover {
+  background: rgba(46, 196, 214, 0.18);
+  border-color: rgba(46, 196, 214, 0.5);
+  transform: translateY(-1px);
+}
+
 .group-entry {
   display: flex;
   align-items: center;
@@ -281,116 +389,27 @@ const startFreeTask = () => {
 .group-entry small { color: rgba(255, 255, 255, 0.64); font-size: 0.68rem; }
 .group-entry strong { font-size: 0.92rem; letter-spacing: 0.04em; }
 .group-entry b { margin-left: auto; font-size: 1.2rem; font-weight: 500; }
-
-:global(.meeting-reminder-overlay) {
-  background: rgba(6, 20, 31, 0.5);
-  backdrop-filter: blur(5px);
-}
-
-:global(.meeting-reminder-dialog) {
-  overflow: hidden;
-  border: 1px solid rgba(46, 196, 214, 0.22);
-  border-radius: 22px;
-  background: #f4f9fc;
-  box-shadow: 0 28px 80px rgba(6, 20, 31, 0.28);
-}
-
-:global(.meeting-reminder-dialog .el-dialog__header) { display: none; }
-:global(.meeting-reminder-dialog .el-dialog__body) { padding: 0; }
-
-.meeting-reminder-card {
-  position: relative;
-  padding: 30px;
-  color: #14283a;
-  background:
-    linear-gradient(135deg, rgba(46, 196, 214, 0.09), transparent 42%),
-    linear-gradient(160deg, #fff, #edf6fa);
-}
-
-.meeting-reminder-card::before {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  content: '';
-  background: linear-gradient(90deg, #1a7a92, #2ec4d6 68%, #c9a86c);
-}
-
-.reminder-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #1a7a92;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
-.reminder-status i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #2ec4d6;
-  box-shadow: 0 0 0 5px rgba(46, 196, 214, 0.12);
-}
-
-.meeting-reminder-card h2 {
-  margin: 17px 0 8px;
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-size: 1.72rem;
-  letter-spacing: 0.04em;
-}
-
-.meeting-reminder-card > p {
-  margin: 0;
-  color: #5a7084;
-  line-height: 1.65;
-}
-
-.meeting-reminder-card dl {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin: 24px 0;
-}
-
-.meeting-reminder-card dl div {
-  padding: 12px;
-  border: 1px solid rgba(20, 40, 58, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.meeting-reminder-card dt { color: #718497; font-size: 0.7rem; }
-.meeting-reminder-card dd { margin: 5px 0 0; font-size: 0.84rem; font-weight: 700; }
-.reminder-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.reminder-actions button { padding: 11px 18px; border-radius: 11px; cursor: pointer; font-weight: 700; }
-.later-button { border: 1px solid rgba(20, 40, 58, 0.12); color: #5a7084; background: #fff; }
-.meeting-button { border: 0; color: #fff; background: linear-gradient(145deg, #16798f, #0f5368); box-shadow: 0 9px 22px rgba(15, 83, 104, 0.22); }
-.meeting-button span { margin-left: 8px; }
-
-/* 页头右上角：跳转工作组 */
+/* 「专项任务」标题右侧：跳转工作组 */
 .group-link {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 16px 9px 14px;
+  gap: 8px;
+  padding: 6px 13px 6px 11px;
   border-radius: 999px;
   background: linear-gradient(160deg, #1f8ea8, #176f84);
   color: #fff;
-  font-size: 0.86rem;
+  font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 0 10px 22px rgba(23, 111, 132, 0.24);
+  box-shadow: 0 6px 14px rgba(23, 111, 132, 0.22);
   transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
 .group-link:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 26px rgba(23, 111, 132, 0.32);
+  box-shadow: 0 10px 20px rgba(23, 111, 132, 0.3);
 }
 
 /* 斜切双条：工作组标识 */
@@ -401,8 +420,8 @@ const startFreeTask = () => {
 }
 
 .group-mark i {
-  width: 5px;
-  height: 15px;
+  width: 4px;
+  height: 12px;
   border-radius: 1px;
   background: currentColor;
 }
@@ -413,7 +432,7 @@ const startFreeTask = () => {
 
 .group-link b {
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 

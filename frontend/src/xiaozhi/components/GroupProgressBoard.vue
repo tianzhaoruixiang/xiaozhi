@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import {
+  SATURATION_MAX,
   STATUS_META,
   countDoneTasks,
   groupProgress,
@@ -9,105 +10,149 @@ import {
 } from '../data/groupTasks'
 import TaskProgressBar from './TaskProgressBar.vue'
 
-defineProps<{
-  groups: TaskGroup[]
-  summary: {
-    groupCount: number
-    taskCount: number
-    memberCount: number
-    doneCount: number
-    riskCount: number
-    progress: number
-  }
+const props = defineProps<{
+  group: TaskGroup
+  /** 当前选中的任务（高亮 + 生成快捷指令） */
+  selectedId?: string
 }>()
 
-/** 默认收起各组任务明细；用户展开后记在 opened 里 */
-const opened = ref<Record<string, boolean>>({})
+const emit = defineEmits<{
+  select: [task: TaskGroup['tasks'][number]]
+}>()
 
-const isOpen = (id: string) => opened.value[id] === true
+const status = computed(() => groupStatus(props.group))
+const progress = computed(() => groupProgress(props.group))
+const doneTasks = computed(() => countDoneTasks(props.group))
+const riskTasks = computed(
+  () => props.group.tasks.filter((task) => task.status === 'risk').length,
+)
+const unassignedTasks = computed(
+  () => props.group.tasks.filter((task) => task.status === 'unassigned').length,
+)
 
-const toggle = (id: string) => {
-  opened.value = { ...opened.value, [id]: !isOpen(id) }
+/** 饱和度分级：≥4 高、=3 偏高、其余正常 */
+const saturationLevel = (value: number) => {
+  if (value >= 4) return 'high'
+  if (value >= 3) return 'mid'
+  return 'normal'
 }
+
+const saturationPercent = (value: number) =>
+  Math.min(100, Math.round((value / SATURATION_MAX) * 100))
 </script>
 
 <template>
-  <section class="board" aria-label="专项任务 · 各组任务进展">
+  <section class="board" aria-label="专项任务 · 本组任务与成员饱和度">
     <header class="board-head">
       <div class="board-title">
-        <h2>专项任务</h2>
-        <p>各组任务进展汇总</p>
+        <div class="title-row">
+          <h2>专项任务</h2>
+          <slot name="title-action" />
+        </div>
+        <p>本组各项任务进展与成员饱和度</p>
       </div>
       <dl class="stats">
-        <div><dt>组</dt><dd>{{ summary.groupCount }}</dd></div>
-        <div><dt>任务</dt><dd>{{ summary.taskCount }}</dd></div>
-        <div><dt>完成</dt><dd>{{ summary.doneCount }}</dd></div>
-        <div :data-warn="summary.riskCount > 0"><dt>受阻</dt><dd>{{ summary.riskCount }}</dd></div>
-        <div><dt>总进度</dt><dd>{{ summary.progress }}%</dd></div>
+        <div><dt>任务</dt><dd>{{ group.tasks.length }}</dd></div>
+        <div><dt>完成</dt><dd>{{ doneTasks }}</dd></div>
+        <div :data-warn="unassignedTasks > 0"><dt>待分配</dt><dd>{{ unassignedTasks }}</dd></div>
+        <div :data-warn="riskTasks > 0"><dt>受阻</dt><dd>{{ riskTasks }}</dd></div>
+        <div><dt>成员</dt><dd>{{ group.roster.length }}</dd></div>
+        <div><dt>组进度</dt><dd>{{ progress }}%</dd></div>
       </dl>
     </header>
 
-    <ol class="groups">
-      <li
-        v-for="(group, index) in groups"
-        :key="group.id"
-        class="group"
-        :data-status="groupStatus(group)"
-        :data-open="isOpen(group.id) ? '1' : '0'"
-      >
-        <button
-          type="button"
-          class="group-top"
-          :aria-expanded="isOpen(group.id)"
-          @click="toggle(group.id)"
-        >
-          <span class="g-index">{{ String(index + 1).padStart(2, '0') }}</span>
-          <span class="g-name">
-            <strong>
-              {{ group.name }}
-              <span v-if="group.current" class="current-tag">当前组</span>
-            </strong>
-            <em>组长 {{ group.lead }} · {{ group.scope }}</em>
-          </span>
-          <span class="g-meta">
-            <span class="chip" :data-status="groupStatus(group)">
-              {{ STATUS_META[groupStatus(group)].label }}
-            </span>
-            <span class="g-count">
-              {{ countDoneTasks(group) }}/{{ group.tasks.length }}
-            </span>
-            <span class="chev">{{ isOpen(group.id) ? '收起' : '展开' }}</span>
-          </span>
-        </button>
+    <div class="group-line">
+      <span class="group-name">{{ group.name }}</span>
+      <span class="chip" :data-status="status">{{ STATUS_META[status].label }}</span>
+      <span class="lead">组长 {{ group.lead }}</span>
+      <span class="scope">{{ group.scope }}</span>
+      <div class="line-bar">
+        <TaskProgressBar compact :progress="progress" :status="status" />
+      </div>
+    </div>
 
-        <div class="g-progress">
-          <TaskProgressBar :progress="groupProgress(group)" :status="groupStatus(group)" />
-        </div>
-
-        <ul v-show="isOpen(group.id)" class="tasks">
+    <div class="board-body">
+      <!-- 左：任务 -->
+      <div class="tasks-col">
+        <h3 class="col-title">
+          任务
+          <span class="col-count">{{ group.tasks.length }}</span>
+        </h3>
+        <ol class="tasks">
           <li
             v-for="task in group.tasks"
             :key="task.id"
             class="task"
             :data-status="task.status"
+            :data-selected="task.id === props.selectedId ? '1' : '0'"
           >
-            <div class="t-head">
-              <strong>{{ task.title }}</strong>
-              <span class="chip" :data-status="task.status">
-                {{ STATUS_META[task.status].label }}
+            <button
+              type="button"
+              class="task-btn"
+              :aria-pressed="task.id === props.selectedId"
+              @click="emit('select', task)"
+            >
+              <span class="t-head">
+                <span class="t-title">
+                  <strong>{{ task.title }}</strong>
+                  <em>{{ task.detail }}</em>
+                </span>
+                <span class="t-side">
+                  <span class="chip" :data-status="task.status">
+                    {{ STATUS_META[task.status].label }}
+                  </span>
+                  <span class="pct">{{ task.progress }}%</span>
+                </span>
               </span>
-            </div>
-            <p class="t-detail">{{ task.detail }}</p>
-            <TaskProgressBar compact :progress="task.progress" :status="task.status" />
-            <div class="t-foot">
-              <span>负责人 {{ task.owner }}</span>
-              <span>{{ task.due }}</span>
-              <span>{{ task.members.length }} 名成员</span>
+
+              <span class="t-bar">
+                <TaskProgressBar :progress="task.progress" :status="task.status" />
+              </span>
+
+              <span class="t-foot">
+                <span>负责人 {{ task.owner || '待分配' }}</span>
+                <span>截止 {{ task.due || '—' }}</span>
+                <span>成员 {{ task.members.length ? `${task.members.length} 名` : '—' }}</span>
+              </span>
+            </button>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 右：成员与工作饱和度 -->
+      <aside class="members-col">
+        <h3 class="col-title">
+          成员
+          <span class="col-count">{{ group.roster.length }}</span>
+        </h3>
+        <ul class="members">
+          <li
+            v-for="member in group.roster"
+            :key="member.id"
+            class="member"
+            :data-level="saturationLevel(member.saturation)"
+          >
+            <span class="avatar" aria-hidden="true">{{ member.name.charAt(0) }}</span>
+            <span class="m-who">
+              <strong>{{ member.name }}</strong>
+              <em>{{ member.role }}</em>
+            </span>
+            <div class="sat">
+              <div
+                class="sat-track"
+                :aria-label="`工作饱和度 ${member.saturation} / ${SATURATION_MAX}`"
+              >
+                <span
+                  class="sat-fill"
+                  :style="{ width: `${saturationPercent(member.saturation)}%` }"
+                />
+              </div>
+              <span class="sat-value">{{ member.saturation }} / {{ SATURATION_MAX }}</span>
             </div>
           </li>
         </ul>
-      </li>
-    </ol>
+      </aside>
+    </div>
   </section>
 </template>
 
@@ -116,6 +161,9 @@ const toggle = (id: string) => {
   position: relative;
   display: flex;
   flex-direction: column;
+  /* 撑满工作台剩余高度：两栏各自内部滚动，页面本身不滚 */
+  flex: 1;
+  min-height: 0;
   padding: 20px 20px 18px;
   border-radius: calc(var(--radius-lg) + 2px);
   background:
@@ -150,6 +198,7 @@ const toggle = (id: string) => {
   padding-bottom: 14px;
   margin-bottom: 14px;
   border-bottom: 1px solid rgba(20, 40, 58, 0.08);
+  flex-shrink: 0;
 }
 
 .board-title h2 {
@@ -159,6 +208,14 @@ const toggle = (id: string) => {
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--color-ink);
+}
+
+/* 标题行：专项任务 + 右侧动作（如「进入工作组」） */
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
 }
 
 .board-title p {
@@ -198,108 +255,85 @@ const toggle = (id: string) => {
 }
 
 .stats div[data-warn='true'] {
-  border-color: rgba(168, 72, 72, 0.28);
-  background: rgba(168, 72, 72, 0.06);
+  border-color: rgba(184, 122, 53, 0.3);
+  background: rgba(184, 122, 53, 0.08);
 }
 
-.stats div[data-warn='true'] dd { color: var(--color-danger); }
+.stats div[data-warn='true'] dd { color: var(--color-warn); }
 
-.groups {
-  list-style: none;
+.group-line {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-}
-
-.group {
-  padding: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
   border: 1px solid rgba(20, 40, 58, 0.08);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.66);
+  flex-shrink: 0;
 }
 
-.group[data-status='risk'] { border-color: rgba(168, 72, 72, 0.32); }
-.group[data-status='done'] { border-color: rgba(47, 125, 90, 0.28); }
-
-.group-top {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px 12px;
-  align-items: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.g-index {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid rgba(46, 196, 214, 0.32);
-  border-radius: 9px;
-  background: rgba(46, 196, 214, 0.1);
-  color: var(--color-accent);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.g-name {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.g-name strong {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.96rem;
+.group-name {
+  font-size: 0.92rem;
+  font-weight: 600;
   color: var(--color-ink);
 }
 
-.current-tag {
-  padding: 1px 7px;
-  border: 1px solid rgba(26, 122, 146, 0.3);
-  border-radius: 999px;
-  background: rgba(26, 122, 146, 0.08);
-  color: var(--color-accent);
-  font-size: 0.64rem;
+.group-line .lead {
+  font-size: 0.84rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  color: var(--color-ink);
 }
 
-.g-name em {
-  font-style: normal;
-  font-size: 0.76rem;
-  color: var(--color-ink-muted);
-}
-
-.g-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.g-count {
-  font-family: var(--font-mono);
+.group-line .scope {
   font-size: 0.78rem;
   color: var(--color-ink-muted);
 }
 
-.chev {
-  min-width: 2.2rem;
-  text-align: right;
+.line-bar {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* 左任务 / 右成员：占满剩余高度，两栏各自内部滚动 */
+.board-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.tasks-col,
+.members-col {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+}
+
+.col-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
   font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   color: var(--color-accent);
+}
+
+.col-count {
+  padding: 1px 7px;
+  border: 1px solid rgba(26, 122, 146, 0.24);
+  border-radius: 999px;
+  background: rgba(26, 122, 146, 0.07);
+  color: var(--color-accent);
+  font-size: 0.66rem;
 }
 
 .chip {
@@ -337,63 +371,246 @@ const toggle = (id: string) => {
   background: rgba(184, 122, 53, 0.12);
 }
 
-.g-progress {
-  margin-top: 10px;
+.chip[data-status='unassigned'] {
+  color: #6b7c8c;
+  border-color: rgba(107, 124, 140, 0.36);
+  border-style: dashed;
+  background: rgba(107, 124, 140, 0.08);
 }
 
 .tasks {
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 10px;
-  margin: 12px 0 0;
-  padding: 12px 0 0;
-  border-top: 1px dashed rgba(20, 40, 58, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
 }
 
 .task {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding: 12px;
+  padding: 14px 16px;
   border: 1px solid rgba(20, 40, 58, 0.08);
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.72);
+  transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out), background 160ms var(--ease-out);
 }
 
-.task[data-status='risk'] { border-color: rgba(168, 72, 72, 0.28); }
+.task:hover {
+  border-color: rgba(26, 122, 146, 0.36);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 16px rgba(6, 20, 31, 0.06);
+}
+
+.task[data-selected='1'] {
+  border-color: rgba(26, 122, 146, 0.55);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    inset 0 0 0 1px rgba(26, 122, 146, 0.2),
+    0 8px 20px rgba(6, 20, 31, 0.08);
+}
+
+/* 整卡可点：点击后任务名进入输入框并生成快捷指令 */
+.task-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-btn:focus-visible {
+  outline: 2px solid rgba(46, 196, 214, 0.65);
+  outline-offset: 4px;
+}
+
+.task[data-status='unassigned'] {
+  border-style: dashed;
+  border-color: rgba(107, 124, 140, 0.42);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.task[data-status='risk'] { border-color: rgba(168, 72, 72, 0.32); }
+.task[data-status='done'] { border-color: rgba(47, 125, 90, 0.28); }
 
 .t-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
 
-.t-head strong {
-  font-size: 0.88rem;
-  line-height: 1.4;
+.t-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.t-title strong {
+  font-size: 0.96rem;
   color: #14304a;
 }
 
-.t-detail {
-  margin: 0;
-  font-size: 0.76rem;
+.t-title em {
+  font-style: normal;
+  font-size: 0.78rem;
   line-height: 1.5;
   color: var(--color-ink-muted);
+}
+
+.t-side {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pct {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.task[data-status='unassigned'] .pct { color: #6b7c8c; }
+
+.t-bar {
+  margin-top: 11px;
 }
 
 .t-foot {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: 4px 16px;
+  margin-top: 10px;
+  font-size: 0.74rem;
+  color: var(--color-ink-muted);
+}
+
+/* 成员列表 */
+.members {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.member {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(20, 40, 58, 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.member[data-level='mid'] { border-color: rgba(184, 122, 53, 0.28); }
+.member[data-level='high'] { border-color: rgba(168, 72, 72, 0.3); }
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(46, 196, 214, 0.32);
+  border-radius: 50%;
+  background: rgba(46, 196, 214, 0.12);
+  color: var(--color-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.member[data-level='mid'] .avatar {
+  border-color: rgba(184, 122, 53, 0.4);
+  background: rgba(184, 122, 53, 0.12);
+  color: var(--color-warn);
+}
+
+.member[data-level='high'] .avatar {
+  border-color: rgba(168, 72, 72, 0.4);
+  background: rgba(168, 72, 72, 0.12);
+  color: var(--color-danger);
+}
+
+.m-who {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+.m-who strong {
+  font-size: 0.88rem;
+  color: var(--color-ink);
+}
+
+.m-who em {
+  font-style: normal;
   font-size: 0.72rem;
   color: var(--color-ink-muted);
 }
 
+.sat {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sat-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border: 1px solid rgba(20, 40, 58, 0.1);
+  border-radius: 999px;
+  background: rgba(20, 40, 58, 0.09);
+  overflow: hidden;
+}
+
+.sat-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2ec4d6, #1a7a92);
+  transition: width var(--dur-mid) var(--ease-out);
+}
+
+.member[data-level='mid'] .sat-fill {
+  background: linear-gradient(90deg, #d8b878, #b87a35);
+}
+
+.member[data-level='high'] .sat-fill {
+  background: linear-gradient(90deg, #c96f6f, #a84848);
+}
+
+.sat-value {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.member[data-level='mid'] .sat-value { color: var(--color-warn); }
+.member[data-level='high'] .sat-value { color: var(--color-danger); }
+
+@media (max-width: 900px) {
+  /* 窄屏仍保持一屏：上下两栏各自滚动 */
+  .board-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 720px) {
   .board { padding: 16px; }
-  .group-top { grid-template-columns: auto 1fr; }
-  .g-meta { grid-column: 1 / -1; justify-content: space-between; }
+  .t-head { flex-direction: column; }
 }
 </style>

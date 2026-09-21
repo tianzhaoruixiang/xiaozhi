@@ -1,12 +1,15 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-export type TaskStatus = 'todo' | 'doing' | 'done' | 'risk'
+export type TaskStatus = 'unassigned' | 'todo' | 'doing' | 'done' | 'risk'
+
+/** 已被分配的任务不会停留在 unassigned */
+export type AssignedTaskStatus = Exclude<TaskStatus, 'unassigned'>
 
 export interface TaskMember {
   id: string
   name: string
   role: string
-  status: TaskStatus
+  status: AssignedTaskStatus
   /** 0-100 */
   progress: number
   note: string
@@ -16,7 +19,9 @@ export interface GroupTask {
   id: string
   title: string
   detail: string
+  /** 待分配任务为空 */
   owner: string
+  /** 待分配任务为空 */
   due: string
   status: TaskStatus
   /** 0-100 */
@@ -24,17 +29,29 @@ export interface GroupTask {
   members: TaskMember[]
 }
 
+/** 组内成员与其工作饱和度（1 项任务 = 1 点） */
+export interface GroupMember {
+  id: string
+  name: string
+  role: string
+  saturation: number
+}
+
 export interface TaskGroup {
   id: string
   name: string
   lead: string
   scope: string
-  /** 当前组：高总工作台默认展示这一组 */
+  /** 当前组：王处工作台展示这一组 */
   current?: boolean
+  roster: GroupMember[]
   tasks: GroupTask[]
 }
 
+export const SATURATION_MAX = 5
+
 export const STATUS_META: Record<TaskStatus, { label: string; short: string }> = {
+  unassigned: { label: '待分配', short: '待分配' },
   todo: { label: '待启动', short: '待启动' },
   doing: { label: '进行中', short: '进行中' },
   done: { label: '已完成', short: '已完成' },
@@ -43,7 +60,7 @@ export const STATUS_META: Record<TaskStatus, { label: string; short: string }> =
 
 /**
  * 各组专项任务台账（演示数据）。
- * 组 → 任务 → 成员三级：张处工作台看各组汇总，高总工作台看当前组下钻到成员。
+ * 组 → 任务 → 成员三级；王处工作台看本组任务与成员饱和度，高总工作台看各组下钻到成员。
  */
 const initialGroups: TaskGroup[] = [
   {
@@ -52,49 +69,25 @@ const initialGroups: TaskGroup[] = [
     lead: '张磊',
     scope: '推荐算法 · 广告投放',
     current: true,
+    roster: [
+      { id: 'r1', name: '张磊', role: '组长 · 统筹', saturation: 2 },
+      { id: 'r2', name: '李娜', role: '候选人触达', saturation: 2 },
+      { id: 'r3', name: '王强', role: '画像与评估', saturation: 1 },
+      { id: 'r4', name: '陈晓', role: '面试协调', saturation: 1 },
+      { id: 'r5', name: '刘洋', role: '行业调研', saturation: 2 },
+      { id: 'r6', name: '赵敏', role: '竞品对标', saturation: 1 },
+    ],
     tasks: [
       {
+        // 待分配：负责人 / 截止 / 成员均为空，等待任务分解后分配
         id: 't1',
         title: '推荐算法专家寻访',
         detail: '按岗位画像触达推荐算法方向人选，完成初筛与意向确认',
-        owner: '张磊',
-        due: '本周五',
-        status: 'doing',
-        progress: 65,
-        members: [
-          {
-            id: 'm1',
-            name: '张磊',
-            role: '组长 · 统筹',
-            status: 'doing',
-            progress: 65,
-            note: '正在对齐岗位画像与候选人优先级',
-          },
-          {
-            id: 'm2',
-            name: '李娜',
-            role: '候选人触达',
-            status: 'doing',
-            progress: 72,
-            note: '已触达 9 人，4 人同意进一步沟通',
-          },
-          {
-            id: 'm3',
-            name: '王强',
-            role: '画像与评估',
-            status: 'doing',
-            progress: 58,
-            note: '完成技术栈拆解，待补评估口径',
-          },
-          {
-            id: 'm4',
-            name: '陈晓',
-            role: '面试协调',
-            status: 'doing',
-            progress: 40,
-            note: '已排定 2 场线上沟通',
-          },
-        ],
+        owner: '',
+        due: '',
+        status: 'unassigned',
+        progress: 0,
+        members: [],
       },
       {
         id: 't2',
@@ -157,6 +150,11 @@ const initialGroups: TaskGroup[] = [
     name: '数据平台寻访组',
     lead: '孙倩',
     scope: '数据架构 · 实时计算',
+    roster: [
+      { id: 'r7', name: '孙倩', role: '组长 · 统筹', saturation: 2 },
+      { id: 'r8', name: '周航', role: '候选人评估', saturation: 2 },
+      { id: 'r9', name: '吴桐', role: '渠道拓展', saturation: 1 },
+    ],
     tasks: [
       {
         id: 't4',
@@ -227,6 +225,10 @@ const initialGroups: TaskGroup[] = [
     name: '风控算法寻访组',
     lead: '周航',
     scope: '风控建模 · 反欺诈',
+    roster: [
+      { id: 'r10', name: '周航', role: '组长 · 统筹', saturation: 3 },
+      { id: 'r11', name: '郑楠', role: '候选人触达', saturation: 2 },
+    ],
     tasks: [
       {
         id: 't6',
@@ -287,38 +289,117 @@ export function groupProgress(group: TaskGroup): number {
 
 /** 组状态：有受阻则受阻；全部完成才完成；有推进则进行中 */
 export function groupStatus(group: TaskGroup): TaskStatus {
-  if (!group.tasks.length) return 'todo'
+  if (!group.tasks.length) return 'unassigned'
   if (group.tasks.some((t) => t.status === 'risk')) return 'risk'
   if (group.tasks.every((t) => t.status === 'done')) return 'done'
   if (group.tasks.some((t) => t.status === 'doing' || t.status === 'done')) return 'doing'
-  return 'todo'
+  if (group.tasks.some((t) => t.status === 'todo')) return 'todo'
+  return 'unassigned'
 }
 
 export function countDoneTasks(group: TaskGroup): number {
   return group.tasks.filter((t) => t.status === 'done').length
 }
 
+function cloneGroups(source: TaskGroup[]): TaskGroup[] {
+  return source.map((group) => ({
+    ...group,
+    roster: group.roster.map((member) => ({ ...member })),
+    tasks: group.tasks.map((task) => ({
+      ...task,
+      members: task.members.map((member) => ({ ...member })),
+    })),
+  }))
+}
+
+/** 共享可变台账：任务分配后跨页面（/team ↔ /team/task）保持一致 */
+const groupsState = ref<TaskGroup[]>(cloneGroups(initialGroups))
+
+function summarize(groups: TaskGroup[]) {
+  const tasks = groups.flatMap((g) => g.tasks)
+  return {
+    groupCount: groups.length,
+    taskCount: tasks.length,
+    memberCount: tasks.reduce((sum, t) => sum + t.members.length, 0),
+    doneCount: tasks.filter((t) => t.status === 'done').length,
+    riskCount: tasks.filter((t) => t.status === 'risk').length,
+    progress: tasks.length
+      ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)
+      : 0,
+  }
+}
+
 export function useGroupTasks() {
-  const groups = computed(() => initialGroups)
+  const groups = computed(() => groupsState.value)
   const currentGroup = computed(
-    () => initialGroups.find((g) => g.current) ?? initialGroups[0],
+    () => groupsState.value.find((g) => g.current) ?? groupsState.value[0],
   )
 
-  const allTasks = computed(() => initialGroups.flatMap((g) => g.tasks))
+  const allTasks = computed(() => groupsState.value.flatMap((g) => g.tasks))
 
-  const summary = computed(() => ({
-    groupCount: initialGroups.length,
-    taskCount: allTasks.value.length,
-    memberCount: allTasks.value.reduce((sum, t) => sum + t.members.length, 0),
-    doneCount: allTasks.value.filter((t) => t.status === 'done').length,
-    riskCount: allTasks.value.filter((t) => t.status === 'risk').length,
-    progress: allTasks.value.length
-      ? Math.round(
-          allTasks.value.reduce((sum, t) => sum + t.progress, 0) /
-            allTasks.value.length,
-        )
-      : 0,
-  }))
+  /**
+   * 把某个任务分配给成员：写入负责人、补一条成员记录，并让该成员饱和度 +1。
+   * 重复分配给同一个人不会重复计数。
+   */
+  const assignTask = (
+    groupId: string,
+    taskId: string,
+    memberName: string,
+    options?: { role?: string; due?: string; note?: string },
+  ) => {
+    const group = groupsState.value.find((g) => g.id === groupId)
+    const task = group?.tasks.find((t) => t.id === taskId)
+    if (!group || !task) return { ok: false as const, reason: 'task-not-found' }
 
-  return { groups, currentGroup, summary }
+    const alreadyOwned = task.owner === memberName
+    task.owner = memberName
+    if (options?.due) task.due = options.due
+    if (task.status === 'unassigned') task.status = 'todo'
+
+    if (!task.members.some((m) => m.name === memberName)) {
+      task.members.push({
+        id: `${task.id}-${memberName}`,
+        name: memberName,
+        role: options?.role || '负责人',
+        status: 'todo',
+        progress: 0,
+        note: options?.note || '已分配，待启动',
+      })
+    }
+
+    const rosterMember = group.roster.find((m) => m.name === memberName)
+    if (rosterMember) {
+      if (!alreadyOwned) rosterMember.saturation += 1
+    } else {
+      group.roster.push({
+        id: `${group.id}-${memberName}`,
+        name: memberName,
+        role: options?.role || '成员',
+        saturation: 1,
+      })
+    }
+
+    return {
+      ok: true as const,
+      saturation:
+        group.roster.find((m) => m.name === memberName)?.saturation ?? 0,
+    }
+  }
+
+  return {
+    groups,
+    currentGroup,
+    allTasks,
+    summary: computed(() => summarize(groupsState.value)),
+    assignTask,
+  }
+}
+
+/** 复位为初始台账（演示/测试用） */
+export function resetGroupTasks() {
+  groupsState.value = cloneGroups(initialGroups)
+}
+
+export function initialSnapshot(): TaskGroup[] {
+  return cloneGroups(initialGroups)
 }
