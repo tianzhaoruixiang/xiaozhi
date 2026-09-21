@@ -11,11 +11,17 @@ import SituationMap from '../components/dashboard/SituationMap.vue'
 import TaskList from '../components/dashboard/TaskList.vue'
 import ViewSwitcher from '../components/dashboard/ViewSwitcher.vue'
 import { useDashboard } from '../composables/useDashboard'
+import { useKeyGroupPulse } from '../composables/useKeyGroupPulse'
 import { getMeetingHandoff, updateMeetingHandoff } from '../composables/useMeetingHandoff'
 import { getTaskExecutionProgress } from '../mock/dashboard'
 import '../styles/dashboard.css'
 
 const { data, viewMode, now } = useDashboard()
+// 王处审核通过的成果 → 重点群体 A+2 / B+5 并标记新增
+const keyGroupPulse = useKeyGroupPulse(
+  computed(() => data.value.keyGroups),
+  computed(() => data.value.keyPersons),
+)
 const route = useRoute()
 const dashboardTitle = ref('大型会议保障 · 指挥作战大屏')
 
@@ -85,8 +91,8 @@ const showCollab = computed(() => viewMode.value === 'opinion' || viewMode.value
       <KeyGroupMonitor
         v-if="showGroups"
         class="area-groups"
-        :key-groups="data.keyGroups"
-        :key-persons="data.keyPersons"
+        :key-groups="keyGroupPulse.groups.value"
+        :key-persons="keyGroupPulse.persons.value"
         :expanded="viewMode === 'groups'"
       />
 

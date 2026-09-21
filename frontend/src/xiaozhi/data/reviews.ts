@@ -7,6 +7,8 @@ export interface ReviewSubmission {
   id: string
   taskId: string
   taskTitle: string
+  /** 归属工作组（高总台按组展示成果） */
+  groupId?: string
   /** 交付物类型（短名单 / 线上沟通方案 / 线下沟通方案…） */
   kind: string
   fileName: string
@@ -113,6 +115,7 @@ export function useReviews() {
   const submitForReview = (payload: {
     taskId: string
     taskTitle: string
+    groupId?: string
     kind: string
     fileName: string
     markdown: string
@@ -126,6 +129,7 @@ export function useReviews() {
       id: newId(),
       taskId: payload.taskId,
       taskTitle: payload.taskTitle,
+      groupId: payload.groupId,
       kind: payload.kind,
       fileName: payload.fileName,
       markdown: payload.markdown,

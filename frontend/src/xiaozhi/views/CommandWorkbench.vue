@@ -4,7 +4,6 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useGroupTasks } from '../data/groupTasks'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
 import MultiGroupTaskBoard from '../components/MultiGroupTaskBoard.vue'
-import ApprovedSubmissionsPanel from '../components/ApprovedSubmissionsPanel.vue'
 import MeetingReminderDialog from '../components/MeetingReminderDialog.vue'
 
 const { groups } = useGroupTasks()
@@ -83,9 +82,6 @@ const startFreeTask = () => {
             </RouterLink>
           </template>
         </WorkbenchHeader>
-
-        <!-- 王处审核通过的成果会自动提交到本台 -->
-        <ApprovedSubmissionsPanel />
 
         <MultiGroupTaskBoard :groups="groups" />
 

@@ -24,6 +24,8 @@ export interface KeyGroupStat {
   count: number
   warning: number
   color: string
+  /** 本轮增量（王处审核通过成果后显示红色 +N，原计数不变） */
+  delta?: number
 }
 
 export interface KeyPerson {
@@ -34,6 +36,8 @@ export interface KeyPerson {
   age: number
   title: string
   country: string
+  /** 本轮新增（王处审核通过成果后，A/B 类名单前若干位会打「新增」标记） */
+  isNew?: boolean
 }
 
 export interface OpinionItem {

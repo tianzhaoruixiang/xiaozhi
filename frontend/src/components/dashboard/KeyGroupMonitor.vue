@@ -1,7 +1,10 @@
 <template>
   <PanelFrame title="重点群体动态监测">
     <template #extra>
-      <span class="panel-badge">预警 {{ totalWarning }} · 人员 {{ keyPersons.length }}</span>
+      <span class="panel-badge">
+        预警 {{ totalWarning }} · 人员 {{ keyPersons.length }}
+        <template v-if="newCount"> · 新增 {{ newCount }}</template>
+      </span>
     </template>
 
     <div class="groups-layout" :class="{ expanded }">
@@ -16,7 +19,10 @@
           @click="toggleType(g.type)"
         >
           <div class="stat-type">{{ g.type }}类</div>
-          <div class="stat-count">{{ g.count }}</div>
+          <div class="stat-count">
+            {{ g.count }}
+            <span v-if="g.delta" class="stat-delta">+{{ g.delta }}</span>
+          </div>
           <div class="stat-meta">
             <span>{{ g.label }}</span>
             <strong :class="{ danger: g.warning > 0 }">预警 {{ g.warning }}</strong>
@@ -48,7 +54,14 @@
         class="person-grid"
         :style="expanded ? { gridTemplateRows: `repeat(${gridRows}, minmax(104px, 1fr))` } : undefined"
       >
-        <article v-for="p in pagedPersons" :key="p.id" class="person-card" :data-type="p.type">
+        <article
+          v-for="p in pagedPersons"
+          :key="p.id"
+          class="person-card"
+          :data-type="p.type"
+          :class="{ 'is-new': p.isNew }"
+        >
+          <span v-if="p.isNew" class="new-tag">新增</span>
           <div class="photo" :data-type="p.type">
             <div class="photo-inner">
               <span class="surname">{{ p.name.slice(0, 1) }}</span>
@@ -97,6 +110,9 @@ const filterCountry = ref('')
 const page = ref(1)
 
 const totalWarning = computed(() => props.keyGroups.reduce((s, g) => s + g.warning, 0))
+
+/** 本轮新增人数（王处审核通过成果后出现在名单里） */
+const newCount = computed(() => props.keyPersons.filter((p) => p.isNew).length)
 
 const statusOptions = computed(() =>
   [...new Set(props.keyPersons.map((p) => p.status))].sort(),
@@ -206,6 +222,17 @@ function resetFilters() {
   line-height: 1.1;
   color: #fff;
   font-family: var(--font-display);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* 本轮增量：红色 +N，字号与左侧计数一致 */
+.stat-delta {
+  font-size: inherit;
+  font-weight: 700;
+  color: var(--danger);
+  text-shadow: 0 0 10px oklch(0.67 0.21 25 / 0.45);
 }
 
 .stat-meta {
@@ -435,6 +462,39 @@ function resetFilters() {
 .badge.type[data-type='B'] { background: oklch(0.52 0.12 216); }
 .badge.type[data-type='C'] { background: oklch(0.43 0.1 224); }
 .badge.type[data-type='D'] { background: oklch(0.35 0.08 232); }
+
+/* 「新增」标签：贴在人员卡片右上角 */
+.new-tag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  padding: 1px 7px 2px;
+  border-bottom-left-radius: 6px;
+  background: linear-gradient(160deg, oklch(0.72 0.19 25), oklch(0.6 0.2 22));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 15px;
+  box-shadow: 0 2px 8px oklch(0.6 0.2 22 / 0.45);
+}
+
+.person-card.is-new {
+  border-color: oklch(0.67 0.21 25 / 0.55);
+  box-shadow:
+    inset 0 0 12px oklch(0.67 0.21 25 / 0.12),
+    0 0 10px oklch(0.67 0.21 25 / 0.12);
+}
+
+/* 给右上角「新增」角标让位，避免压住已核查等状态徽标 */
+.person-card.is-new .name-row {
+  padding-right: 42px;
+}
+
+.person-card.is-new::before {
+  background: oklch(0.72 0.19 25);
+}
 
 .badge.status[data-status='在控'] { background: var(--blue); }
 .badge.status[data-status='核处中'] { background: var(--amber); color: var(--bg-deep); box-shadow: 0 0 8px oklch(0.82 0.16 83 / .35); }

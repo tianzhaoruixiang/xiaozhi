@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useGroupTasks, type GroupTask } from '../data/groupTasks'
 import { quickCommandsForTask, type QuickCommand } from '../data/quickCommands'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
 import GroupProgressBoard from '../components/GroupProgressBoard.vue'
-import MeetingReminderDialog from '../components/MeetingReminderDialog.vue'
 import ReviewQueueDialog from '../components/ReviewQueueDialog.vue'
 import { useReviews } from '../data/reviews'
 
@@ -15,20 +14,6 @@ const router = useRouter()
 
 /** 张磊提交的成果待审核 */
 const reviewVisible = ref(false)
-
-/** 进入本台后弹出「大型会议保障动员会」提醒 */
-const reminderVisible = ref(false)
-let reminderTimer: number | undefined
-
-onMounted(() => {
-  reminderTimer = window.setTimeout(() => {
-    reminderVisible.value = true
-  }, 650)
-})
-
-onUnmounted(() => {
-  if (reminderTimer) window.clearTimeout(reminderTimer)
-})
 
 /** 底部输入框：初始为空，由占位提示引导；点击任务后填入任务名 */
 const homeDraft = ref('')
@@ -138,7 +123,6 @@ const startFreeTask = () => {
       </form>
     </div>
 
-    <MeetingReminderDialog v-model="reminderVisible" />
     <ReviewQueueDialog v-model="reviewVisible" />
   </div>
 </template>
