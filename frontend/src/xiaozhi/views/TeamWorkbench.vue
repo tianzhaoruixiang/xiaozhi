@@ -24,9 +24,8 @@ onUnmounted(() => {
   if (reminderTimer) window.clearTimeout(reminderTimer)
 })
 
-/** 底部输入框：默认填入任务分解指令，发送后进入 /team/task 执行页 */
-const DECOMPOSE_INSTRUCTION = '将推荐算法专家寻访工作拆分成任务项，分配给合适的成员'
-const homeDraft = ref(DECOMPOSE_INSTRUCTION)
+/** 底部输入框：初始为空，由占位提示引导；点击任务后填入任务名 */
+const homeDraft = ref('')
 
 /** 点击任务：任务名进入输入框，并按任务状态生成快捷指令 */
 const selectedTaskId = ref('')
@@ -49,7 +48,8 @@ const applyQuickCommand = (command: QuickCommand) => {
 }
 
 const startFreeTask = () => {
-  const text = homeDraft.value.trim() || DECOMPOSE_INSTRUCTION
+  const text = homeDraft.value.trim()
+  if (!text) return
   const taskQuery = selectedTaskId.value
     ? `&task=${encodeURIComponent(selectedTaskId.value)}`
     : ''
@@ -79,39 +79,49 @@ const startFreeTask = () => {
         @select="selectTask"
       >
         <template #title-action>
-          <RouterLink class="group-link" to="/group-operations">
+          <!-- 新标签页打开工作组页面，当前工作台不离开 -->
+          <RouterLink
+            class="group-link"
+            to="/group-operations"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <span class="group-mark" aria-hidden="true"><i /><i /></span>
             进入工作组
-            <b aria-hidden="true">→</b>
+            <b aria-hidden="true">↗</b>
           </RouterLink>
         </template>
       </GroupProgressBoard>
 
       <form class="home-dock" @submit.prevent="startFreeTask">
-        <textarea
-          :value="homeDraft"
-          rows="2"
-          placeholder="点击左侧任务，或直接输入指令"
-          @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
-          @keydown.enter.exact.prevent="startFreeTask"
-        />
-        <button type="submit" :disabled="!homeDraft.trim()">发送</button>
+        <!-- 输入框：快捷指令在同一框内 -->
+        <div class="composer">
+          <textarea
+            :value="homeDraft"
+            rows="2"
+            :placeholder="
+              selectedTask
+                ? '可补充说明后发送'
+                : '你可以向小智分配任务，询问进度'
+            "
+            @input="homeDraft = ($event.target as HTMLTextAreaElement).value"
+            @keydown.enter.exact.prevent="startFreeTask"
+          />
 
-        <!-- 点击任务后出现：按任务状态给出快捷指令 -->
-        <div v-if="quickCommands.length" class="quick-bar">
-          <span class="quick-label">
-            {{ selectedTask?.title }} · 快捷指令
-          </span>
-          <button
-            v-for="command in quickCommands"
-            :key="command.id"
-            type="button"
-            class="quick-chip"
-            @click="applyQuickCommand(command)"
-          >
-            {{ command.label }}
-          </button>
+          <div v-if="quickCommands.length" class="quick-bar">
+            <button
+              v-for="command in quickCommands"
+              :key="command.id"
+              type="button"
+              class="quick-chip"
+              @click="applyQuickCommand(command)"
+            >
+              {{ command.label }}
+            </button>
+          </div>
         </div>
+
+        <button type="submit" :disabled="!homeDraft.trim()">发送</button>
       </form>
     </div>
 
@@ -285,16 +295,39 @@ const startFreeTask = () => {
   animation: page-rise var(--dur-enter) var(--ease-out) 240ms both;
 }
 
-.home-dock textarea {
-  resize: none;
-  border-radius: 12px;
+/* 输入框：快捷指令与文本框同在一个边框内 */
+.composer {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 4px 4px 6px;
   border: 1px solid rgba(20, 40, 58, 0.12);
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.82);
-  padding: 10px 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.composer:focus-within {
+  border-color: rgba(26, 122, 146, 0.45);
+  box-shadow: 0 0 0 3px rgba(46, 196, 214, 0.12);
+}
+
+.composer textarea {
+  resize: none;
+  border: 0;
+  background: transparent;
+  padding: 8px 8px 4px;
   font: inherit;
   font-size: 0.94rem;
   color: var(--color-ink);
   line-height: 1.5;
+  outline: none;
+}
+
+/* 未选任务时的提示文案：灰色 */
+.home-dock textarea::placeholder {
+  color: #93a3b1;
+  opacity: 1;
 }
 
 .home-dock button {
@@ -313,27 +346,23 @@ const startFreeTask = () => {
   cursor: not-allowed;
 }
 
-/* 点击任务后出现在输入框下方的快捷指令 */
+/* 点击任务后出现在输入框内部下方的快捷指令 */
 .quick-bar {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  margin: 4px 8px 0;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(20, 40, 58, 0.1);
 }
 
-.quick-label {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
-  color: var(--color-ink-muted);
-}
-
+/* 按钮格式，无底色 */
 .quick-chip {
-  padding: 5px 13px;
-  border: 1px solid rgba(46, 196, 214, 0.34);
-  border-radius: 999px;
-  background: rgba(46, 196, 214, 0.1);
+  padding: 5px 14px;
+  border: 1px solid rgba(26, 122, 146, 0.34);
+  border-radius: 8px;
+  background: transparent;
   color: var(--color-accent);
   font-size: 0.78rem;
   font-weight: 600;
@@ -341,13 +370,16 @@ const startFreeTask = () => {
   transition:
     background 160ms ease,
     border-color 160ms ease,
-    transform 160ms var(--ease-out);
+    color 160ms ease;
 }
 
 .quick-chip:hover {
-  background: rgba(46, 196, 214, 0.18);
-  border-color: rgba(46, 196, 214, 0.5);
-  transform: translateY(-1px);
+  background: rgba(26, 122, 146, 0.07);
+  border-color: rgba(26, 122, 146, 0.55);
+}
+
+.quick-chip:active {
+  background: rgba(26, 122, 146, 0.12);
 }
 
 .group-entry {

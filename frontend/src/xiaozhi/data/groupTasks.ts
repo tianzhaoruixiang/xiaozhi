@@ -66,11 +66,11 @@ const initialGroups: TaskGroup[] = [
   {
     id: 'g1',
     name: '广告事业部寻访组',
-    lead: '张磊',
+    lead: '王处',
     scope: '推荐算法 · 广告投放',
     current: true,
     roster: [
-      { id: 'r1', name: '张磊', role: '组长 · 统筹', saturation: 2 },
+      { id: 'r1', name: '张磊', role: '统筹', saturation: 2 },
       { id: 'r2', name: '李娜', role: '候选人触达', saturation: 2 },
       { id: 'r3', name: '王强', role: '画像与评估', saturation: 1 },
       { id: 'r4', name: '陈晓', role: '面试协调', saturation: 1 },
