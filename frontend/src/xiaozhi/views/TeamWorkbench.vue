@@ -34,8 +34,11 @@ const startFreeTask = () => {
     <div class="shell wide">
       <WorkbenchHeader compact brand="张处，您好" tagline="专项任务 · 各组任务进展">
         <template #actions>
-          <RouterLink class="desk-link" to="/command">高总工作台</RouterLink>
-          <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
+          <RouterLink class="group-link" to="/group-operations">
+            <span class="group-mark" aria-hidden="true"><i /><i /></span>
+            进入工作组
+            <b aria-hidden="true">→</b>
+          </RouterLink>
         </template>
       </WorkbenchHeader>
 
@@ -366,6 +369,53 @@ const startFreeTask = () => {
 .later-button { border: 1px solid rgba(20, 40, 58, 0.12); color: #5a7084; background: #fff; }
 .meeting-button { border: 0; color: #fff; background: linear-gradient(145deg, #16798f, #0f5368); box-shadow: 0 9px 22px rgba(15, 83, 104, 0.22); }
 .meeting-button span { margin-left: 8px; }
+
+/* 页头右上角：跳转工作组 */
+.group-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px 9px 14px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, #1f8ea8, #176f84);
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(23, 111, 132, 0.24);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.group-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(23, 111, 132, 0.32);
+}
+
+/* 斜切双条：工作组标识 */
+.group-mark {
+  display: flex;
+  gap: 3px;
+  transform: skewX(-14deg);
+}
+
+.group-mark i {
+  width: 5px;
+  height: 15px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.group-mark i + i {
+  opacity: 0.6;
+}
+
+.group-link b {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+}
 
 @media (max-width: 640px) {
   .home-dock {

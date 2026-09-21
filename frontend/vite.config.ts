@@ -9,6 +9,12 @@ export default defineConfig({
   server: {
     port: Number(process.env.VITE_PORT || 4173),
     strictPort: true,
+    watch: {
+      // 外部工具（编辑器、git、脚本）改写文件时原生 watcher 偶发漏事件，
+      // 会导致 dev server 继续提供旧模块；轮询可确保变更一定被发现。
+      usePolling: true,
+      interval: 300,
+    },
     proxy: {
       '/api': {
         target: apiTarget,
