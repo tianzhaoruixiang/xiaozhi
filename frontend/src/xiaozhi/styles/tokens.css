@@ -1,0 +1,185 @@
+.xiaozhi-scope {
+  color-scheme: light;
+  /* 指挥舱色板：深海钢蓝 × 信号青 × 香槟铜 */
+  --color-abyss: #06141f;
+  --color-steel: #0f2a3d;
+  --color-signal: #2ec4d6;
+  --color-brass: #c9a86c;
+  --color-mist: #e7f0f6;
+  --color-ink: #14283a;
+  --color-ink-muted: #5a7084;
+
+  /* 兼容旧变量名 */
+  --color-bg-deep: var(--color-abyss);
+  --color-bg-mid: var(--color-steel);
+  --color-bg-soft: var(--color-mist);
+  --color-surface: rgba(255, 255, 255, 0.62);
+  --color-surface-solid: #f2f7fb;
+  --color-surface-glass: rgba(255, 255, 255, 0.48);
+  --color-line: rgba(20, 40, 58, 0.1);
+  --color-line-bright: rgba(46, 196, 214, 0.42);
+  --color-gold: var(--color-brass);
+  --color-gold-soft: #e6d4a8;
+  --color-accent: #1a7a92;
+  --color-accent-bright: var(--color-signal);
+  --color-cyan: #6ad4e4;
+  --color-cyan-glow: rgba(46, 196, 214, 0.4);
+  --color-success: #2f7d5a;
+  --color-warn: #b87a35;
+  --color-danger: #a84848;
+
+  --font-display: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --font-body: 'Sora', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  --shadow-soft: 0 22px 56px rgba(6, 20, 31, 0.14);
+  --shadow-glow: 0 0 36px rgba(46, 196, 214, 0.16);
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --avatar-size: 124px;
+
+  /* 丝滑动效：偏 expo-out，少弹跳 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  --ease-soft: cubic-bezier(0.33, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.22, 1.05, 0.36, 1);
+  --dur-fast: 220ms;
+  --dur-mid: 380ms;
+  --dur-slow: 620ms;
+  --dur-enter: 780ms;
+}
+
+.xiaozhi-scope,
+.xiaozhi-scope *,
+.xiaozhi-scope *::before,
+.xiaozhi-scope *::after {
+  box-sizing: border-box;
+}
+
+.xiaozhi-scope {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-mist);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.xiaozhi-scope button,
+.xiaozhi-scope input,
+.xiaozhi-scope textarea {
+  font: inherit;
+}
+
+.xiaozhi-scope button:focus-visible,
+.xiaozhi-scope textarea:focus-visible,
+.xiaozhi-scope a:focus-visible {
+  outline: 2px solid rgba(46, 196, 214, 0.65);
+  outline-offset: 2px;
+}
+
+/* motion primitives */
+@keyframes hud-sweep {
+  0% { transform: translate3d(-120%, 0, 0); opacity: 0; }
+  18% { opacity: 0.7; }
+  100% { transform: translate3d(220%, 0, 0); opacity: 0; }
+}
+
+@keyframes float-orb {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(10px, -14px, 0) scale(1.03); }
+}
+
+@keyframes grid-drift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 56px 56px, 56px 56px; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.42; }
+  50% { opacity: 1; }
+}
+
+@keyframes status-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46, 196, 214, 0.4); }
+  50% { opacity: 0.62; box-shadow: 0 0 10px 2px rgba(46, 196, 214, 0.28); }
+}
+
+@keyframes page-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes brand-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.18em;
+    filter: blur(4px);
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.06em;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes soft-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 全局滚动条 */
+.xiaozhi-scope,
+.xiaozhi-scope * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(46, 196, 214, 0.18) transparent;
+}
+
+.xiaozhi-scope::-webkit-scrollbar,
+.xiaozhi-scope *::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.xiaozhi-scope::-webkit-scrollbar-track,
+.xiaozhi-scope *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xiaozhi-scope::-webkit-scrollbar-thumb,
+.xiaozhi-scope *::-webkit-scrollbar-thumb {
+  background: rgba(120, 160, 180, 0.14);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.xiaozhi-scope::-webkit-scrollbar-thumb:hover,
+.xiaozhi-scope *::-webkit-scrollbar-thumb:hover {
+  background: rgba(46, 196, 214, 0.4);
+}
+
+.xiaozhi-scope::-webkit-scrollbar-corner,
+.xiaozhi-scope *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xiaozhi-scope,
+  .xiaozhi-scope *,
+  .xiaozhi-scope *::before,
+  .xiaozhi-scope *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

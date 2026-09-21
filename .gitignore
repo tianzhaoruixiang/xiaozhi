@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+*.log
+.DS_Store
+frontend/dist
+backend/dist
+
+# 运行时数据（模型体积大，不入库；保留目录占位）
+data/models/**
+!data/models/.gitignore
+data/hrbp-reports/**
+!data/hrbp-reports/.gitignore
+data/runtime/**
+!data/runtime/.gitignore

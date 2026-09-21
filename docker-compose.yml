@@ -1,0 +1,78 @@
+services:
+  api:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      HOME: /data/runtime
+      AGENT_CONFIG_ROOT: /app/.claude
+      XIAOZHI_ORCHESTRATION: hybrid
+      XIAOZHI_DEFAULT_TEAM: personnel-dispatch
+      XIAOZHI_DEFAULT_WORKFLOW: personnel-dispatch
+      TTS_URL: http://tts:8090
+      LLM_TIMEOUT_MS: "45000"
+      HRBP_REPORT_DIR: /data/hrbp-reports
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/data
+      - ./.claude:/app/.claude:ro
+    expose:
+      - "3000"
+    depends_on:
+      tts:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+
+  tts:
+    build:
+      context: ./tts
+    environment:
+      TTS_MODEL_DIR: /data/models/vits-melo-tts-zh_en
+      ASR_MODEL_DIR: /data/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17
+      TTS_NUM_THREADS: "4"
+      TTS_SPEED: "0.92"
+      TTS_PAUSE_SEC: "0.32"
+    volumes:
+      - ./data:/data:ro
+    expose:
+      - "8090"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      tts:
+        condition: service_healthy
+    restart: unless-stopped

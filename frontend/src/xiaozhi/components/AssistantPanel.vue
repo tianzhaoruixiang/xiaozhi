@@ -1,0 +1,884 @@
+<script setup lang="ts">
+import { computed, nextTick, ref, watch } from 'vue'
+import type { ChatMessage } from '../types/assistant'
+import AgentCollabTimeline from './AgentCollabTimeline.vue'
+import MarkdownView from './MarkdownView.vue'
+
+const props = defineProps<{
+  open: boolean
+  messages: ChatMessage[]
+  streaming: boolean
+  error: string | null
+  draft: string
+  voiceSupported: boolean
+  voiceListening: boolean
+  voiceAwaiting?: boolean
+  /** 正在播报唤醒应答「我在，请讲」 */
+  voiceAckPlaying?: boolean
+  voiceCapturing?: boolean
+  voiceRecognizing?: boolean
+  voiceMode?: 'local-asr' | 'browser-cloud' | 'unavailable'
+  /** 0~1 声强，驱动聆听呼吸闪光 */
+  soundLevel?: number
+  hearing?: boolean
+  reportSpeaking?: boolean
+  ttsSupported?: boolean
+  ttsEngine?: string
+  teams?: Array<{ name: string; displayName: string; defaultWorkflow?: string }>
+  workflows?: Array<{ name: string; displayName: string }>
+  selectedTeam?: string
+  selectedWorkflow?: string
+  selectedMode?: string
+}>()
+
+const emit = defineEmits<{
+  close: []
+  submit: [text: string]
+  'update:draft': [value: string]
+  'replay-report': [text: string]
+  'update:team': [value: string]
+  'update:workflow': [value: string]
+  'update:mode': [value: string]
+}>()
+
+const shortcuts = ['今天重点事项', '准备下午人员调度会并通知相关部门']
+const scroller = ref<HTMLElement | null>(null)
+
+const activeCollab = computed(() => {
+  for (let i = props.messages.length - 1; i >= 0; i -= 1) {
+    const msg = props.messages[i]
+    if (msg.role === 'assistant' && (msg.steps?.length || msg.taskPlan)) {
+      return {
+        steps: msg.steps ?? [],
+        taskPlan: msg.taskPlan ?? null,
+      }
+    }
+  }
+  return { steps: [], taskPlan: null }
+})
+
+const showCollab = computed(() => {
+  const plan = activeCollab.value.taskPlan
+  return (
+    activeCollab.value.steps.length > 0 ||
+    (plan && plan.phase !== 'idle')
+  )
+})
+
+/** 协作台接受语音时：声强 → 呼吸周期（大声更快） */
+const voiceBreathStyle = computed(() => {
+  const lvl = Math.min(1, Math.max(0, props.soundLevel || 0))
+  const listening = Boolean(props.voiceAwaiting || props.voiceCapturing)
+  const active = listening ? Math.max(lvl, 0.14) : lvl
+  const period = listening
+    ? Math.max(0.4, 1.85 - active * 1.4)
+    : 2
+  return {
+    '--voice-lvl': String(active),
+    '--voice-period': `${period.toFixed(2)}s`,
+    '--voice-glow': `${12 + active * 36}px`,
+  }
+})
+
+const voiceActive = computed(
+  () => Boolean(props.voiceAwaiting || props.voiceCapturing),
+)
+
+const onSubmit = () => {
+  const text = props.draft.trim()
+  if (!text) return
+  emit('submit', text)
+}
+
+const useShortcut = (text: string) => {
+  emit('update:draft', text)
+  emit('submit', text)
+}
+
+const scrollToBottom = async () => {
+  await nextTick()
+  const el = scroller.value
+  if (!el) return
+  el.scrollTop = el.scrollHeight
+}
+
+watch(
+  () => [props.messages, props.streaming, props.open],
+  () => {
+    if (props.open) void scrollToBottom()
+  },
+  { deep: true },
+)
+</script>
+
+<template>
+  <Teleport to="body">
+    <div class="layer" :class="{ open }" aria-hidden="true">
+      <button type="button" class="backdrop" aria-label="关闭协作台" @click="emit('close')" />
+
+      <aside
+        class="workspace"
+        :class="{ open, 'voice-listen': voiceActive }"
+        :style="voiceBreathStyle"
+        role="dialog"
+        aria-modal="true"
+        aria-label="小智协作台"
+        aria-live="polite"
+      >
+        <div class="hud-frame" aria-hidden="true">
+          <span class="c tl" /><span class="c tr" /><span class="c bl" /><span class="c br" />
+          <span class="scan" />
+          <span v-if="voiceActive" class="voice-breath" />
+        </div>
+
+        <header class="workspace-head">
+          <div>
+            <p class="eyebrow">
+              <span class="live-dot" :class="{ voice: voiceActive }" />
+              {{ voiceActive ? '正在聆听' : '协作进行中' }}
+            </p>
+            <h2>小智协作台</h2>
+            <p class="status">
+              <template v-if="reportSpeaking">
+                小智正在向您语音汇报
+                <span v-if="ttsEngine === 'local'" class="voice-tag">神经语音</span>
+                <span v-else-if="ttsEngine === 'browser'" class="voice-tag dim">系统音色</span>
+              </template>
+              <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'planning'">
+                正在设计本轮专家团队…
+              </template>
+              <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'executing'">
+                专家正按调度执行任务
+              </template>
+              <template v-else-if="streaming">多智能体协作进行中</template>
+              <template v-else-if="voiceAckPlaying">
+                <span class="listen-live">小智应答「我在，请讲」…</span>
+                <span class="voice-tag">已唤醒</span>
+              </template>
+              <template v-else-if="voiceAwaiting">
+                <span class="listen-live">{{ voiceCapturing ? '正在聆听，停顿后自动发送…' : '已唤醒，请说出指示' }}</span>
+                <span class="voice-tag">聆听中</span>
+              </template>
+              <template v-else-if="voiceRecognizing">正在识别语音…</template>
+              <template v-else-if="voiceListening && voiceSupported">
+                待命中，说「你好，小智」唤醒
+                <span v-if="voiceMode === 'local-asr'" class="voice-tag">本地唤醒</span>
+              </template>
+              <template v-else>说出需求后，小智会调度专家并完成汇报</template>
+            </p>
+            <div v-if="teams?.length" class="orch-bar">
+              <label>
+                专家团
+                <select
+                  :value="selectedTeam"
+                  :disabled="streaming"
+                  @change="emit('update:team', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="">智能识别</option>
+                  <option v-for="t in teams" :key="t.name" :value="t.name">
+                    {{ t.displayName }}
+                  </option>
+                </select>
+              </label>
+              <label>
+                工作流
+                <select
+                  :value="selectedWorkflow"
+                  :disabled="streaming"
+                  @change="emit('update:workflow', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="">智能识别</option>
+                  <option v-for="w in workflows" :key="w.name" :value="w.name">
+                    {{ w.displayName }}
+                  </option>
+                </select>
+              </label>
+              <label>
+                模式
+                <select
+                  :value="selectedMode || 'hybrid'"
+                  :disabled="streaming"
+                  @change="emit('update:mode', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="hybrid">混合</option>
+                  <option value="config">仅配置</option>
+                  <option value="dynamic">仅动态</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <button type="button" class="icon-btn" aria-label="关闭" @click="emit('close')">×</button>
+        </header>
+
+        <div class="workspace-body">
+          <section class="collab-pane">
+            <AgentCollabTimeline
+              v-if="showCollab"
+              :steps="activeCollab.steps"
+              :task-plan="activeCollab.taskPlan"
+            />
+            <div v-else class="empty-collab">
+              <strong>等待您的指示</strong>
+              <p>直接说「你好，小智」唤醒，再口述需求；也可在下方输入。普通问询由小智直接作答，办会任务再调度专家团。</p>
+            </div>
+          </section>
+
+          <section class="chat-pane">
+            <div ref="scroller" class="messages">
+              <article
+                v-for="msg in messages"
+                :key="msg.id"
+                class="bubble"
+                :data-role="msg.role"
+              >
+                <header v-if="msg.role !== 'system'" class="bubble-meta">
+                  <span>{{ msg.role === 'user' ? '领导' : '小智' }}</span>
+                </header>
+
+                <MarkdownView
+                  v-if="msg.content && msg.role === 'assistant'"
+                  :source="msg.content"
+                />
+                <p v-else-if="msg.content" class="plain">{{ msg.content }}</p>
+                <p v-else-if="msg.role === 'assistant' && streaming" class="plain muted">
+                  <template v-if="msg.taskPlan?.phase === 'planning'">小智正在生成多智能体任务规划…</template>
+                  <template v-else-if="msg.taskPlan?.phase === 'executing'">智能体正在逐步执行，请看左侧协作过程…</template>
+                  <template v-else>正在启动协同流程…</template>
+                </p>
+
+                <div v-if="msg.oralReport" class="oral-card" :class="{ live: reportSpeaking }">
+                  <div class="oral-head">
+                    <strong>口述汇报</strong>
+                    <em v-if="reportSpeaking">播报中</em>
+                    <button
+                      v-else-if="ttsSupported"
+                      type="button"
+                      class="replay"
+                      @click="emit('replay-report', msg.oralReport!)"
+                    >
+                      再播一次
+                    </button>
+                  </div>
+                  <p>{{ msg.oralReport }}</p>
+                </div>
+              </article>
+            </div>
+
+            <p v-if="error" class="error">{{ error }}</p>
+
+            <div class="dock">
+              <div class="shortcuts">
+                <button
+                  v-for="item in shortcuts"
+                  :key="item"
+                  type="button"
+                  :disabled="streaming"
+                  @click="useShortcut(item)"
+                >
+                  {{ item }}
+                </button>
+              </div>
+
+              <form class="composer" @submit.prevent="onSubmit">
+                <textarea
+                  :value="draft"
+                  rows="2"
+                  placeholder="说「你好，小智」唤醒后口述，或在此输入…"
+                  :disabled="streaming"
+                  @keydown.enter.exact.prevent="onSubmit"
+                  @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
+                />
+                <button type="submit" :disabled="streaming || !draft.trim()">
+                  发送
+                </button>
+              </form>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </Teleport>
+</template>
+
+<style scoped>
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.layer.open {
+  pointer-events: auto;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(8, 16, 24, 0.42);
+  opacity: 0;
+  transition: opacity var(--dur-mid) var(--ease-soft);
+  cursor: pointer;
+}
+
+.layer.open .backdrop {
+  opacity: 1;
+}
+
+.workspace {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  width: auto;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  border-radius: 24px;
+  background:
+    radial-gradient(900px 420px at 10% -10%, rgba(42, 180, 210, 0.14), transparent 55%),
+    radial-gradient(700px 360px at 100% 0%, rgba(196, 163, 90, 0.1), transparent 50%),
+    linear-gradient(165deg, rgba(10, 26, 40, 0.98), rgba(7, 18, 30, 0.99));
+  color: #edf4f8;
+  border: 1px solid rgba(94, 200, 232, 0.22);
+  box-shadow:
+    0 28px 80px rgba(4, 12, 20, 0.5),
+    0 0 48px rgba(42, 180, 210, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transform: translate3d(28px, 0, 0) scale(0.985);
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+  overflow: hidden;
+  will-change: transform, opacity;
+}
+
+.workspace.open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.workspace.voice-listen {
+  border-color: rgba(232, 213, 163, 0.45);
+  box-shadow:
+    0 28px 80px rgba(4, 12, 20, 0.5),
+    0 0 var(--voice-glow, 24px) rgba(196, 163, 90, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: workspace-voice-flash var(--voice-period, 1.4s) ease-in-out infinite;
+}
+
+.hud-frame .voice-breath {
+  position: absolute;
+  inset: 8%;
+  border-radius: 28px;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 12%,
+    rgba(232, 213, 163, calc(0.14 + var(--voice-lvl, 0.14) * 0.28)),
+    transparent 55%
+  );
+  animation: voice-breath-wash var(--voice-period, 1.4s) ease-in-out infinite;
+}
+
+.hud-frame {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.hud-frame .c {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(94, 200, 232, 0.55);
+}
+
+.hud-frame .c.tl { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
+.hud-frame .c.tr { top: 12px; right: 12px; border-left: 0; border-bottom: 0; }
+.hud-frame .c.bl { bottom: 12px; left: 12px; border-right: 0; border-top: 0; }
+.hud-frame .c.br { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
+
+.hud-frame .scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 18%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(94, 200, 232, 0.05),
+    transparent
+  );
+  animation: panel-scan 5.5s ease-in-out infinite;
+}
+
+.workspace-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid rgba(94, 200, 232, 0.12);
+  background: linear-gradient(180deg, rgba(94, 200, 232, 0.05), transparent);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: rgba(230, 212, 168, 0.85);
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-signal);
+  box-shadow: 0 0 10px rgba(46, 196, 214, 0.8);
+  animation: status-blink 2s ease-in-out infinite;
+}
+
+.live-dot.voice {
+  width: 9px;
+  height: 9px;
+  background: #e8d5a3;
+  box-shadow: 0 0 calc(8px + var(--voice-lvl, 0.14) * 18px) rgba(232, 213, 163, 0.95);
+  animation: voice-dot-flash var(--voice-period, 1.4s) ease-in-out infinite;
+}
+
+.listen-live {
+  color: #e6d4a8;
+  font-weight: 600;
+  animation: listen-text-flash var(--voice-period, 1.4s) ease-in-out infinite;
+}
+
+.workspace-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  background: linear-gradient(120deg, #f4f8fb 18%, #9adce8 62%, #e6d4a8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.orch-bar {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.orch-bar label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: rgba(158, 216, 234, 0.8);
+}
+
+.orch-bar select {
+  min-width: 140px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(94, 200, 232, 0.28);
+  background: rgba(8, 22, 36, 0.75);
+  color: #edf4f8;
+  font-size: 0.82rem;
+}
+
+.orch-bar select:disabled {
+  opacity: 0.55;
+}
+
+.status {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  color: rgba(237, 244, 248, 0.62);
+}
+
+.voice-tag {
+  margin-left: 8px;
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: #0b2a36;
+  background: linear-gradient(120deg, #9adce8, #e6d4a8);
+}
+
+.voice-tag.dim {
+  color: rgba(237, 244, 248, 0.75);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.icon-btn {
+  border: 1px solid rgba(94, 200, 232, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition:
+    background var(--dur-fast) var(--ease-soft),
+    border-color var(--dur-fast) var(--ease-soft),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.icon-btn:hover {
+  background: rgba(94, 200, 232, 0.14);
+  border-color: rgba(94, 200, 232, 0.45);
+  transform: scale(1.04);
+}
+
+@keyframes panel-scan {
+  0% { top: -20%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.workspace-body {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(420px, 1.15fr) minmax(360px, 0.95fr);
+  gap: 0;
+}
+
+.collab-pane,
+.chat-pane {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.collab-pane {
+  padding: 18px 20px 18px 26px;
+  border-right: 1px solid rgba(94, 200, 232, 0.1);
+  background:
+    linear-gradient(180deg, rgba(94, 200, 232, 0.04), transparent 30%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.collab-pane :deep(.rail) {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.chat-pane {
+  padding: 18px 26px 18px 18px;
+}
+
+.empty-collab {
+  margin: auto 0;
+  padding: 28px 16px;
+  text-align: center;
+  color: rgba(237, 244, 248, 0.55);
+  border: 1px dashed rgba(94, 200, 232, 0.22);
+  border-radius: 16px;
+  background: rgba(94, 200, 232, 0.03);
+}
+
+.empty-collab strong {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(237, 244, 248, 0.82);
+  font-family: var(--font-display);
+}
+
+.empty-collab p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.messages {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding-right: 4px;
+  margin-bottom: 12px;
+}
+
+.bubble {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.bubble[data-role='user'] {
+  background: linear-gradient(145deg, rgba(42, 180, 210, 0.2), rgba(21, 122, 156, 0.12));
+  border-color: rgba(94, 200, 232, 0.32);
+  justify-self: end;
+  max-width: 88%;
+}
+
+.bubble[data-role='system'] {
+  background: transparent;
+  border-style: dashed;
+}
+
+.bubble-meta {
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: rgba(237, 244, 248, 0.5);
+}
+
+.plain {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.plain.muted {
+  color: rgba(237, 244, 248, 0.5);
+}
+
+.oral-card {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(196, 163, 90, 0.16), rgba(42, 180, 210, 0.08));
+  border: 1px solid rgba(232, 213, 163, 0.4);
+}
+
+.oral-card.live {
+  box-shadow: 0 0 24px rgba(196, 163, 90, 0.2);
+  border-color: rgba(232, 213, 163, 0.65);
+}
+
+.oral-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.oral-head strong {
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  color: var(--color-gold-soft);
+}
+
+.oral-head em {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: #9ad8ea;
+  animation: blink 1s ease-in-out infinite;
+}
+
+.oral-head .replay {
+  margin-left: auto;
+  border: 1px solid rgba(94, 200, 232, 0.35);
+  background: rgba(94, 200, 232, 0.1);
+  color: #9ad8ea;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.74rem;
+}
+
+.oral-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #f4f8fb;
+}
+
+@keyframes blink {
+  50% { opacity: 0.45; }
+}
+
+@keyframes workspace-voice-flash {
+  0%, 100% {
+    box-shadow:
+      0 28px 80px rgba(4, 12, 20, 0.5),
+      0 0 calc(12px + var(--voice-lvl, 0.14) * 20px) rgba(196, 163, 90, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 28px 80px rgba(4, 12, 20, 0.5),
+      0 0 calc(28px + var(--voice-lvl, 0.14) * 48px) rgba(232, 213, 163, 0.48),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+@keyframes voice-breath-wash {
+  0%, 100% { opacity: 0.55; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes voice-dot-flash {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.75;
+    box-shadow: 0 0 8px rgba(232, 213, 163, 0.55);
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+    box-shadow: 0 0 calc(14px + var(--voice-lvl, 0.14) * 22px) rgba(255, 236, 180, 1);
+  }
+}
+
+@keyframes listen-text-flash {
+  0%, 100% { opacity: 0.78; }
+  50% { opacity: 1; }
+}
+
+.error {
+  margin: 0 0 10px;
+  color: #ffb4b4;
+  font-size: 0.85rem;
+}
+
+.dock {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shortcuts button {
+  border: 1px solid rgba(201, 168, 108, 0.32);
+  background: rgba(201, 168, 108, 0.1);
+  color: var(--color-gold-soft);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  transition: background 260ms var(--ease-soft), border-color 260ms var(--ease-soft), transform 260ms var(--ease-out);
+}
+
+.shortcuts button:hover:not(:disabled) {
+  background: rgba(196, 163, 90, 0.22);
+  border-color: rgba(232, 213, 163, 0.55);
+  transform: translate3d(0, -2px, 0);
+}
+
+.shortcuts button:disabled,
+.composer button:disabled,
+.composer textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.composer textarea {
+  resize: none;
+  border: 1px solid rgba(94, 200, 232, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  border-radius: 14px;
+  padding: 12px 14px;
+  outline: none;
+  line-height: 1.45;
+  min-height: 72px;
+  transition:
+    border-color var(--dur-mid) var(--ease-soft),
+    box-shadow var(--dur-mid) var(--ease-soft);
+}
+
+.composer textarea:focus {
+  border-color: rgba(94, 200, 232, 0.65);
+  box-shadow: 0 0 0 3px rgba(42, 180, 210, 0.15);
+}
+
+.composer button {
+  border: 0;
+  border-radius: 14px;
+  padding: 0 18px;
+  min-height: 72px;
+  background: linear-gradient(135deg, #3ec4e0, #157a9c 55%, #0e5f7a);
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(21, 122, 156, 0.35);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast) var(--ease-soft);
+}
+
+.composer button:hover:not(:disabled) {
+  transform: translate3d(0, -2px, 0);
+  filter: brightness(1.06);
+  box-shadow: 0 12px 28px rgba(21, 122, 156, 0.42);
+}
+
+@media (max-width: 1100px) {
+  .workspace-body {
+    grid-template-columns: minmax(360px, 1.05fr) minmax(300px, 0.95fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .workspace {
+    top: 6px;
+    right: 6px;
+    bottom: 6px;
+    left: 6px;
+    width: auto;
+    border-radius: 18px;
+  }
+
+  .workspace-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(280px, 48%) 1fr;
+  }
+
+  .collab-pane {
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .bubble[data-role='user'] {
+    max-width: 100%;
+    justify-self: stretch;
+  }
+}
+</style>

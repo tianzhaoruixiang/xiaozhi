@@ -1,0 +1,11 @@
+{
+  "name": "offline-meetup",
+  "displayName": "线下沟通邀约",
+  "description": "猎头线下沟通：邀约话术与接待协调并行，综合专家汇总正式方案。",
+  "agents": [
+    "offline-invite-scripter",
+    "offline-meetup-coordinator",
+    "offline-plan-synthesizer"
+  ],
+  "defaultWorkflow": "offline-meetup"
+}

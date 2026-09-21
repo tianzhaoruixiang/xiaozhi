@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 820" width="1280" height="820">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a2744"/>
+      <stop offset="100%" stop-color="#071523"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4fd6e8"/>
+      <stop offset="55%" stop-color="#1a6d8a"/>
+      <stop offset="100%" stop-color="#0d3a52"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8be7ff"/>
+      <stop offset="100%" stop-color="#2b7ea0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1280" height="820" fill="url(#sky)"/>
+  <g opacity=".35">
+    <path d="M0 620 L220 480 L460 610 L680 430 L920 600 L1280 470 L1280 820 L0 820 Z" fill="#12344c"/>
+  </g>
+  <g transform="translate(140 210)" filter="url(#glow)">
+    <polygon points="180,40 520,10 860,80 510,150" fill="url(#roof)" opacity=".9"/>
+    <polygon points="180,40 180,220 510,330 510,150" fill="#16556c"/>
+    <polygon points="510,150 510,330 860,250 860,80" fill="#0e3d52"/>
+    <g stroke="#8eefff" stroke-width="2" opacity=".45">
+      <line x1="250" y1="90" x2="250" y2="250"/>
+      <line x1="320" y1="78" x2="320" y2="268"/>
+      <line x1="390" y1="66" x2="390" y2="286"/>
+      <line x1="580" y1="130" x2="580" y2="300"/>
+      <line x1="660" y1="118" x2="660" y2="282"/>
+      <line x1="740" y1="106" x2="740" y2="264"/>
+    </g>
+  </g>
+  <g transform="translate(70 430)">
+    <polygon points="40,80 280,20 430,90 180,170" fill="#1c5d72"/>
+    <polygon points="40,80 40,170 180,260 180,170" fill="#134556"/>
+    <polygon points="180,170 180,260 430,180 430,90" fill="#0d3646"/>
+  </g>
+  <g transform="translate(780 390)">
+    <polygon points="40,90 260,30 390,110 160,180" fill="#247a8d"/>
+    <polygon points="40,90 40,180 160,270 160,180" fill="#165666"/>
+    <polygon points="160,180 160,270 390,200 390,110" fill="#0f3f4d"/>
+  </g>
+  <g stroke="#5cf0ff" stroke-width="3" fill="none" opacity=".55">
+    <path d="M120 640 C 280 600, 420 680, 610 620 S 980 560, 1180 610"/>
+    <path d="M90 700 C 300 650, 520 730, 760 670 S 1100 630, 1240 690"/>
+  </g>
+  <circle cx="430" cy="560" r="8" fill="#7dffcf"/>
+  <circle cx="710" cy="520" r="8" fill="#ffd36a"/>
+  <circle cx="980" cy="580" r="8" fill="#7dffcf"/>
+  <text x="640" y="790" text-anchor="middle" fill="#8ad4ea" font-size="22" font-family="sans-serif" opacity=".7">ñ3ýE¤A-Ã · ¿:</text>
+</svg>

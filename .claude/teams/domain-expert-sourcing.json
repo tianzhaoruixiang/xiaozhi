@@ -1,0 +1,12 @@
+{
+  "name": "domain-expert-sourcing",
+  "displayName": "领域专家寻访",
+  "description": "猎头领域专家寻访：小红书、领英、脉脉三渠道并行挖人，再由综合专家汇总最终候选人短名单。",
+  "agents": [
+    "xhs-sourcer",
+    "linkedin-sourcer",
+    "maimai-sourcer",
+    "candidate-synthesizer"
+  ],
+  "defaultWorkflow": "domain-expert-sourcing"
+}

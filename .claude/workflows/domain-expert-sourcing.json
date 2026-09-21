@@ -1,0 +1,36 @@
+{
+  "name": "domain-expert-sourcing",
+  "displayName": "领域专家寻访标准流程",
+  "description": "小红书、领英、脉脉三渠道并行寻访，综合专家汇总最终候选人结果。",
+  "goalTemplate": "围绕「{{shortMessage}}」完成多渠道领域专家寻访并给出最终候选人短名单",
+  "steps": [
+    {
+      "agent": "xhs-sourcer",
+      "title": "小红书挖人",
+      "objectiveTemplate": "围绕「{{shortMessage}}」从小红书渠道挖掘匹配的领域专家/候选人线索，输出结构化短名单。",
+      "dependsOn": []
+    },
+    {
+      "agent": "linkedin-sourcer",
+      "title": "领英挖人",
+      "objectiveTemplate": "围绕「{{shortMessage}}」从领英渠道挖掘匹配的领域专家/候选人线索，输出结构化短名单。",
+      "dependsOn": []
+    },
+    {
+      "agent": "maimai-sourcer",
+      "title": "脉脉挖人",
+      "objectiveTemplate": "围绕「{{shortMessage}}」从脉脉渠道挖掘匹配的领域专家/候选人线索，输出结构化短名单。",
+      "dependsOn": []
+    },
+    {
+      "agent": "candidate-synthesizer",
+      "title": "综合短名单",
+      "objectiveTemplate": "综合小红书、领英、脉脉三渠道线索，去重排序后输出「{{shortMessage}}」的完整 Markdown 短名单文档（可另存为 .md，供猎头查阅并上报 HRBP）。",
+      "dependsOn": [
+        "xhs-sourcer",
+        "linkedin-sourcer",
+        "maimai-sourcer"
+      ]
+    }
+  ]
+}

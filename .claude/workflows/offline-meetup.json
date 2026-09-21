@@ -1,0 +1,29 @@
+{
+  "name": "offline-meetup",
+  "displayName": "线下沟通邀约标准流程",
+  "description": "线下邀约话术与接待安排并行产出，综合专家汇总正式方案供查阅并上报 HRBP。",
+  "goalTemplate": "围绕「{{shortMessage}}」完成线下沟通方案并形成可上报文档",
+  "steps": [
+    {
+      "agent": "offline-invite-scripter",
+      "title": "撰写邀约话术",
+      "objectiveTemplate": "围绕「{{shortMessage}}」撰写线下沟通邀约话术（正式/轻松）与跟进话术。",
+      "dependsOn": []
+    },
+    {
+      "agent": "offline-meetup-coordinator",
+      "title": "协调接待安排",
+      "objectiveTemplate": "围绕「{{shortMessage}}」给出线下时间地点建议、接待流程、到场指引与风险备选。",
+      "dependsOn": []
+    },
+    {
+      "agent": "offline-plan-synthesizer",
+      "title": "综合线下方案",
+      "objectiveTemplate": "综合邀约话术与接待安排，输出「{{shortMessage}}」的完整 Markdown 线下沟通方案（可另存为 .md，供猎头查阅并上报 HRBP）。",
+      "dependsOn": [
+        "offline-invite-scripter",
+        "offline-meetup-coordinator"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "personnel-dispatch",
+  "displayName": "人员调度会标准流程",
+  "description": "情境分析后，会议室预定与厅长日程、档案检索并行，最后汇讯通知汇总。",
+  "goalTemplate": "围绕「{{shortMessage}}」完成人员调度会准备与通知",
+  "steps": [
+    {
+      "agent": "context-analyst",
+      "title": "情境研判",
+      "objectiveTemplate": "分析领导指示「{{shortMessage}}」与今日工作安排的关联，给出可执行要点。",
+      "dependsOn": []
+    },
+    {
+      "agent": "room-coordinator",
+      "title": "会议室预定",
+      "objectiveTemplate": "为「{{shortMessage}}」查询并预定合适会议室，写明完整名称与时段。",
+      "dependsOn": ["context-analyst"]
+    },
+    {
+      "agent": "director-scheduler",
+      "title": "厅长日程安排",
+      "objectiveTemplate": "为「{{shortMessage}}」查询厅长日程并写入出席安排，尽量与会议室时段对齐。",
+      "dependsOn": ["context-analyst"]
+    },
+    {
+      "agent": "archive-researcher",
+      "title": "背景资料汇编",
+      "objectiveTemplate": "围绕「{{shortMessage}}」检索历年相关会议资料，整理会前背景。",
+      "dependsOn": ["context-analyst"]
+    },
+    {
+      "agent": "notice-dispatcher",
+      "title": "汇讯通知",
+      "objectiveTemplate": "综合前序会议室、日程与背景资料，通过汇讯发送人员调度会通知。",
+      "dependsOn": [
+        "room-coordinator",
+        "director-scheduler",
+        "archive-researcher"
+      ]
+    }
+  ]
+}

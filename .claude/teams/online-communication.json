@@ -1,0 +1,11 @@
+{
+  "name": "online-communication",
+  "displayName": "线上沟通",
+  "description": "猎头线上沟通：话术准备与会议安排并行，综合专家汇总正式方案。",
+  "agents": [
+    "online-talk-script",
+    "online-call-scheduler",
+    "online-plan-synthesizer"
+  ],
+  "defaultWorkflow": "online-communication"
+}

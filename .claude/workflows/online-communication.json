@@ -1,0 +1,29 @@
+{
+  "name": "online-communication",
+  "displayName": "线上沟通标准流程",
+  "description": "线上沟通话术与会议安排并行产出，综合专家汇总正式方案供查阅并上报 HRBP。",
+  "goalTemplate": "围绕「{{shortMessage}}」完成线上沟通方案并形成可上报文档",
+  "steps": [
+    {
+      "agent": "online-talk-script",
+      "title": "准备沟通话术",
+      "objectiveTemplate": "围绕「{{shortMessage}}」准备线上沟通话术、核验问题清单与异议应对。",
+      "dependsOn": []
+    },
+    {
+      "agent": "online-call-scheduler",
+      "title": "安排线上会议",
+      "objectiveTemplate": "围绕「{{shortMessage}}」给出线上沟通时段建议、会议信息、邀约消息与会前清单。",
+      "dependsOn": []
+    },
+    {
+      "agent": "online-plan-synthesizer",
+      "title": "综合线上方案",
+      "objectiveTemplate": "综合话术与会议安排，输出「{{shortMessage}}」的完整 Markdown 线上沟通方案（可另存为 .md，供猎头查阅并上报 HRBP）。",
+      "dependsOn": [
+        "online-talk-script",
+        "online-call-scheduler"
+      ]
+    }
+  ]
+}
