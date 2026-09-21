@@ -51,14 +51,21 @@ const saturationPercent = (value: number) =>
         </div>
         <p>本组各项任务进展与成员饱和度</p>
       </div>
-      <dl class="stats">
-        <div><dt>任务</dt><dd>{{ group.tasks.length }}</dd></div>
-        <div><dt>完成</dt><dd>{{ doneTasks }}</dd></div>
-        <div :data-warn="unassignedTasks > 0"><dt>待分配</dt><dd>{{ unassignedTasks }}</dd></div>
-        <div :data-warn="riskTasks > 0"><dt>受阻</dt><dd>{{ riskTasks }}</dd></div>
-        <div><dt>成员</dt><dd>{{ group.roster.length }}</dd></div>
-        <div><dt>组进度</dt><dd>{{ progress }}%</dd></div>
-      </dl>
+      <!-- 右侧：待审核入口（在统计行左侧） + 统计 -->
+      <div class="head-right">
+        <div class="head-action">
+          <slot name="head-action" />
+        </div>
+
+        <dl class="stats">
+          <div><dt>任务</dt><dd>{{ group.tasks.length }}</dd></div>
+          <div><dt>完成</dt><dd>{{ doneTasks }}</dd></div>
+          <div :data-warn="unassignedTasks > 0"><dt>待分配</dt><dd>{{ unassignedTasks }}</dd></div>
+          <div :data-warn="riskTasks > 0"><dt>受阻</dt><dd>{{ riskTasks }}</dd></div>
+          <div><dt>成员</dt><dd>{{ group.roster.length }}</dd></div>
+          <div><dt>组进度</dt><dd>{{ progress }}%</dd></div>
+        </dl>
+      </div>
     </header>
 
     <div class="group-line">
@@ -260,6 +267,28 @@ const saturationPercent = (value: number) =>
 }
 
 .stats div[data-warn='true'] dd { color: var(--color-warn); }
+
+/* 头部右侧：待审核入口 + 统计，整体靠右 */
+.head-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 10px 14px;
+  margin-left: auto;
+}
+
+/* 统计行左侧的入口（待审核等） */
+.head-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.head-action:empty {
+  display: none;
+}
 
 .group-line {
   display: flex;

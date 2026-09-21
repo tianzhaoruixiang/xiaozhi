@@ -2,9 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import type { ChatMessage } from '../types/assistant'
 import {
-  downloadWordDocument,
-  renderWordBodyHtml,
-} from '../utils/wordDocument'
+  buildDocxBase64,
+  downloadDocx,
+} from '../utils/docx'
+import { renderMarkdown } from '../utils/markdown'
 
 type DeliverableKind = 'shortlist' | 'online-plan' | 'offline-plan'
 
@@ -48,7 +49,15 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  reported: [kind: DeliverableKind]
+  /** 上报成功：把成果内容一并交给上层（用于提交王处审核） */
+  reported: [
+    payload: {
+      kind: DeliverableKind
+      taskTitle: string
+      fileName: string
+      markdown: string
+    },
+  ]
 }>()
 
 const viewing = ref(false)
@@ -106,22 +115,20 @@ const fileBase = computed(() => {
   return base || 'plan'
 })
 
-/** 交付物为 Word 文档（.doc，Word 可直接编辑） */
-const fileName = computed(() => `${fileBase.value}.doc`)
+/** 交付物为真正的 Word 文档（.docx，OOXML 包） */
+const fileName = computed(() => `${fileBase.value}.docx`)
 
 const docTitle = computed(
   () => props.taskTitle || meta.value?.defaultTitle || '交付方案',
 )
 
+/** 交付物正文：预览、下载、上报归档三处共用同一份 Markdown */
 const documentMarkdown = computed(() => {
   const body = rawMarkdown.value
   if (!body) return ''
   if (/^#\s/.test(body)) return body
   return `${meta.value?.titleFallback || '# 交付方案\n\n'}${body}`
 })
-
-/** Word 正文 HTML：预览、下载、上报归档三处共用同一份内容 */
-const wordBodyHtml = computed(() => renderWordBodyHtml(documentMarkdown.value))
 
 watch(viewing, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
@@ -136,22 +143,27 @@ const closeViewer = () => {
 }
 
 const downloadWord = () => {
-  if (!wordBodyHtml.value) return
-  downloadWordDocument(fileName.value, docTitle.value, wordBodyHtml.value)
+  if (!documentMarkdown.value) return
+  downloadDocx(fileName.value, docTitle.value, documentMarkdown.value)
 }
+
+/** 查阅抽屉里的 A4 纸张预览（与导出的 .docx 内容一致） */
+const paperBodyHtml = computed(() => renderMarkdown(documentMarkdown.value))
 
 const reportToHrbp = async () => {
   if (submitting.value || submitted.value || !kind.value) return
   submitting.value = true
   submitError.value = null
   try {
+    // 交付物为真正的 .docx：随上报一起提交，服务端原样归档
+    const docxBase64 = await buildDocxBase64(docTitle.value, documentMarkdown.value)
     const res = await fetch('/api/hrbp/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: docTitle.value,
         markdown: documentMarkdown.value,
-        html: wordBodyHtml.value,
+        docxBase64,
         taskId: props.taskId,
         fileName: fileBase.value,
         kind: kind.value,
@@ -169,7 +181,12 @@ const reportToHrbp = async () => {
       fileName: data.fileName || fileName.value,
       reportedAt: data.reportedAt || new Date().toISOString(),
     }
-    emit('reported', kind.value)
+    emit('reported', {
+      kind: kind.value,
+      taskTitle: docTitle.value,
+      fileName: data.fileName || fileName.value,
+      markdown: documentMarkdown.value,
+    })
   } catch (err) {
     submitError.value =
       err instanceof Error ? err.message : '上报 HRBP 失败，请稍后重试'
@@ -194,7 +211,7 @@ const reportToHrbp = async () => {
 
     <div class="actions">
       <button type="button" class="btn ghost" @click="openViewer">查阅文档</button>
-      <button type="button" class="btn ghost" @click="downloadWord">下载 Word</button>
+      <button type="button" class="btn ghost" @click="downloadWord">下载 .docx</button>
       <button
         type="button"
         class="btn primary"
@@ -207,7 +224,7 @@ const reportToHrbp = async () => {
 
     <p v-if="submitError" class="error">{{ submitError }}</p>
     <p v-else-if="submitted" class="ok">
-      已上报 HRBP · 存档 {{ submitted.fileName }}
+      已上报 HRBP · 存档 {{ submitted.fileName }} · 已提交王处审核
     </p>
   </div>
 
@@ -233,14 +250,14 @@ const reportToHrbp = async () => {
             <p class="drawer-meta">{{ meta?.defaultTitle }} · A4 版式</p>
           </div>
           <div class="drawer-actions">
-            <button type="button" class="btn ghost" @click="downloadWord">下载 Word</button>
+            <button type="button" class="btn ghost" @click="downloadWord">下载 .docx</button>
             <button type="button" class="icon-close" aria-label="关闭" @click="closeViewer">
               ×
             </button>
           </div>
         </header>
         <div class="drawer-body">
-          <div class="word-paper" v-html="wordBodyHtml" />
+          <div class="word-paper" v-html="paperBodyHtml" />
         </div>
         <footer class="drawer-foot">
           <button type="button" class="btn ghost" @click="closeViewer">关闭</button>
@@ -399,7 +416,10 @@ const reportToHrbp = async () => {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(560px, 100vw);
+  /* 查阅文档：占据整屏宽度的 40%；窄屏不窄于原来的 560px */
+  width: 40vw;
+  min-width: min(560px, 100vw);
+  max-width: 100vw;
   display: flex;
   flex-direction: column;
   background:

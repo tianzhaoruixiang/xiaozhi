@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { usePersonalTasks, type PersonalTask } from '../data/personalTasks'
 import type { PlanItem } from '../data/mockPlans'
 import { useAssistantChat } from '../composables/useAssistantChat'
 import { useAgentCatalog } from '../composables/useAgentCatalog'
+import { useReviews } from '../data/reviews'
 import MarkdownView from '../components/MarkdownView.vue'
 import PersonalCollabProcess from '../components/PersonalCollabProcess.vue'
 import SourcingShortlistCard from '../components/SourcingShortlistCard.vue'
@@ -25,10 +26,8 @@ const {
   specialTasks,
   keyTasks,
   dailyTasks,
-  newSpecialNotice,
   completeSourcingAfterHrbpReport,
   scheduleFollowupSpecialTasks,
-  clearNewSpecialNotice,
   completeCommunicationAfterHrbpReport,
 } = usePersonalTasks()
 
@@ -86,30 +85,41 @@ const { state, messages, streaming, error, pendingConfirm, send, confirmDispatch
 const { catalog, selectedTeam, selectedWorkflow, selectedMode, onTeamChange } =
   useAgentCatalog()
 
+const { submitForReview } = useReviews()
+
 const isLiveMessage = (msgId: string) => {
   if (!streaming.value) return false
   const last = [...messages.value].reverse().find((m) => m.role === 'assistant')
   return last?.id === msgId
 }
 
-const resetWelcome = (task: PersonalTask | null) => {
-  const kind = task && selectedKind.value ? kindLabel[selectedKind.value] : '任务'
-  messages.value = [
-    {
-      id: `welcome-${task?.id ?? 'none'}`,
-      role: 'system',
-      content: task
-        ? `已进入${kind}「${task.title}」。确认指令后点击发送，小智即刻开始执行。`
-        : '选择下方任务，或直接输入指令后点击发送，小智即刻开始执行。',
-    },
-  ]
+/** 进入/切换任务：对话区清空，直接等指令（不再插入系统提示气泡） */
+const resetConversation = () => {
+  messages.value = []
   state.value = 'idle'
 }
 
-const onHrbpReported = (kind: 'shortlist' | 'online-plan' | 'offline-plan') => {
+const onHrbpReported = (payload: {
+  kind: 'shortlist' | 'online-plan' | 'offline-plan'
+  taskTitle: string
+  fileName: string
+  markdown: string
+}) => {
   const taskId = selected.value?.id || props.taskId || 's1'
-  if (kind === 'online-plan' || kind === 'offline-plan') {
-    completeCommunicationAfterHrbpReport(taskId, kind)
+  const taskTitle = selected.value?.title || payload.taskTitle
+
+  // 张磊完成任务：成果提交王处审核（/team 的「待审核」角标 +1）
+  submitForReview({
+    taskId,
+    taskTitle,
+    kind: payload.kind,
+    fileName: payload.fileName,
+    markdown: payload.markdown,
+    submittedBy: '张磊',
+  })
+
+  if (payload.kind === 'online-plan' || payload.kind === 'offline-plan') {
+    completeCommunicationAfterHrbpReport(taskId, payload.kind)
     return
   }
   completeSourcingAfterHrbpReport(taskId)
@@ -123,7 +133,7 @@ watch(
   (id) => {
     if (lastTaskId === id) return
     lastTaskId = id
-    resetWelcome(selected.value)
+    resetConversation()
     // 选中的任务内容进入输入框，确认后点击发送开始执行
     draft.value = selected.value ? taskPrompt(selected.value) : ''
   },
@@ -190,39 +200,6 @@ watch(
   },
   { immediate: true },
 )
-
-/* 输入框内的任务选择器 */
-const pickerGroups = computed(() => [
-  { kind: 'special' as TaskKind, label: '专项任务', items: specialTasks.value },
-  { kind: 'key' as TaskKind, label: '重点任务', items: keyTasks.value },
-  { kind: 'daily' as TaskKind, label: '待办任务', items: dailyTasks.value },
-])
-
-const picker = ref<TaskKind | null>(null)
-
-const togglePicker = (kind: TaskKind) => {
-  picker.value = picker.value === kind ? null : kind
-  if (kind === 'special' && picker.value === 'special') clearNewSpecialNotice()
-}
-
-const pickTask = (task: PersonalTask) => {
-  picker.value = null
-  // 任务名称进入输入框
-  draft.value = taskPrompt(task)
-  emit('select-task', task.id)
-}
-
-const onDocClick = () => {
-  picker.value = null
-}
-
-onMounted(() => {
-  document.addEventListener('click', onDocClick)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onDocClick)
-})
 </script>
 
 <template>
@@ -358,52 +335,6 @@ onUnmounted(() => {
       <p v-if="error" class="error">{{ error }}</p>
 
       <div class="dock">
-        <div class="dock-tools">
-          <div
-            v-for="group in pickerGroups"
-            :key="group.kind"
-            class="picker"
-            :class="`picker-${group.kind}`"
-          >
-            <button
-              type="button"
-              class="picker-btn"
-              :class="{ open: picker === group.kind }"
-              :aria-expanded="picker === group.kind"
-              :disabled="streaming"
-              @click.stop="togglePicker(group.kind)"
-            >
-              {{ group.label }}
-              <span
-                v-if="group.kind === 'special' && newSpecialNotice > 0"
-                class="picker-badge"
-                >+{{ newSpecialNotice }}</span
-              >
-              <span class="caret" aria-hidden="true">▾</span>
-            </button>
-
-            <div v-if="picker === group.kind" class="picker-pop" @click.stop>
-              <p class="picker-head">
-                {{ group.label }}
-                <span>{{ group.items.length }}</span>
-              </p>
-              <ul>
-                <li v-for="task in group.items" :key="task.id">
-                  <button
-                    type="button"
-                    :class="{ active: selected?.id === task.id }"
-                    :disabled="streaming"
-                    @click="pickTask(task)"
-                  >
-                    <strong>{{ task.title }}</strong>
-                    <em>{{ task.time }}</em>
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
         <form class="composer" @submit.prevent="onSubmit()">
           <textarea
             :value="draft"
@@ -673,174 +604,6 @@ onUnmounted(() => {
   border-top: 1px solid rgba(20, 40, 58, 0.08);
   background: rgba(255, 255, 255, 0.35);
   flex-shrink: 0;
-}
-
-.dock-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.picker {
-  position: relative;
-}
-
-.picker-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid rgba(20, 40, 58, 0.12);
-  background: rgba(255, 255, 255, 0.78);
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 0.84rem;
-  color: var(--color-ink);
-  cursor: pointer;
-  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
-}
-
-.picker-btn:hover,
-.picker-btn.open {
-  color: var(--color-accent);
-  border-color: rgba(46, 196, 214, 0.4);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.picker-daily .picker-btn:hover,
-.picker-daily .picker-btn.open {
-  color: #8a6a2e;
-  border-color: rgba(201, 168, 108, 0.45);
-}
-
-.picker-key .picker-btn:hover,
-.picker-key .picker-btn.open {
-  color: #3a689c;
-  border-color: rgba(58, 104, 156, 0.45);
-}
-
-.caret {
-  font-size: 0.62rem;
-  opacity: 0.65;
-}
-
-/* 新任务到达：红色 +N */
-.picker-badge {
-  min-width: 1.4rem;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: linear-gradient(160deg, #d9534f, #a84848);
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.5;
-  text-align: center;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.9),
-    0 4px 12px rgba(168, 72, 72, 0.38);
-  animation: badge-pop 460ms var(--ease-out) both;
-}
-
-@keyframes badge-pop {
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.14);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.picker-btn:disabled,
-.picker-pop li button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.picker-pop {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 10px);
-  z-index: 20;
-  width: min(340px, 78vw);
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(252, 254, 255, 0.97);
-  border: 1px solid rgba(46, 196, 214, 0.25);
-  box-shadow: 0 18px 42px rgba(6, 20, 31, 0.18);
-  animation: soft-fade var(--dur-fast) var(--ease-out) both;
-}
-
-.picker-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 0 8px;
-  padding: 0 4px;
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.06em;
-  color: var(--color-accent);
-}
-
-.picker-head span {
-  color: var(--color-ink-muted);
-}
-
-.picker-pop ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.picker-pop li button {
-  width: 100%;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  text-align: left;
-  border: 1px solid transparent;
-  background: transparent;
-  border-radius: 10px;
-  padding: 9px 10px;
-  cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
-}
-
-.picker-pop li button:hover {
-  background: rgba(46, 196, 214, 0.1);
-  border-color: rgba(46, 196, 214, 0.28);
-}
-
-.picker-pop li button.active {
-  background: rgba(46, 196, 214, 0.14);
-  border-color: rgba(46, 196, 214, 0.38);
-}
-
-.picker-pop strong {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-ink);
-  line-height: 1.35;
-}
-
-.picker-pop em {
-  flex-shrink: 0;
-  font-style: normal;
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  color: var(--color-ink-muted);
 }
 
 .composer {

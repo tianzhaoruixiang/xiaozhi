@@ -23,16 +23,25 @@ function emptyPlan(): TaskPlan {
   }
 }
 
-export function useAssistantChat() {
+/** 默认开场白（领导台的语音唤醒引导） */
+export const DEFAULT_WELCOME =
+  '您好，我是小智，您的领导助手。请说「你好，小智」唤醒我，再说出您的指示。问今日安排可直接聊；要准备会议、预定或通知时，我会调度专家协同办理。'
+
+export function useAssistantChat(options?: { welcome?: boolean }) {
   const open = ref(false)
   const state = ref<AssistantState>('idle')
-  const messages = ref<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'system',
-      content: '您好，我是小智，您的领导助手。请说「你好，小智」唤醒我，再说出您的指示。问今日安排可直接聊；要准备会议、预定或通知时，我会调度专家协同办理。',
-    },
-  ])
+  /** welcome 传 false 时不带默认开场白（如任务执行页直接进入执行） */
+  const messages = ref<ChatMessage[]>(
+    options?.welcome === false
+      ? []
+      : [
+          {
+            id: 'welcome',
+            role: 'system',
+            content: DEFAULT_WELCOME,
+          },
+        ],
+  )
   const streaming = ref(false)
   const error = ref<string | null>(null)
 
