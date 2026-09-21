@@ -1,0 +1,8 @@
+# 内网发布：基于已导入的 API 底包，只覆盖本轮 dist（不再 npm install）
+ARG BASE_IMAGE=xiaozhi-api:base
+FROM ${BASE_IMAGE} AS app
+USER root
+WORKDIR /app
+COPY dist ./dist
+RUN chown -R appuser:appuser /app/dist
+USER appuser

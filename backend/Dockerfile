@@ -1,8 +1,8 @@
 # 直连 Docker Hub；国内若超时可覆盖 NODE_IMAGE
 ARG NODE_IMAGE=node:22-bookworm-slim
 
-# build stage
-FROM ${NODE_IMAGE} AS build
+# 外网一次性：含 TypeScript 的构建依赖，内网可打成 xiaozhi-api-builder:base
+FROM ${NODE_IMAGE} AS builder
 WORKDIR /app
 COPY package.json ./
 RUN npm config set registry https://registry.npmmirror.com \
@@ -11,11 +11,10 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-# runtime
-FROM ${NODE_IMAGE}
+# 外网一次性：生产 node_modules + 系统依赖，打成 xiaozhi-api:base
+FROM ${NODE_IMAGE} AS runtime-base
 WORKDIR /app
 
-# 国内构建：改写 Deb822 / mirror+file，并在多家镜像间回退
 RUN set -eux; \
   printf '%s\n' \
     'Acquire::ForceIPv4 "true";' \
@@ -55,9 +54,7 @@ COPY package.json ./
 RUN npm config set registry https://registry.npmmirror.com \
   && npm install --omit=dev
 
-COPY --from=build /app/dist ./dist
-
-RUN mkdir -p /data /home/appuser/.claude \
+RUN mkdir -p /data /home/appuser/.claude /app/dist \
   && chown -R appuser:appuser /app /data /home/appuser
 
 USER appuser
@@ -70,3 +67,10 @@ HEALTHCHECK --interval=20s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "dist/index.js"]
+
+# 完整构建：底包 + 本轮 dist
+FROM runtime-base AS app
+USER root
+COPY --from=builder /app/dist ./dist
+RUN chown -R appuser:appuser /app/dist
+USER appuser

@@ -38,22 +38,35 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ## Docker
 
+前后端拆成两层：外网打一次**依赖底包**，内网改代码后只编 `dist` 叠进底包，不再访问 npm/apt。TTS/ASR 在宿主机固定运行，不打进业务镜像。
+
 ```bash
 cp .env.example .env
-# 容器访问宿主机模型时，将 OPENAI_BASE_URL 设为：
+# 容器访问宿主机模型时：
 # OPENAI_BASE_URL=http://host.docker.internal:11434/v1
-
-# 预下载语音模型到 data/models（首次；TTS 为 Higgs Audio V2）
-python tts/download_model.py
-bash tts/download_asr_model.sh
-
-# 本机 AMD GPU：先在宿主机启动 TTS（占用 8090）
-# powershell -ExecutionPolicy Bypass -File tts/run_windows_gpu.ps1
-
-docker compose up --build -d
 ```
 
-运行时数据与模型统一在项目根目录 `data/`（见 `data/README.md`），compose 挂载为容器内 `/data`。
+### 外网：打底包
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/docker-base.ps1
+docker save xiaozhi-web:base xiaozhi-web-builder:base xiaozhi-api:base xiaozhi-api-builder:base -o xiaozhi-web-api-base.tar
+```
+
+内网：`docker load -i xiaozhi-web-api-base.tar`
+
+### 内网：改代码后叠 dist
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/docker-app.ps1
+docker compose up -d web api
+```
+
+本机已装 Node 时脚本会直接 `npm run build`；否则用 `*-builder:base` 在容器里离线编译。
+
+完整联网构建（开发机）：`docker compose up --build -d web api`
+
+运行时数据在项目根目录 `data/`（见 `data/README.md`），compose 挂载为容器内 `/data`。
 
 浏览器：http://localhost:8080
 

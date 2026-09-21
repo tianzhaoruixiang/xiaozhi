@@ -7,7 +7,9 @@
     "dev": "concurrently -n web,api -c cyan,magenta \"npm run dev -w frontend\" \"npm run dev -w backend\"",
     "build": "npm run build -w frontend && npm run build -w backend",
     "dev:web": "npm run dev -w frontend",
-    "dev:api": "npm run dev -w backend"
+    "dev:api": "npm run dev -w backend",
+    "docker:base": "powershell -ExecutionPolicy Bypass -File scripts/docker-base.ps1",
+    "docker:app": "powershell -ExecutionPolicy Bypass -File scripts/docker-app.ps1"
   },
   "workspaces": [
     "frontend",

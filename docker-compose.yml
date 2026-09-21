@@ -1,7 +1,10 @@
 services:
   api:
+    image: ${API_IMAGE:-xiaozhi-api:local}
     build:
       context: ./backend
+      dockerfile: Dockerfile
+      target: app
     env_file:
       - .env
     environment:
@@ -11,9 +14,9 @@ services:
       XIAOZHI_ORCHESTRATION: hybrid
       XIAOZHI_DEFAULT_TEAM: personnel-dispatch
       XIAOZHI_DEFAULT_WORKFLOW: personnel-dispatch
-      # 播报走本地 vLLM-Omni；ASR 仍访问宿主机 sherpa 服务
-      TTS_URL: ${TTS_URL:-http://host.docker.internal:8090}
-      TTS_SPEECH_URL: ${TTS_SPEECH_URL_DOCKER:-http://vllm-omni:8091}
+      # 语音模型在宿主机固定运行，容器经 host.docker.internal 访问
+      TTS_URL: ${TTS_URL_DOCKER:-http://host.docker.internal:8090}
+      TTS_SPEECH_URL: ${TTS_SPEECH_URL_DOCKER:-http://host.docker.internal:8091}
       TTS_MODEL: ${TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice}
       TTS_VOICE: ${TTS_VOICE:-vivian}
       LLM_TIMEOUT_MS: "45000"
@@ -25,13 +28,6 @@ services:
       - ./.claude:/app/.claude:ro
     expose:
       - "3000"
-    depends_on:
-      tts:
-        condition: service_healthy
-        required: false
-      vllm-omni:
-        condition: service_healthy
-        required: false
     healthcheck:
       test:
         [
@@ -130,17 +126,14 @@ services:
     restart: unless-stopped
 
   web:
+    image: ${WEB_IMAGE:-xiaozhi-web:local}
     build:
       context: ./frontend
+      dockerfile: Dockerfile
+      target: app
     ports:
       - "8080:80"
     depends_on:
       api:
         condition: service_healthy
-      tts:
-        condition: service_healthy
-        required: false
-      vllm-omni:
-        condition: service_healthy
-        required: false
     restart: unless-stopped
