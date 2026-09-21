@@ -1,7 +1,7 @@
 {
   "name": "personnel-dispatch",
   "displayName": "人员调度会专家团",
-  "description": "人员调度会标准专家组合：情境研判、会议室预定、厅长日程、档案汇编、汇讯通知。",
+  "description": "人员调度会标准专家组合：情境研判、会议室预定与会议议程、厅长日程、历史会议资料汇编、汇讯通知。",
   "agents": [
     "context-analyst",
     "room-coordinator",

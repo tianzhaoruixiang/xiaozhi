@@ -13,6 +13,7 @@ const props = defineProps<{
 const statusText: Record<CollabStep['status'], string> = {
   queued: '待命',
   running: '执行中',
+  awaiting: '待确认',
   done: '已完成',
   error: '失败',
 }
@@ -40,6 +41,7 @@ const planFullyRevealed = computed(() => {
   // 规划项齐了，且已进入执行或完成，视为「第一次展示完成」
   return (
     plan.phase === 'executing' ||
+    plan.phase === 'awaiting_confirm' ||
     plan.phase === 'done' ||
     (plan.phase === 'ready' && props.steps.length > 0)
   )
@@ -97,12 +99,13 @@ const phaseLabel = computed(() => {
   if (phase === 'planning') return '规划生成中'
   if (phase === 'ready') return '规划揭示中'
   if (phase === 'executing') return '智能体执行中'
+  if (phase === 'awaiting_confirm') return '待您确认发出'
   if (phase === 'done') return '协同完成'
   return '协作台'
 })
 
 const runningCount = computed(
-  () => props.steps.filter((s) => s.status === 'running').length,
+  () => props.steps.filter((s) => s.status === 'running' || s.status === 'awaiting').length,
 )
 
 const isExpanded = (step: CollabStep) => expanded.value[step.id] === true
@@ -131,6 +134,7 @@ const activityLines = (step: CollabStep): string[] => {
     .filter((l) => !/^(开始调用|调用完成|调用失败)/.test(l))
     .slice(-3)
   lines.push(...recentLogs)
+  if (step.status === 'awaiting') lines.push('已拟好通知与议程，等候领导人确认')
   if (step.status === 'done' && step.summary) lines.push('已产出结果，点击查看完整过程')
   if (step.status === 'queued') lines.push('已登场，等待执行')
   if (!lines.length && step.status === 'running') lines.push('正在思考与落实任务…')
@@ -204,7 +208,9 @@ onUnmounted(() => {
         <p class="phase">{{ phaseLabel }}</p>
       </div>
       <div class="head-meta">
-        <span v-if="runningCount" class="live-badge">{{ runningCount }} 个执行中</span>
+        <span v-if="runningCount" class="live-badge">{{
+          steps.some((s) => s.status === 'awaiting') ? '待您确认' : `${runningCount} 个执行中`
+        }}</span>
         <span v-if="steps.length" class="count">
           {{ steps.filter((s) => s.status === 'done').length }}/{{ steps.length }}
         </span>
@@ -636,6 +642,13 @@ onUnmounted(() => {
     0 0 22px rgba(196, 163, 90, 0.12);
 }
 
+.card[data-status='awaiting'] {
+  border-color: rgba(196, 72, 54, 0.55);
+  box-shadow:
+    inset 3px 0 0 rgba(196, 72, 54, 0.75),
+    0 0 22px rgba(154, 42, 32, 0.18);
+}
+
 .card[data-status='done'] {
   border-color: rgba(93, 202, 160, 0.28);
 }
@@ -719,6 +732,11 @@ onUnmounted(() => {
 .card[data-status='running'] .badge {
   background: rgba(196, 163, 90, 0.18);
   color: var(--color-gold-soft);
+}
+
+.card[data-status='awaiting'] .badge {
+  background: rgba(196, 72, 54, 0.22);
+  color: #f0c4b8;
 }
 
 .card[data-status='done'] .badge {

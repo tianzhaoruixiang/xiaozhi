@@ -177,6 +177,15 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     callbacks.onWake({ hasFollowUp })
   }
 
+  /** 不经过唤醒词，直接听下一句（用于确认发出） */
+  const listenForReply = (timeoutMs = 45000) => {
+    awaitingCommand.value = true
+    clearArmedTimer()
+    armedTimer = window.setTimeout(() => {
+      awaitingCommand.value = false
+    }, timeoutMs)
+  }
+
   const handleRecognizedText = (raw: string) => {
     const text = raw.trim()
     if (!text) return
@@ -569,6 +578,7 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     stop,
     pause,
     resume,
+    listenForReply,
     isSecureContext: isSecureContextNow,
   }
 }

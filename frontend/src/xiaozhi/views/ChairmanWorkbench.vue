@@ -32,9 +32,11 @@ const {
   messages,
   streaming,
   error,
+  pendingConfirm,
   setOpen,
   toggle,
   send,
+  confirmDispatch,
 } = useAssistantChat()
 
 const {
@@ -55,6 +57,7 @@ const {
 } = useSpeechReport()
 
 const lastSpokenId = ref<string | null>(null)
+const lastSpokenConfirmId = ref<string | null>(null)
 
 const orchestration = () => ({
   team: selectedTeam.value || undefined,
@@ -79,6 +82,7 @@ const {
   mode: voiceMode,
   pause: pauseListen,
   resume: resumeListen,
+  listenForReply,
   start: startListen,
 } = useVoiceSession({
   onWakeDetected: () => {
@@ -115,6 +119,9 @@ const listenBreathStyle = computed(() => {
 const avatarState = computed(() => {
   // 唤醒收听优先，避免应答/汇报播报盖掉收听态
   if (voiceAwake.value && !voiceAckPlaying.value) return 'listening'
+  if (pendingConfirm.value?.confirm.status === 'pending' && !reportSpeaking.value) {
+    return 'listening'
+  }
   if (reportSpeaking.value) return 'speaking'
   if (streaming.value) return state.value === 'speaking' ? 'speaking' : 'thinking'
   return state.value === 'listening' ? 'idle' : state.value
@@ -144,22 +151,52 @@ watch(
   },
 )
 
+watch(
+  () => {
+    const latest = [...messages.value]
+      .reverse()
+      .find((m) => m.role === 'assistant' && m.dispatchConfirm?.status === 'pending' && m.dispatchConfirm.oral)
+    return latest?.dispatchConfirm
+      ? { id: latest.dispatchConfirm.id, oral: latest.dispatchConfirm.oral as string }
+      : null
+  },
+  async (curr) => {
+    if (!curr?.oral || curr.id === lastSpokenConfirmId.value) return
+    lastSpokenConfirmId.value = curr.id
+    pauseListen()
+    stopReport()
+    state.value = 'speaking'
+    setOpen(true)
+    await speak(curr.oral)
+    if (lastSpokenConfirmId.value === curr.id) {
+      state.value = 'listening'
+      listenForReply(45000)
+    }
+  },
+)
+
 watch(streaming, (isStreaming) => {
+  if (pendingConfirm.value?.confirm.status === 'pending') return
   if (isStreaming) pauseListen()
   else if (!reportSpeaking.value) resumeListen()
 })
 
 watch(reportSpeaking, (speaking) => {
   if (speaking) pauseListen()
+  else if (pendingConfirm.value?.confirm.status === 'pending') resumeListen()
   else if (!streaming.value) resumeListen()
 })
 
 const onSubmit = (text: string) => {
   draft.value = ''
+  setOpen(true)
+  if (pendingConfirm.value?.confirm.status === 'pending') {
+    void send(text, plans, orchestration())
+    return
+  }
   pauseListen()
   stopReport()
   state.value = 'thinking'
-  setOpen(true)
   void send(text, plans, orchestration())
 }
 
@@ -219,6 +256,7 @@ const onModeChange = (mode: string) => {
       @update:draft="draft = $event"
       @submit="onSubmit"
       @replay-report="(text: string) => { pauseListen(); stopReport(); void speak(text).then(() => resumeListen()) }"
+      @confirm-dispatch="(approved: boolean) => { void confirmDispatch(approved) }"
       @update:team="onTeamChange"
       @update:workflow="selectedWorkflow = $event"
       @update:mode="onModeChange"

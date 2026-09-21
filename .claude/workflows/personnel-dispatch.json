@@ -1,7 +1,7 @@
 {
   "name": "personnel-dispatch",
   "displayName": "人员调度会标准流程",
-  "description": "情境分析后，会议室预定与厅长日程、档案检索并行，最后汇讯通知汇总。",
+  "description": "情境分析后，会议室预定与议程、厅长日程、历史会议资料汇编并行，最后汇讯通知汇总。",
   "goalTemplate": "围绕「{{shortMessage}}」完成人员调度会准备与通知",
   "steps": [
     {
@@ -12,8 +12,8 @@
     },
     {
       "agent": "room-coordinator",
-      "title": "会议室预定",
-      "objectiveTemplate": "为「{{shortMessage}}」查询并预定合适会议室，写明完整名称与时段。",
+      "title": "会议室预定与议程",
+      "objectiveTemplate": "为「{{shortMessage}}」查询并预定合适会议室，写明完整名称与时段，并生成《相应会议议程》全文。",
       "dependsOn": ["context-analyst"]
     },
     {
@@ -24,14 +24,14 @@
     },
     {
       "agent": "archive-researcher",
-      "title": "背景资料汇编",
-      "objectiveTemplate": "围绕「{{shortMessage}}」检索历年相关会议资料，整理会前背景。",
+      "title": "会议资料汇编",
+      "objectiveTemplate": "围绕「{{shortMessage}}」检索知识库中历年相似会议档案，整理并生成《相应会议资料》全文。",
       "dependsOn": ["context-analyst"]
     },
     {
       "agent": "notice-dispatcher",
       "title": "汇讯通知",
-      "objectiveTemplate": "综合前序会议室、日程与背景资料，通过汇讯发送人员调度会通知。",
+      "objectiveTemplate": "综合前序会议室、日程、《会议议程》与《会议资料》拟好汇讯，呈请领导人确认后再发给全体参会人。",
       "dependsOn": [
         "room-coordinator",
         "director-scheduler",

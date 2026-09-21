@@ -19,8 +19,8 @@
 ```yaml
 ---
 name: room-coordinator          # 必填，lowercase-hyphen，= subagent_type
-displayName: 会议室协调专家       # 前端展示名
-role: 查询并预定会议室
+displayName: 会议专家             # 前端展示名
+role: 预定会议室并生成会议议程
 description: Use when ...       # 英文，供编排器判断何时委派
 capabilities: [rooms]           # knowledge | rooms | schedule | huixun
 ---

@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import type { ChatMessage } from '../types/assistant'
 import AgentCollabTimeline from './AgentCollabTimeline.vue'
 import MarkdownView from './MarkdownView.vue'
+import DispatchConfirmCard from './DispatchConfirmCard.vue'
 
 const props = defineProps<{
   open: boolean
@@ -36,6 +37,7 @@ const emit = defineEmits<{
   submit: [text: string]
   'update:draft': [value: string]
   'replay-report': [text: string]
+  'confirm-dispatch': [approved: boolean]
   'update:team': [value: string]
   'update:workflow': [value: string]
   'update:mode': [value: string]
@@ -56,6 +58,11 @@ const activeCollab = computed(() => {
   }
   return { steps: [], taskPlan: null }
 })
+
+const awaitingConfirm = computed(() =>
+  props.messages.some((m) => m.dispatchConfirm?.status === 'pending'),
+)
+const composerLocked = computed(() => props.streaming && !awaitingConfirm.value)
 
 const showCollab = computed(() => {
   const plan = activeCollab.value.taskPlan
@@ -147,6 +154,9 @@ watch(
                 </template>
                 <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'planning'">
                   正在设计本轮专家团队…
+                </template>
+                <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'awaiting_confirm'">
+                  通知已拟好，请您确认是否发出
                 </template>
                 <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'executing'">
                   专家正按调度执行任务
@@ -247,6 +257,7 @@ watch(
                 <p v-else-if="msg.content" class="plain">{{ msg.content }}</p>
                 <p v-else-if="msg.role === 'assistant' && streaming" class="plain muted">
                   <template v-if="msg.taskPlan?.phase === 'planning'">小智正在生成多智能体任务规划…</template>
+                  <template v-else-if="msg.taskPlan?.phase === 'awaiting_confirm'">通知已拟好，请您确认是否发出…</template>
                   <template v-else-if="msg.taskPlan?.phase === 'executing'">智能体正在逐步执行，请看左侧协作过程…</template>
                   <template v-else>正在启动协同流程…</template>
                 </p>
@@ -266,6 +277,13 @@ watch(
                   </div>
                   <p>{{ msg.oralReport }}</p>
                 </div>
+
+                <DispatchConfirmCard
+                  v-if="msg.dispatchConfirm"
+                  :confirm="msg.dispatchConfirm"
+                  @approve="emit('confirm-dispatch', true)"
+                  @reject="emit('confirm-dispatch', false)"
+                />
               </article>
             </div>
 
@@ -277,7 +295,7 @@ watch(
                   v-for="item in shortcuts"
                   :key="item"
                   type="button"
-                  :disabled="streaming"
+                  :disabled="composerLocked"
                   @click="useShortcut(item)"
                 >
                   {{ item }}
@@ -288,12 +306,16 @@ watch(
                 <textarea
                   :value="draft"
                   rows="2"
-                  placeholder="说「你好，小智」唤醒后口述，或在此输入…"
-                  :disabled="streaming"
+                  :disabled="composerLocked"
+                  :placeholder="
+                    awaitingConfirm
+                      ? '等候确认时，请说「确认发出」或「先不发」…'
+                      : '说「你好，小智」唤醒后口述，或在此输入…'
+                  "
                   @keydown.enter.exact.prevent="onSubmit"
                   @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
                 />
-                <button type="submit" :disabled="streaming || !draft.trim()">
+                <button type="submit" :disabled="composerLocked || !draft.trim()">
                   发送
                 </button>
               </form>

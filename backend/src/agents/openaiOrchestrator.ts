@@ -15,13 +15,17 @@ import {
 import { chatCompletion } from '../lib/openaiCompatible.js'
 import { getOpenAIConfig } from '../lib/llmConfig.js'
 import { sleep, type SsePayload } from '../lib/sse.js'
+import { awaitLeaderDispatchConfirm } from '../lib/leaderConfirm.js'
 import {
+  extractMeetingAgenda,
+  extractMeetingMaterials,
   formatHuixunDirectoryHint,
   sendHuixunMeetingNotice,
   type HuixunNoticeInput,
 } from '../tools/huixun.js'
 import {
   compileMeetingBackground,
+  formatMeetingMaterialsPacket,
   searchMeetingArchives,
 } from '../tools/knowledge.js'
 import {
@@ -36,7 +40,10 @@ import {
   formatScheduleCard,
   queryDirectorSchedule,
 } from '../tools/schedule.js'
-import { formatAttendeeStatusHint } from '../data/attendeeStatus.js'
+import {
+  ATTENDEE_STATUS,
+  formatAttendeeStatusHint,
+} from '../data/attendeeStatus.js'
 import { pickPlanSource } from '../config/resolvePlan.js'
 import {
   resolveOralReport,
@@ -86,7 +93,7 @@ async function runKnowledgeCapability(options: {
       messages: [
         {
           role: 'system',
-          content: '根据上下文提炼会议档案检索词。只输出一行中文关键词，空格分隔，勿解释。',
+          content: '根据上下文提炼历年相似会议档案检索词。只输出一行中文关键词，空格分隔，勿解释。',
         },
         {
           role: 'user',
@@ -127,20 +134,25 @@ async function runKnowledgeCapability(options: {
     agentId: id,
     agentName: name,
     toolName: 'compile_meeting_background',
-    toolLabel: '知识库 · 汇编背景资料',
+    toolLabel: '知识库 · 汇编会议资料',
     summary: `汇编 ${hits.length} 份档案`,
   })
 
-  const background = compileMeetingBackground(hits)
-  const compiled = `## 会议背景资料（聚焦：${query}）\n以下根据历年相关会议档案整理，供参会人会前阅读。\n\n${background}`
+  const meetingLabel = query.includes('调度')
+    ? '人员调度会'
+    : query.split(/[\s,，、]+/).filter(Boolean)[0]?.slice(0, 16) || '工作会'
+  const packet = formatMeetingMaterialsPacket(
+    meetingLabel,
+    compileMeetingBackground(hits),
+  )
 
   onEvent({
     type: 'tool_done',
     agentId: id,
     agentName: name,
     toolName: 'compile_meeting_background',
-    toolLabel: '知识库 · 汇编背景资料',
-    summary: `已汇编 ${hits.length} 份背景资料`,
+    toolLabel: '知识库 · 汇编会议资料',
+    summary: `已汇编 ${hits.length} 份，生成${packet.title}`,
     ok: true,
   })
 
@@ -148,7 +160,13 @@ async function runKnowledgeCapability(options: {
     messages: [
       {
         role: 'system',
-        content: `${expert.prompt}\n\n本轮任务目标：${expert.objective}\n工具检索与汇编已完成，请基于结果整理输出。`,
+        content: `${expert.prompt}
+
+本轮任务目标：${expert.objective}
+工具检索与汇编已完成。请基于结果整理输出：
+1. 说明检索了哪些历年相似会议
+2. 必须单独给出章节标题${packet.title}，正文含历次对照、可借鉴决议、会前阅读要点
+3. 只引用工具结果，勿编造档案`,
       },
       {
         role: 'user',
@@ -160,16 +178,19 @@ ${options.priorText}
 【检索关键词】
 ${query}
 
-【已汇编背景资料】
-${compiled}`,
+【已汇编会议资料】
+${packet.text}`,
       },
     ],
   })
 
-  return `${think.trim()}
+  const combined = think.trim()
+  if (/《[^》]{2,40}会议资料》/.test(combined)) {
+    return combined
+  }
+  return `${combined}
 
-## 会议背景资料（定稿）
-${compiled}`
+${packet.text}`
 }
 
 async function runRoomsCapability(options: {
@@ -296,11 +317,11 @@ async function runRoomsCapability(options: {
 
 本轮任务目标：${expert.objective}
 
-你已获得会议室查询结果。请比较候选会议室后做出决策：
+你已获得会议室查询结果。请比较候选会议室后做出决策，并用简洁 Markdown 输出：
 1. 明确写出「选定会议室：完整名称」（必须来自查询结果，如七楼101会议室、三楼阶梯会议室）
 2. 说明容量、时段是否冲突、设备是否满足
 3. 列出 1-2 个备选及不选用原因
-用简洁 Markdown 输出。`,
+4. 必须单独给出章节标题《{本次会议简称}会议议程》（例如《人员调度会会议议程》），正文含：会议名称、时间、地点（完整会议室名）、主持人、参会人（须含领导人/厅长及各部门参会人）、议题顺序与建议时长、会前准备。`,
       },
       {
         role: 'user',
@@ -347,7 +368,28 @@ ${catalog || '（无结果）'}`,
     bookLine = `\n\n## 预定结果\n${booked.message}`
   }
 
-  return `${think.trim()}${bookLine}`
+  const meetingLabel = queryHint.includes('调度')
+    ? '人员调度会'
+    : queryHint.slice(0, 16) || '工作会议'
+  const combined = `${think.trim()}${bookLine}`
+  if (/《[^》]{2,40}会议议程》/.test(combined)) {
+    return combined
+  }
+
+  const roomName = top?.name ?? '待会议室协调确认'
+  return `${combined}
+
+## 《${meetingLabel}会议议程》
+- 会议名称：${meetingLabel}
+- 时间：${startTime}–${endTime}
+- 地点：${roomName}
+- 主持人：办公室
+- 出席：${DIRECTOR_NAME}（领导人）及各部门参会人
+
+1. 主持人宣布开会并确认出席（3 分钟）
+2. 汇报议题与研判要点（主时段）
+3. 领导人指示
+4. 明确分工、落实时限并散会`
 }
 
 async function runScheduleCapability(options: {
@@ -472,6 +514,40 @@ ${arranged.message}`,
 ${arranged.message}`
 }
 
+function mergeAllMeetingRecipients(list: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const name of [
+    ...list,
+    DIRECTOR_NAME,
+    ...ATTENDEE_STATUS.map((a) => a.name),
+  ]) {
+    const key = name.trim()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(key)
+  }
+  return out
+}
+
+function agendaFromPrior(priorText: string): {
+  agendaTitle?: string
+  agenda?: string
+} {
+  const found = extractMeetingAgenda(priorText)
+  if (!found) return {}
+  return { agendaTitle: found.title, agenda: found.body }
+}
+
+function briefingFromPrior(priorText: string): {
+  briefingTitle?: string
+  backgroundBrief?: string
+} {
+  const found = extractMeetingMaterials(priorText)
+  if (!found) return {}
+  return { briefingTitle: found.title, backgroundBrief: found.body }
+}
+
 async function buildHuixunNoticeArgs(options: {
   contextBlock: string
   priorText: string
@@ -484,11 +560,11 @@ async function buildHuixunNoticeArgs(options: {
           role: 'system',
           content: `你是通知工具规划器。生成汇讯工具 send_meeting_notice 的 JSON 参数。
 只输出 JSON：
-{"recipients":["姓名或角色"],"title":"通知标题","content":"通知正文","backgroundBrief":"会议背景资料","meetingTime":"可选","location":"可选"}
+{"recipients":["姓名或角色"],"title":"通知标题","content":"通知正文","briefingTitle":"《xxx会议资料》","backgroundBrief":"会议资料全文","agendaTitle":"《xxx会议议程》","agenda":"会议议程全文","meetingTime":"可选","location":"可选"}
 通讯录可匹配：${formatHuixunDirectoryHint()}
 参会状态：
 ${formatAttendeeStatusHint()}
-要求：必须带 backgroundBrief；recipients 至少 1 人；出差人员仍列入收件人；location 优先填写前序结论中已选定的完整会议室名称（如七楼101会议室、三楼阶梯会议室）。`,
+要求：须从前期结论提取《xxx会议议程》填入 agendaTitle/agenda，提取《xxx会议资料》填入 briefingTitle/backgroundBrief；recipients 必须覆盖全部参会人且包含领导人（陈厅长）；出差人员仍列入收件人；location 优先填写前序结论中已选定的完整会议室名称（如七楼101会议室、三楼阶梯会议室）。`,
         },
         {
           role: 'user',
@@ -507,13 +583,34 @@ ${formatAttendeeStatusHint()}
       typeof parsed.content === 'string'
     ) {
       return {
-        recipients: parsed.recipients.map(String),
+        recipients: mergeAllMeetingRecipients(parsed.recipients.map(String)),
         title: parsed.title,
         content: parsed.content,
-        backgroundBrief:
-          typeof parsed.backgroundBrief === 'string' && parsed.backgroundBrief.trim()
-            ? parsed.backgroundBrief
-            : options.priorText.slice(0, 2500),
+        ...(() => {
+          const fromPrior = briefingFromPrior(options.priorText)
+          const backgroundBrief =
+            typeof parsed.backgroundBrief === 'string' &&
+            parsed.backgroundBrief.trim()
+              ? parsed.backgroundBrief
+              : fromPrior.backgroundBrief || options.priorText.slice(0, 2500)
+          const briefingTitle =
+            typeof parsed.briefingTitle === 'string' && parsed.briefingTitle.trim()
+              ? parsed.briefingTitle
+              : fromPrior.briefingTitle
+          return { backgroundBrief, briefingTitle }
+        })(),
+        ...(() => {
+          const fromPrior = agendaFromPrior(options.priorText)
+          const agenda =
+            typeof parsed.agenda === 'string' && parsed.agenda.trim()
+              ? parsed.agenda
+              : fromPrior.agenda
+          const agendaTitle =
+            typeof parsed.agendaTitle === 'string' && parsed.agendaTitle.trim()
+              ? parsed.agendaTitle
+              : fromPrior.agendaTitle
+          return agenda ? { agenda, agendaTitle } : {}
+        })(),
         meetingTime:
           typeof parsed.meetingTime === 'string' ? parsed.meetingTime : undefined,
         location: typeof parsed.location === 'string' ? parsed.location : undefined,
@@ -528,11 +625,15 @@ ${formatAttendeeStatusHint()}
     /((?:[一二三四五六七八九十百负]+楼|[0-9]+楼)?[^\n，。；]{0,8}(?:会议室|会商室|多功能厅|指挥会议室|阶梯教室|视频会议室))/,
   )
 
+  const briefing = briefingFromPrior(options.priorText)
+
   return {
-    recipients: ['市政府办公室', '应急管理局', '人社局'],
-    title: '人员调度会参会通知（含背景资料）',
-    content: `${options.priorText.slice(0, 600)}\n\n请相关同志确认出席，并会前阅知附件背景资料。`,
-    backgroundBrief: options.priorText.slice(0, 2500),
+    recipients: mergeAllMeetingRecipients([]),
+    title: '人员调度会参会通知（含会议议程与会议资料）',
+    content: `${options.priorText.slice(0, 600)}\n\n请全体参会人（含领导人）确认出席，会前阅知附件《会议议程》与《会议资料》。`,
+    backgroundBrief: briefing.backgroundBrief || options.priorText.slice(0, 2500),
+    briefingTitle: briefing.briefingTitle,
+    ...agendaFromPrior(options.priorText),
     meetingTime: '待确认',
     location: roomMatch?.[1] ?? '待会议室协调确认',
   }
@@ -559,7 +660,7 @@ async function runHuixunCapability(options: {
     messages: [
       {
         role: 'system',
-        content: `${expert.prompt}\n\n本轮任务目标：${expert.objective}\n须把背景资料随汇讯通知发出。`,
+        content: `${expert.prompt}\n\n本轮任务目标：${expert.objective}\n先拟好通知与《会议议程》《会议资料》，必须等领导人确认后再调用汇讯发出。`,
       },
       {
         role: 'user',
@@ -572,7 +673,7 @@ async function runHuixunCapability(options: {
     type: 'agent_progress',
     agentId: id,
     agentName: name,
-    summary: '正在组装汇讯通知（含背景资料）…',
+    summary: '正在组装汇讯通知（含会议议程与会议资料）…',
   })
 
   const noticeArgs = await buildHuixunNoticeArgs({
@@ -582,12 +683,49 @@ async function runHuixunCapability(options: {
   })
 
   onEvent({
+    type: 'agent_progress',
+    agentId: id,
+    agentName: name,
+    summary: '通知与议程已拟就，呈请领导人确认后再发出',
+  })
+
+  const decision = await awaitLeaderDispatchConfirm({
+    onEvent,
+    agentId: id,
+    agentName: name,
+    draft: noticeArgs,
+  })
+
+  if (!decision.approved) {
+    const why =
+      decision.reason === 'timeout'
+        ? '等候领导人确认超时，会议通知与议程未发出'
+        : '领导人未确认，会议通知与议程未发出'
+    onEvent({
+      type: 'tool_done',
+      agentId: id,
+      agentName: name,
+      toolName: 'send_meeting_notice',
+      toolLabel: '汇讯 · 发送会议通知',
+      summary: why,
+      ok: false,
+    })
+    return `${planText.trim()}
+
+## 汇讯通知执行
+- 状态：未发出
+- 原因：${why}`
+  }
+
+  onEvent({
     type: 'tool_start',
     agentId: id,
     agentName: name,
     toolName: 'send_meeting_notice',
     toolLabel: '汇讯 · 发送会议通知',
-    summary: `正在通过汇讯通知：${noticeArgs.recipients.join('、')}（附背景资料）`,
+    summary: `领导人已确认，正在通过汇讯通知：${noticeArgs.recipients.join('、')}${
+      noticeArgs.agenda ? '（附会议议程）' : ''
+    }${noticeArgs.backgroundBrief ? '（附会议资料）' : ''}`,
   })
 
   const result = await sendHuixunMeetingNotice(noticeArgs)
@@ -609,7 +747,8 @@ async function runHuixunCapability(options: {
 - 工具：send_meeting_notice
 - 模式：${result.mode === 'live' ? '实发' : '模拟投递'}
 - 结果：${result.summary}
-- 已附背景资料：是
+- 已附会议议程：${noticeArgs.agendaTitle || (noticeArgs.agenda ? '是' : '否')}
+- 已附会议资料：${noticeArgs.briefingTitle || (noticeArgs.backgroundBrief ? '是' : '否')}
 - 已达对象：${
     result.delivered.map((d) => `${d.name}（${d.role}）`).join('、') || '无'
   }`

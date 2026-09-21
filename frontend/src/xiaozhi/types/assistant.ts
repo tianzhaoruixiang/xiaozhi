@@ -1,7 +1,20 @@
 export type AssistantState = 'idle' | 'listening' | 'thinking' | 'speaking'
 
-export type CollabStatus = 'queued' | 'running' | 'done' | 'error'
-export type PlanPhase = 'idle' | 'planning' | 'ready' | 'executing' | 'done'
+export type CollabStatus = 'queued' | 'running' | 'awaiting' | 'done' | 'error'
+export type PlanPhase = 'idle' | 'planning' | 'ready' | 'executing' | 'awaiting_confirm' | 'done'
+
+export interface DispatchConfirm {
+  id: string
+  status: 'pending' | 'approved' | 'rejected'
+  title: string
+  preview?: string
+  meetingTime?: string
+  location?: string
+  agendaTitle?: string
+  briefingTitle?: string
+  recipients?: string[]
+  oral?: string
+}
 
 export interface PlanTaskItem {
   index: number
@@ -57,6 +70,8 @@ export interface ChatMessage {
   taskPlan?: TaskPlan
   /** 小智向领导口述的语音稿 */
   oralReport?: string
+  /** 发出汇讯前的领导人确认 */
+  dispatchConfirm?: DispatchConfirm
 }
 
 export type SseEventType =
@@ -71,6 +86,9 @@ export type SseEventType =
   | 'tool_done'
   | 'assistant_delta'
   | 'oral_report'
+  | 'await_confirm'
+  | 'confirm_resolved'
+  | 'heartbeat'
   | 'final'
   | 'error'
 
@@ -92,4 +110,9 @@ export interface SsePayload {
   ok?: boolean
   recipients?: string[]
   dependsOn?: string[]
+  confirmId?: string
+  meetingTime?: string
+  location?: string
+  agendaTitle?: string
+  briefingTitle?: string
 }

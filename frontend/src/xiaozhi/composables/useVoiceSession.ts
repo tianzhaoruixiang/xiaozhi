@@ -126,6 +126,11 @@ export function useVoiceSession(options: VoiceSessionOptions) {
     syncFromWake,
   )
 
+  const listenForReply = (timeoutMs?: number) => {
+    wake.resume()
+    wake.listenForReply(timeoutMs)
+  }
+
   const start = () => wake.start()
 
   const stop = () => {
@@ -181,5 +186,6 @@ export function useVoiceSession(options: VoiceSessionOptions) {
     stop,
     pause,
     resume,
+    listenForReply,
   }
 }

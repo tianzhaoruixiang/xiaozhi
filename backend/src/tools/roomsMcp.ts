@@ -28,7 +28,7 @@ export function createRoomsMcpServer(options?: {
   agentName?: string
 }) {
   const agentId = options?.agentId ?? 'room-coordinator'
-  const agentName = options?.agentName ?? '会议室协调'
+  const agentName = options?.agentName ?? '会议专家'
   const onEmit = options?.onEmit
 
   const emitStart = (toolName: string, toolLabel: string, summary: string) => {

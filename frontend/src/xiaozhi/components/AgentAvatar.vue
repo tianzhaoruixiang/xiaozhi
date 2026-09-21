@@ -12,7 +12,7 @@ const props = withDefaults(
     avatarId?: string
     name?: string
     size?: number | string
-    status?: 'queued' | 'running' | 'done' | 'error' | 'pending'
+    status?: 'queued' | 'running' | 'awaiting' | 'done' | 'error' | 'pending'
   }>(),
   {
     size: 40,
@@ -86,6 +86,12 @@ const ring = computed(
     0 0 0 2px rgba(232, 213, 163, 0.75),
     0 0 18px rgba(196, 163, 90, 0.4);
   animation: avatar-pulse 1.4s ease-in-out infinite;
+}
+
+.agent-avatar[data-status='awaiting'] {
+  box-shadow:
+    0 0 0 2px rgba(196, 72, 54, 0.8),
+    0 0 16px rgba(154, 42, 32, 0.35);
 }
 
 .agent-avatar[data-status='done'] {

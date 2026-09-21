@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type {
   AssistantState,
   ChatMessage,
@@ -7,6 +7,7 @@ import type {
   TaskPlan,
 } from '../types/assistant'
 import type { PlanItem } from '../data/mockPlans'
+import { classifyConfirmUtterance } from '../utils/confirmUtterance'
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -34,6 +35,42 @@ export function useAssistantChat() {
   ])
   const streaming = ref(false)
   const error = ref<string | null>(null)
+
+  const pendingConfirm = computed(() => {
+    for (let i = messages.value.length - 1; i >= 0; i -= 1) {
+      const msg = messages.value[i]
+      if (msg.dispatchConfirm?.status === 'pending') {
+        return { messageId: msg.id, confirm: msg.dispatchConfirm }
+      }
+    }
+    return null
+  })
+
+  const confirmDispatch = async (approved: boolean, utterance?: string) => {
+    const pending = pendingConfirm.value
+    if (!pending) return
+    pending.confirm.status = approved ? 'approved' : 'rejected'
+    error.value = null
+    try {
+      const response = await fetch('/api/chat/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          confirmId: pending.confirm.id,
+          approved,
+          utterance,
+        }),
+      })
+      if (!response.ok) {
+        pending.confirm.status = 'pending'
+        const detail = await response.text()
+        throw new Error(detail || `确认失败（${response.status}）`)
+      }
+    } catch (err) {
+      pending.confirm.status = 'pending'
+      error.value = err instanceof Error ? err.message : '无法提交确认'
+    }
+  }
 
   const setOpen = (value: boolean) => {
     open.value = value
@@ -80,7 +117,24 @@ export function useAssistantChat() {
     options?: { enableOralReport?: boolean },
   ) => {
     const content = text.trim()
-    if (!content || streaming.value) return
+    if (!content) return
+
+    if (pendingConfirm.value) {
+      messages.value.push({
+        id: uid('user'),
+        role: 'user',
+        content,
+      })
+      const kind = classifyConfirmUtterance(content)
+      if (kind === 'unknown') {
+        error.value = '请口头说「确认发出」或「先不发」，也可点击页面上的确认按钮。'
+        return
+      }
+      await confirmDispatch(kind === 'approve', content)
+      return
+    }
+
+    if (streaming.value) return
     const enableOral = options?.enableOralReport !== false
 
     open.value = true
@@ -297,6 +351,54 @@ export function useAssistantChat() {
             msg.content += payload.text ?? ''
             break
           }
+          case 'await_confirm': {
+            plan.phase = 'awaiting_confirm'
+            plan.statusText = payload.summary ?? '等候您确认后发出通知'
+            if (payload.agentId) {
+              const step = ensureStep(msg.steps ?? steps, payload.agentId, {
+                name: payload.agentName,
+              })
+              step.status = 'awaiting'
+              if (payload.summary) {
+                if (!step.logs) step.logs = []
+                step.logs.push(payload.summary)
+              }
+            }
+            if (payload.confirmId) {
+              msg.dispatchConfirm = {
+                id: payload.confirmId,
+                status: 'pending',
+                title: payload.title ?? '会议通知',
+                preview: payload.message,
+                meetingTime: payload.meetingTime,
+                location: payload.location,
+                agendaTitle: payload.agendaTitle,
+                briefingTitle: payload.briefingTitle,
+                recipients: payload.recipients,
+                oral: payload.text,
+              }
+            }
+            break
+          }
+          case 'confirm_resolved': {
+            if (msg.dispatchConfirm && payload.confirmId === msg.dispatchConfirm.id) {
+              msg.dispatchConfirm.status = payload.ok ? 'approved' : 'rejected'
+            }
+            plan.phase = payload.ok ? 'executing' : 'executing'
+            plan.statusText = payload.summary ?? plan.statusText
+            if (payload.agentId) {
+              const step = ensureStep(msg.steps ?? steps, payload.agentId)
+              step.status = payload.ok ? 'running' : 'done'
+              if (payload.summary) {
+                if (!step.logs) step.logs = []
+                step.logs.push(payload.summary)
+                if (!payload.ok) step.summary = payload.summary
+              }
+            }
+            break
+          }
+          case 'heartbeat':
+            break
           case 'oral_report': {
             if (!enableOral) break
             state.value = 'speaking'
@@ -381,8 +483,10 @@ export function useAssistantChat() {
     messages,
     streaming,
     error,
+    pendingConfirm,
     setOpen,
     toggle,
     send,
+    confirmDispatch,
   }
 }

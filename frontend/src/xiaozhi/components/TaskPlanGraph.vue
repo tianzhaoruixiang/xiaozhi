@@ -17,6 +17,7 @@ const statusLabel: Record<CollabStatus | 'pending', string> = {
   pending: '待揭示',
   queued: '待命',
   running: '执行中',
+  awaiting: '待确认',
   done: '完成',
   error: '失败',
 }

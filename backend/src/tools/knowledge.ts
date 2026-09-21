@@ -104,3 +104,21 @@ ${d.decisions.map((x) => `  - ${x}`).join('\n')}
     )
     .join('\n\n')
 }
+
+/** 生成书名号标题的《xxx会议资料》汇编稿 */
+export function formatMeetingMaterialsPacket(
+  meetingName: string,
+  docsBody: string,
+): { title: string; text: string } {
+  const label =
+    meetingName
+      .replace(/[《》]/g, '')
+      .replace(/(会议资料|会议议程)$/g, '')
+      .trim() || '工作会'
+  const title = `《${label}会议资料》`
+  const text = `## ${title}
+以下根据知识库中历年相似会议档案整理，供全体参会人（含领导人）会前阅知。引用如下档案，勿当作未检索事实。
+
+${docsBody}`
+  return { title, text }
+}
