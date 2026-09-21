@@ -28,7 +28,7 @@ const pendingInGroup = () => props.groupTasks.filter((task) => task.status === '
 <template>
   <aside class="panel-frame distribution-assistant" aria-labelledby="distribution-assistant-title">
     <header class="distribution-assistant-head">
-      <AIAssistantAvatar label="任务部署会议助手机器人头像" />
+      <AIAssistantAvatar label="任务部署会议助手书记员头像" />
       <div><h2 id="distribution-assistant-title">会议助手</h2><p>任务拆解、责任校核与送达检查</p></div>
       <span class="assistant-online"><i />持续检查</span>
     </header>
