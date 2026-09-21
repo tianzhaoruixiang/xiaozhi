@@ -37,7 +37,7 @@ const send = (preset?: string) => {
 <template>
   <aside class="panel-frame revision-assistant" aria-labelledby="revision-assistant-title">
     <header class="revision-assistant-header">
-      <AIAssistantAvatar label="统稿会议助手机器人头像" />
+      <AIAssistantAvatar label="统稿会议助手书记员头像" />
       <div>
         <h2 id="revision-assistant-title">会议助手</h2>
         <p>仅处理会议已形成的决议</p>

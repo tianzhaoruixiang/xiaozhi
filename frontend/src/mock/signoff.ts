@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   SignoffActivity,
   SignoffAssistantTask,
   SignoffDepartment,
@@ -8,7 +8,7 @@
 import { planDocument } from './meeting'
 
 export const signoffDepartments: SignoffDepartment[] = [
-  { id: 'command', name: '市局指挥中心', signer: '张卫明', role: '指挥长', order: 1, status: 'signed', signedAt: '11:48', sealCode: 'QZ-2401' },
+  { id: 'command', name: '市局指挥中心', signer: '王卫明', role: '指挥长', order: 1, status: 'signed', signedAt: '11:48', sealCode: 'QZ-2401' },
   { id: 'security', name: '治安支队', signer: '王凯铭', role: '支队负责人', order: 2, status: 'signed', signedAt: '11:51', sealCode: 'ZA-0816' },
   { id: 'entry', name: '出入境管理支队', signer: '陈立文', role: '审核负责人', order: 3, status: 'signed', signedAt: '11:54', sealCode: 'CRJ-0328' },
   { id: 'cyber', name: '网安支队', signer: '赵敏婕', role: '研判负责人', order: 4, status: 'pending' },

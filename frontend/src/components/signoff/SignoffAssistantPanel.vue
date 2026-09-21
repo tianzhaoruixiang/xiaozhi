@@ -35,7 +35,7 @@ const openMaterial = async (materialId: string) => {
 <template>
   <aside class="panel-frame signoff-assistant" aria-labelledby="signoff-assistant-title">
     <header class="signoff-assistant-head">
-      <AIAssistantAvatar label="会签会议助手机器人头像" />
+      <AIAssistantAvatar label="会签会议助手书记员头像" />
       <div><h2 id="signoff-assistant-title">会议助手</h2><p>持续跟踪审阅状态</p></div>
       <span class="assistant-online"><i />运行中</span>
     </header>

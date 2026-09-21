@@ -6,6 +6,8 @@ export interface Participant {
   initial: string
   color: string
   avatar: number
+  signedIn?: boolean
+  isMe?: boolean
 }
 
 export interface TranscriptEntry {
@@ -32,6 +34,14 @@ export interface ScriptLine {
   speakerId: string
   content: string
   suggestion?: Omit<Suggestion, 'id' | 'speakerId' | 'time'>
+}
+
+/** 会议议程阶段：进入阶段时助手播报，随后按序发言 */
+export interface AgendaPhase {
+  id: string
+  label: string
+  assistantIntro: string
+  lines: ScriptLine[]
 }
 
 export interface AssistantTask {

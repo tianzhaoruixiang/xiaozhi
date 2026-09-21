@@ -134,7 +134,7 @@ export function usePlanRevision() {
             original: clause.text,
             revised: `${clause.text.replace(/。$/, '')}；结合会话指令补充：${text.replace(clauseNo, '').trim()}。`,
             reason: `来自会议现场补充指令：“${text}”，已定位至对应条文并登记为统稿补充事项。`,
-            speaker: '张卫明',
+            speaker: '王卫明',
             department: '市局指挥中心',
             time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }),
             references: ['会议现场补充指令', `安保方案版本 ${sourceVersion.value}`],
