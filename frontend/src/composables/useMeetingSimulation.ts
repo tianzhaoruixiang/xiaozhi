@@ -145,15 +145,20 @@ export function useMeetingSimulation() {
     addActivity(`提取${activeSpeaker.value.name}发言要点`, '已识别责任单位和执行要求')
 
     if (line.suggestion) {
-      registeredSuggestions.value.push({
-        ...line.suggestion,
-        id: nextEntryId(),
-        speakerId: line.speakerId,
-        time,
-      })
-      // 建议直接写入方案待修改清单，版本号同步升版
-      planMinor.value += 1
-      addActivity('建议已写入方案待修改清单', `方案版本更新为 ${planVersion.value}，拟写入${line.suggestion.chapter}，统稿确认阶段统一审定`, 'info')
+      // 去重：同一发言人同一章节已登记过就跳过（循环播放时避免重复登记）
+      const key = `${line.speakerId}:${line.suggestion.chapter}`
+      const already = registeredSuggestions.value.some((s) => `${s.speakerId}:${s.chapter}` === key)
+      if (!already) {
+        registeredSuggestions.value.push({
+          ...line.suggestion,
+          id: nextEntryId(),
+          speakerId: line.speakerId,
+          time,
+        })
+        // 建议直接写入方案待修改清单，版本号同步升版
+        planMinor.value += 1
+        addActivity('建议已写入方案待修改清单', `方案版本更新为 ${planVersion.value}，拟写入${line.suggestion.chapter}，统稿确认阶段统一审定`, 'info')
+      }
     }
 
     // 统稿/会签表态队列：推进下一条或结束

@@ -1,5 +1,4 @@
-export type SignoffStatus = 'signed' | 'pending' | 'objection'
-export type SignoffOpinionStatus = 'open' | 'resolved'
+export type SignoffStatus = 'signed' | 'pending'
 
 export interface SignoffClause {
   id: string
@@ -22,19 +21,6 @@ export interface SignoffDepartment {
   status: SignoffStatus
   signedAt?: string
   sealCode?: string
-}
-
-export interface SignoffOpinion {
-  id: string
-  departmentId: string
-  clauseId: string
-  section: string
-  author: string
-  department: string
-  time: string
-  content: string
-  proposal: string
-  status: SignoffOpinionStatus
 }
 
 export interface SignoffActivity {

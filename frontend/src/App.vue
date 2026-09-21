@@ -55,7 +55,7 @@ const stageMeta = computed(() => {
   return ({
     1: { status: '会议进行中 · 意见征集中', clock: '会议时长', liveStage: '意见征集中', pending: '待统稿建议', tone: 'live' as const },
     2: { status: '会议进行中 · 统稿确认中', clock: '会议时长', liveStage: '统稿确认中', pending: '统稿补充事项', tone: 'revision' as const },
-    3: { status: '会议进行中 · 联合会签中', clock: '会议时长', liveStage: '联合会签中', pending: '会签补充意见', tone: 'revision' as const },
+    3: { status: '会议进行中 · 联合会签中', clock: '会议时长', liveStage: '联合会签中', pending: '待签章单位', tone: 'revision' as const },
     4: { status: '会议进行中 · 任务部署中', clock: '会议时长', liveStage: '任务部署中', pending: '任务调整事项', tone: 'live' as const },
   }[currentStep.value] ?? { status: '会议进行中', clock: '会议时长', liveStage: '会议进行中', pending: '待处理事项', tone: 'live' as const })
 })
@@ -82,15 +82,9 @@ const backToMeeting = () => {
   ElMessage.info('已返回会议讨论，统稿内容保持保存')
 }
 
-const acceptLowRisk = () => {
-  const count = revision.acceptLowRisk()
-  if (count > 0) ElMessage.success(`已确认 ${count} 项会议决议表述`)
-  else ElMessage.info('当前没有可批量确认的统稿事项')
-}
-
 const submitRevision = () => {
   if (!revision.canSubmit) {
-    ElMessage.warning(`仍有 ${revision.pendingCount} 项表述待确认、${revision.conflictCount} 项冲突待裁决`)
+    ElMessage.warning(`仍有 ${revision.pendingCount} 项统稿补充事项待确认`)
     return
   }
   signoff.prepare(revision.revisionVersion, revision.changes)
@@ -103,11 +97,6 @@ const backToRevision = () => {
   currentStep.value = 2
   meeting.stopStageSpeech()
   ElMessage.info('已返回统稿确认，会签状态保持保存')
-}
-
-const resolveSignoffOpinion = (opinionId: string) => {
-  signoff.resolveOpinion(opinionId)
-  ElMessage.success('补充意见已写入定稿条文，等待责任单位确认')
 }
 
 const signCurrentDepartment = (departmentId: string) => {
@@ -125,7 +114,7 @@ const completeAllSignoff = () => {
 
 const enterDistribution = () => {
   if (!signoff.canComplete) {
-    ElMessage.warning(`仍有 ${signoff.pendingCount} 个单位待会签、${signoff.objectionCount} 条意见待处理`)
+    ElMessage.warning(`仍有 ${signoff.pendingCount} 个单位待会签`)
     return
   }
   signoff.completeSignoff()
@@ -265,10 +254,8 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :selected-chapter-id="revision.selectedChapterId"
       :view-mode="revision.viewMode"
       :current-task="revision.currentTask"
-      :conflict-change="revision.conflictChange"
       :activities="revision.activities"
       :sources="revision.sources"
-      :pending-count="revision.pendingCount"
       :progress="revision.progress"
       :source-version="revision.sourceVersion"
       :target-version="revision.revisionVersion"
@@ -277,8 +264,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       @update:view-mode="revision.viewMode = $event"
       @accept="revision.acceptChange"
       @keep="revision.keepOriginal"
-      @resolve="revision.resolveConflict"
-      @accept-low-risk="acceptLowRisk"
       @command="revision.sendCommand"
     />
 
@@ -290,7 +275,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :departments="signoff.departments"
       :selected-department-id="signoff.selectedDepartmentId"
       :selected-department="signoff.selectedDepartment"
-      :selected-opinion="signoff.selectedOpinion"
       :activities="signoff.activities"
       :current-task="signoff.currentTask"
       :materials="signoff.materials"
@@ -299,7 +283,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :signed-count="signoff.signedCount"
       :progress="signoff.progress"
       @select="signoff.selectedDepartmentId = $event"
-      @resolve="resolveSignoffOpinion"
       @sign="signCurrentDepartment"
       @remind="remindDepartment"
       @select-material="signoff.selectMaterial"
@@ -340,7 +323,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       :version="revision.revisionVersion"
       :accepted-count="revision.acceptedCount"
       :pending-count="revision.pendingCount"
-      :conflict-count="revision.conflictCount"
       :can-submit="revision.canSubmit"
       @back="backToMeeting"
       @next="submitRevision"
@@ -350,7 +332,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       v-else-if="currentStep === 3"
       :signed-count="signoff.signedCount"
       :pending-count="signoff.pendingCount"
-      :objection-count="signoff.objectionCount"
       :can-complete="signoff.canComplete"
       @back="backToRevision"
       @next="enterDistribution"

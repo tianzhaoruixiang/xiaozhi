@@ -1,14 +1,13 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { signoffActivities, signoffAssistantTasks, signoffDepartments, signoffMaterials, signoffOpinions } from '../mock/signoff'
+import { signoffActivities, signoffAssistantTasks, signoffDepartments, signoffMaterials } from '../mock/signoff'
 import type { RevisionChange } from '../types/revision'
-import type { SignoffClause, SignoffStatus } from '../types/signoff'
+import type { SignoffClause } from '../types/signoff'
 
 export function usePlanSignoff() {
   const version = ref('1.4')
   const sourceChangeCount = ref(0)
   const clauses = ref<SignoffClause[]>([])
   const departments = ref(signoffDepartments.map((department) => ({ ...department })))
-  const opinions = ref(signoffOpinions.map((opinion) => ({ ...opinion })))
   const activities = ref(signoffActivities.map((activity) => ({ ...activity })))
   const selectedDepartmentId = ref('traffic')
   const activeTaskIndex = ref(0)
@@ -18,12 +17,10 @@ export function usePlanSignoff() {
   const selectedMaterialId = ref(signoffMaterials[0]?.id ?? '')
 
   const selectedDepartment = computed(() => departments.value.find((department) => department.id === selectedDepartmentId.value) ?? departments.value[0])
-  const selectedOpinion = computed(() => opinions.value.find((opinion) => opinion.departmentId === selectedDepartmentId.value) ?? null)
   const signedCount = computed(() => departments.value.filter((department) => department.status === 'signed').length)
   const pendingCount = computed(() => departments.value.filter((department) => department.status === 'pending').length)
-  const objectionCount = computed(() => departments.value.filter((department) => department.status === 'objection').length)
   const progress = computed(() => Math.round((signedCount.value / departments.value.length) * 100))
-  const canComplete = computed(() => signedCount.value === departments.value.length && objectionCount.value === 0)
+  const canComplete = computed(() => signedCount.value === departments.value.length)
   const currentTask = computed(() => signoffAssistantTasks[activeTaskIndex.value] ?? signoffAssistantTasks[0]!)
   const selectedMaterial = computed(() => materials.value.find((material) => material.id === selectedMaterialId.value) ?? materials.value[0])
 
@@ -75,27 +72,9 @@ export function usePlanSignoff() {
     if (materials.value.some((material) => material.id === materialId)) selectedMaterialId.value = materialId
   }
 
-  const updateDepartmentStatus = (id: string, status: SignoffStatus) => {
-    const department = departments.value.find((item) => item.id === id)
-    if (!department) return
-    department.status = status
-  }
-
-  const resolveOpinion = (opinionId: string) => {
-    const opinion = opinions.value.find((item) => item.id === opinionId)
-    if (!opinion) return
-    opinion.status = 'resolved'
-    updateDepartmentStatus(opinion.departmentId, 'pending')
-    const clause = clauses.value.find((item) => item.id === opinion.clauseId)
-    if (clause && !clause.finalText.includes('09:30')) {
-      clause.finalText += ' 东侧弹性边界在 09:30 后或道路流量降至阈值以下时恢复至 150 米。'
-    }
-    addActivity('会签意见已闭环', `${opinion.section}已补充边界恢复条件，等待交警支队确认`)
-  }
-
   const signDepartment = (departmentId: string) => {
     const department = departments.value.find((item) => item.id === departmentId)
-    if (!department || department.status === 'objection') return false
+    if (!department || department.status === 'signed') return false
     department.status = 'signed'
     department.signedAt = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
     department.sealCode = `QS-${String(department.order).padStart(2, '0')}${Math.floor(10 + Math.random() * 89)}`
@@ -111,8 +90,6 @@ export function usePlanSignoff() {
   }
 
   const completeAll = () => {
-    const openOpinion = opinions.value.find((opinion) => opinion.status === 'open')
-    if (openOpinion) resolveOpinion(openOpinion.id)
     departments.value.forEach((department) => {
       if (department.status !== 'signed') {
         department.status = 'signed'
@@ -135,15 +112,12 @@ export function usePlanSignoff() {
     sourceChangeCount,
     clauses,
     departments,
-    opinions,
     activities,
     selectedDepartmentId,
     selectedDepartment,
-    selectedOpinion,
     currentTask,
     signedCount,
     pendingCount,
-    objectionCount,
     progress,
     canComplete,
     completedAt,
@@ -153,7 +127,6 @@ export function usePlanSignoff() {
     selectedMaterial,
     prepare,
     selectMaterial,
-    resolveOpinion,
     signDepartment,
     sendReminder,
     completeAll,

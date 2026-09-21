@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   RevisionActivity,
   RevisionAssistantTask,
   RevisionChapter,
@@ -107,7 +107,7 @@ export const revisionChanges: RevisionChange[] = [
     time: '10:26',
     references: ['会议发言 10:26', '重点人员信息管理办法第十二条'],
     owner: '情况通报组',
-    status: 'pending',
+    status: 'accepted',
     risk: 'medium',
   },
   {
@@ -139,7 +139,7 @@ export const revisionChanges: RevisionChange[] = [
     time: '10:47',
     references: ['会议发言 10:47', '同类活动舆情复盘材料 3 份'],
     owner: '舆情监测组',
-    status: 'pending',
+    status: 'accepted',
     risk: 'medium',
   },
   {
@@ -148,14 +148,14 @@ export const revisionChanges: RevisionChange[] = [
     section: '4.1 核心区域划分',
     title: '外围缓冲区由 100 米调整为 150 米',
     original: '以主会场建筑外沿为基准设置 100 米外围安保缓冲区。',
-    revised: '以主会场建筑外沿为基准设置 150 米外围安保缓冲区，东侧城市主干道根据早高峰流量动态调整管控边界。',
-    reason: '扩大缓冲区有利于提前发现风险，但与东侧道路通行保障要求存在冲突。',
+    revised: '以主会场建筑外沿为基准设置 150 米外围安保缓冲区；东侧城市主干道在早高峰时段采用 100 米弹性边界，并增设一处前置识别岗。',
+    reason: '扩大缓冲区有利于提前发现风险，东侧采用分时弹性边界兼顾道路通行需求。',
     speaker: '王凯铭',
     department: '治安支队',
     time: '11:02',
     references: ['会议发言 11:02', '主会场周边交通流量评估', '现场踏勘记录'],
     owner: '现场安保组',
-    status: 'conflict',
+    status: 'accepted',
     risk: 'high',
   },
   {
@@ -171,7 +171,7 @@ export const revisionChanges: RevisionChange[] = [
     time: '11:11',
     references: ['会议发言 11:11', '现场力量到场时间测算'],
     owner: '现场安保组',
-    status: 'pending',
+    status: 'accepted',
     risk: 'medium',
   },
   {
@@ -223,6 +223,6 @@ export const revisionSources: RevisionSource[] = [
 
 export const revisionActivities: RevisionActivity[] = [
   { id: 1, time: '11:36', title: '完成会议决议归章', detail: '8 条领导已采纳事项已映射至方案条款', type: 'success' },
-  { id: 2, time: '11:38', title: '发现一处执行条件冲突', detail: '外围缓冲区调整可能影响东侧道路通行', type: 'running' },
+  { id: 2, time: '11:38', title: '完成冲突与缺项检查', detail: '东侧边界已采用分时弹性表述，无规则冲突', type: 'success' },
   { id: 3, time: '11:39', title: '完成支撑依据校核', detail: '已关联交通评估、踏勘记录和历史案例', type: 'info' },
 ]
