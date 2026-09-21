@@ -13,6 +13,7 @@ const props = defineProps<{
 const statusText: Record<CollabStep['status'], string> = {
   queued: '待命',
   running: '执行中',
+  awaiting: '待确认',
   done: '已完成',
   error: '失败',
 }
@@ -40,6 +41,7 @@ const planFullyRevealed = computed(() => {
   // 规划项齐了，且已进入执行或完成，视为「第一次展示完成」
   return (
     plan.phase === 'executing' ||
+    plan.phase === 'awaiting_confirm' ||
     plan.phase === 'done' ||
     (plan.phase === 'ready' && props.steps.length > 0)
   )
@@ -97,12 +99,13 @@ const phaseLabel = computed(() => {
   if (phase === 'planning') return '规划生成中'
   if (phase === 'ready') return '规划揭示中'
   if (phase === 'executing') return '智能体执行中'
+  if (phase === 'awaiting_confirm') return '待您确认发出'
   if (phase === 'done') return '协同完成'
   return '协作台'
 })
 
 const runningCount = computed(
-  () => props.steps.filter((s) => s.status === 'running').length,
+  () => props.steps.filter((s) => s.status === 'running' || s.status === 'awaiting').length,
 )
 
 const isExpanded = (step: CollabStep) => expanded.value[step.id] === true
@@ -131,6 +134,7 @@ const activityLines = (step: CollabStep): string[] => {
     .filter((l) => !/^(开始调用|调用完成|调用失败)/.test(l))
     .slice(-3)
   lines.push(...recentLogs)
+  if (step.status === 'awaiting') lines.push('已拟好通知与议程，等候领导人确认')
   if (step.status === 'done' && step.summary) lines.push('已产出结果，点击查看完整过程')
   if (step.status === 'queued') lines.push('已登场，等待执行')
   if (!lines.length && step.status === 'running') lines.push('正在思考与落实任务…')
@@ -204,7 +208,9 @@ onUnmounted(() => {
         <p class="phase">{{ phaseLabel }}</p>
       </div>
       <div class="head-meta">
-        <span v-if="runningCount" class="live-badge">{{ runningCount }} 个执行中</span>
+        <span v-if="runningCount" class="live-badge">{{
+          steps.some((s) => s.status === 'awaiting') ? '待您确认' : `${runningCount} 个执行中`
+        }}</span>
         <span v-if="steps.length" class="count">
           {{ steps.filter((s) => s.status === 'done').length }}/{{ steps.length }}
         </span>
@@ -318,7 +324,7 @@ onUnmounted(() => {
             <span>思考与执行链</span>
             <em v-if="step.tools?.length">{{ step.tools.length }} 次工具</em>
           </div>
-          <AgentThoughtChain :step="step" />
+          <AgentThoughtChain :step="step" tone="light" />
           <p
             v-if="
               step.status === 'running' &&
@@ -348,6 +354,7 @@ onUnmounted(() => {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-right: 8px;
+  color: var(--color-ink);
 }
 
 .rail-head {
@@ -356,12 +363,12 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(20, 40, 58, 0.08);
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 3;
-  background: linear-gradient(180deg, rgba(8, 20, 32, 0.96), rgba(8, 20, 32, 0.88));
+  background: linear-gradient(180deg, rgba(247, 251, 253, 0.98), rgba(238, 244, 248, 0.92));
   backdrop-filter: blur(8px);
 }
 
@@ -377,7 +384,7 @@ onUnmounted(() => {
   font-family: var(--font-mono);
   font-size: 0.76rem;
   letter-spacing: 0.1em;
-  color: rgba(232, 213, 163, 0.85);
+  color: #8a6a2e;
 }
 
 .head-meta {
@@ -389,7 +396,7 @@ onUnmounted(() => {
 .count {
   font-family: var(--font-mono);
   font-size: 0.88rem;
-  color: rgba(237, 244, 248, 0.55);
+  color: var(--color-ink-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -399,9 +406,9 @@ onUnmounted(() => {
   letter-spacing: 0.04em;
   padding: 4px 8px;
   border-radius: 999px;
-  color: var(--color-gold-soft);
-  background: rgba(196, 163, 90, 0.16);
-  border: 1px solid rgba(196, 163, 90, 0.35);
+  color: #7a5a22;
+  background: rgba(201, 168, 108, 0.14);
+  border: 1px solid rgba(201, 168, 108, 0.4);
   animation: blink 1.2s ease-in-out infinite;
 }
 
@@ -410,9 +417,9 @@ onUnmounted(() => {
   border-radius: 16px;
   padding: 12px 14px 14px;
   background:
-    linear-gradient(145deg, rgba(42, 180, 210, 0.12), rgba(196, 163, 90, 0.06)),
-    rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(94, 200, 232, 0.22);
+    linear-gradient(145deg, rgba(46, 196, 214, 0.1), rgba(201, 168, 108, 0.08)),
+    rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(46, 196, 214, 0.22);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -422,16 +429,16 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(94, 200, 232, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(94, 200, 232, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(46, 196, 214, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46, 196, 214, 0.08) 1px, transparent 1px);
   background-size: 16px 16px;
   pointer-events: none;
   opacity: 0.5;
 }
 
 .plan-board[data-phase='planning'] {
-  border-color: rgba(232, 213, 163, 0.4);
-  box-shadow: 0 0 24px rgba(196, 163, 90, 0.12);
+  border-color: rgba(201, 168, 108, 0.45);
+  box-shadow: 0 0 24px rgba(201, 168, 108, 0.12);
 }
 
 .plan-top,
@@ -477,14 +484,14 @@ onUnmounted(() => {
   letter-spacing: 0.06em;
   padding: 3px 8px;
   border-radius: 999px;
-  color: rgba(158, 216, 234, 0.9);
-  border: 1px solid rgba(94, 200, 232, 0.28);
-  background: rgba(8, 22, 36, 0.45);
+  color: var(--color-accent);
+  border: 1px solid rgba(26, 122, 146, 0.22);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .plan-top:hover .plan-toggle {
-  border-color: rgba(94, 200, 232, 0.5);
-  color: #9adce8;
+  border-color: rgba(26, 122, 146, 0.45);
+  color: var(--color-accent);
 }
 
 .plan-board[data-open='0'] {
@@ -495,7 +502,7 @@ onUnmounted(() => {
   margin: 8px 0 0;
   font-size: 0.78rem;
   line-height: 1.45;
-  color: rgba(237, 244, 248, 0.62);
+  color: var(--color-ink-muted);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -510,7 +517,7 @@ onUnmounted(() => {
 .graph-tag {
   font-style: normal;
   font-size: 0.72rem;
-  color: var(--color-gold-soft);
+  color: #7a5a22;
 }
 
 .pulse-dot {
@@ -520,13 +527,13 @@ onUnmounted(() => {
 .graph-tag {
   font-family: var(--font-mono);
   letter-spacing: 0.12em;
-  color: rgba(158, 216, 234, 0.85);
+  color: var(--color-accent);
 }
 
 .plan-status {
   margin: 8px 0 0;
   font-size: 0.78rem;
-  color: rgba(237, 244, 248, 0.62);
+  color: var(--color-ink-muted);
   line-height: 1.45;
 }
 
@@ -541,9 +548,9 @@ onUnmounted(() => {
   border-radius: 999px;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.04),
-    rgba(94, 200, 232, 0.28),
-    rgba(255, 255, 255, 0.04)
+    rgba(255, 255, 255, 0.4),
+    rgba(46, 196, 214, 0.35),
+    rgba(255, 255, 255, 0.4)
   );
   background-size: 200% 100%;
   animation: shimmer-bar 1.4s linear infinite;
@@ -562,7 +569,7 @@ onUnmounted(() => {
 .plan-empty {
   margin: 10px 0 0;
   font-size: 0.78rem;
-  color: rgba(237, 244, 248, 0.45);
+  color: var(--color-ink-muted);
 }
 
 .agents-head {
@@ -577,12 +584,12 @@ onUnmounted(() => {
   margin: 0;
   font-size: 0.92rem;
   letter-spacing: 0.08em;
-  color: rgba(237, 244, 248, 0.88);
+  color: var(--color-ink);
 }
 
 .agents-head span {
   font-size: 0.78rem;
-  color: rgba(237, 244, 248, 0.45);
+  color: var(--color-ink-muted);
 }
 
 .timeline {
@@ -600,8 +607,8 @@ onUnmounted(() => {
   position: relative;
   z-index: 0;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(20, 40, 58, 0.1);
   overflow: hidden;
   transform-origin: 50% 0%;
   transition:
@@ -621,8 +628,8 @@ onUnmounted(() => {
 }
 
 .card.open {
-  border-color: rgba(94, 200, 232, 0.28);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(46, 196, 214, 0.35);
+  background: #fff;
 }
 
 .card.flash {
@@ -634,6 +641,13 @@ onUnmounted(() => {
   box-shadow:
     inset 0 0 0 1px rgba(196, 163, 90, 0.1),
     0 0 22px rgba(196, 163, 90, 0.12);
+}
+
+.card[data-status='awaiting'] {
+  border-color: rgba(26, 122, 146, 0.4);
+  box-shadow:
+    inset 3px 0 0 rgba(26, 122, 146, 0.55),
+    0 0 22px rgba(46, 196, 214, 0.12);
 }
 
 .card[data-status='done'] {
@@ -677,7 +691,7 @@ onUnmounted(() => {
 }
 
 .card-top:hover:not(:disabled) {
-  background: rgba(94, 200, 232, 0.06);
+  background: rgba(46, 196, 214, 0.08);
 }
 
 .card-top:disabled {
@@ -697,7 +711,7 @@ onUnmounted(() => {
 .identity em {
   font-style: normal;
   font-size: 0.8rem;
-  color: rgba(237, 244, 248, 0.55);
+  color: var(--color-ink-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -711,33 +725,38 @@ onUnmounted(() => {
   letter-spacing: 0.04em;
   padding: 5px 9px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(237, 244, 248, 0.7);
+  background: rgba(20, 40, 58, 0.06);
+  color: var(--color-ink-muted);
   white-space: nowrap;
 }
 
 .card[data-status='running'] .badge {
-  background: rgba(196, 163, 90, 0.18);
-  color: var(--color-gold-soft);
+  background: rgba(201, 168, 108, 0.18);
+  color: #7a5a22;
+}
+
+.card[data-status='awaiting'] .badge {
+  background: rgba(46, 196, 214, 0.16);
+  color: var(--color-accent);
 }
 
 .card[data-status='done'] .badge {
-  background: rgba(93, 202, 160, 0.16);
-  color: #9be4c4;
+  background: rgba(47, 125, 90, 0.12);
+  color: var(--color-success);
 }
 
 .spin {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 1.5px solid rgba(232, 213, 163, 0.35);
-  border-top-color: #e8d5a3;
+  border: 1.5px solid rgba(201, 168, 108, 0.35);
+  border-top-color: #c9a86c;
   animation: spin 0.8s linear infinite;
 }
 
 .chevron {
   font-size: 0.85rem;
-  color: rgba(158, 216, 234, 0.75);
+  color: var(--color-accent);
   width: 1.2em;
   text-align: center;
 }
@@ -758,9 +777,9 @@ onUnmounted(() => {
   letter-spacing: 0.08em;
   padding: 3px 6px;
   border-radius: 4px;
-  color: rgba(158, 216, 234, 0.85);
-  background: rgba(94, 200, 232, 0.1);
-  border: 1px solid rgba(94, 200, 232, 0.22);
+  color: var(--color-accent);
+  background: rgba(46, 196, 214, 0.1);
+  border: 1px solid rgba(26, 122, 146, 0.18);
   margin-top: 1px;
 }
 
@@ -768,7 +787,7 @@ onUnmounted(() => {
   margin: 0;
   font-size: 0.84rem;
   line-height: 1.45;
-  color: rgba(237, 244, 248, 0.62);
+  color: var(--color-ink-muted);
   animation: soft-fade 280ms var(--ease-out) both;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -778,7 +797,7 @@ onUnmounted(() => {
 
 .peek.alone {
   padding: 0 16px 14px;
-  color: rgba(237, 244, 248, 0.48);
+  color: var(--color-ink-muted);
 }
 
 .detail {
@@ -787,7 +806,7 @@ onUnmounted(() => {
   display: grid;
   gap: 10px;
   padding: 0 16px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(20, 40, 58, 0.08);
   animation: soft-fade 320ms var(--ease-out) both;
 }
 
@@ -803,19 +822,19 @@ onUnmounted(() => {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
-  color: rgba(158, 216, 234, 0.85);
+  color: var(--color-accent);
 }
 
 .cot-head em {
   font-style: normal;
   font-size: 0.72rem;
-  color: rgba(237, 244, 248, 0.45);
+  color: var(--color-ink-muted);
 }
 
 .hint {
   margin: 0;
   font-size: 0.86rem;
-  color: rgba(237, 244, 248, 0.5);
+  color: var(--color-ink-muted);
 }
 
 .shimmer {
@@ -888,7 +907,7 @@ onUnmounted(() => {
   }
 
   .shimmer {
-    color: var(--color-gold-soft);
+    color: #7a5a22;
     background: none;
     -webkit-background-clip: unset;
     background-clip: unset;

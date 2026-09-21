@@ -25,13 +25,13 @@ import { classifyIntent } from '../lib/intentRouter.js'
 export type CapabilityId = 'knowledge' | 'huixun' | 'rooms' | 'schedule'
 
 export const CAPABILITY_HINT = `可选能力（填入 capabilities，可多选或留空）：
-- knowledge：检索历年会议档案并汇编背景资料（须实际调用知识库工具）
-- rooms：会议室查询与预定（须调用 query_meeting_rooms，决策后调用 book_meeting_room，写明完整会议室名称）
+- knowledge：检索历年相似会议档案并生成《xxx会议资料》（须实际调用知识库工具，注明引用）
+- rooms：会议室查询与预定，并生成《xxx会议议程》（须调用 query_meeting_rooms，决策后调用 book_meeting_room，写明完整会议室名称与议程全文）
 - schedule：厅长日程查询与安排（须调用 query_director_schedule / find_director_free_slots，确定后 arrange_director_schedule）
-- huixun：通过汇讯发送会议通知与背景资料（须实际调用 send_meeting_notice）`
+- huixun：通过汇讯向全体参会人（含领导人）发送会议通知，发出前须领导人确认，并附上《会议议程》与《会议资料》（须实际调用 send_meeting_notice）`
 
 export interface DynamicExpert {
-  /** Claude Code 风格 slug，由小智生成，如 archive-researcher */
+  /** Claude Code 风格 slug，由小智生成，如 security-management-expert */
   id: string
   /** 展示名，由小智生成 */
   name: string
@@ -66,10 +66,10 @@ export const XIAOZHI_SYSTEM = `你是「小智」，政府机关领导的智能�
 原则：
 1. 按需生成：只创建真正需要的专家，禁止套模板机械凑数；问询类可为 0 个专家
 2. 每位专家须有清晰 id / 名称 / 职责 / 本轮目标 / 专属系统提示
-3. 需要查历史调度会/联席会议资料时，给对应专家挂 knowledge 能力
-4. 需要选定并预定线下会议室时，给对应专家挂 rooms 能力（须查台账、预定，写明如「七楼101会议室」等完整名称）
+3. 需要查历史相似会议/调度会/联席会议资料时，给对应专家挂 knowledge 能力（须检索知识库并输出《xxx会议资料》）
+4. 需要选定并预定线下会议室时，给对应专家挂 rooms 能力（须查台账、预定，写明如「七楼101会议室」等完整名称，并输出《xxx会议议程》）
 5. 需要对接厅长出席时间时，给对应专家挂 schedule 能力（须查厅长日程、找空档并写入安排）
-6. 需要发政务汇讯通知时，给对应专家挂 huixun 能力；通知地点应引用已预定的会议室全名
+6. 需要发政务汇讯通知时，给对应专家挂 huixun 能力；须把《会议议程》与《会议资料》发给全体参会人（含领导人），发出前必须先请领导人确认；地点应引用已预定的会议室全名
 7. 无数据依赖的专家应并行（dependsOn 相同或互不依赖）；有先后依赖的用 dependsOn 指向前置专家 id
 8. 你本人负责最后向领导汇总与口述汇报，不要把「小智」再写成子专家
 9. 最终面向领导的答复用简洁规范的政务中文，分点清晰，用语得体`
@@ -273,11 +273,11 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
   const experts: DynamicExpert[] = [
     {
       id: 'context-analyst',
-      name: '情境分析专家',
+      name: '研判分析专家',
       role: '梳理问题与今日计划的关键要点',
       title: '情境研判',
       objective: `分析领导指示「${short}${message.length > 36 ? '…' : ''}」与今日工作安排的关联，给出可执行要点。`,
-      prompt: `你是政务情境分析专家。结合今日工作安排与领导指示，提炼关键事项、风险与建议行动。不要编造计划外事实。`,
+      prompt: `你是研判分析专家。结合今日工作安排与领导指示，提炼关键事项、风险与建议行动。不要编造计划外事实。`,
       capabilities: [],
       dependsOn: [],
     },
@@ -286,12 +286,12 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
   if (needRoom) {
     experts.push({
       id: 'room-coordinator',
-      name: '会议室协调专家',
-      role: '查询并预定会议室',
-      title: '会议室预定',
+      name: '会议管理专家',
+      role: '预定会议室并生成会议议程',
+      title: '会议室预定与议程',
       objective:
-        '查询机关会议室台账，决策并预定一间会议室，结论必须写明完整名称与预定时段（如七楼101会议室）。',
-      prompt: `你是会议室协调专家。必须先查询会议室台账，比较容量与占用后调用预定工具完成预定。禁止虚构不在台账中的房间名。`,
+        '查询机关会议室台账，决策并预定一间会议室，写明完整名称与预定时段，并生成《本次会议议程》全文供分发。',
+      prompt: `你是会议管理专家。必须先查询会议室台账，比较容量与占用后调用预定工具完成预定；预定后必须输出标题为《{会议简称}会议议程》的完整议程（含时间、地点、主持人、含领导人在内的参会人、议题顺序）。禁止虚构不在台账中的房间名。`,
       capabilities: ['rooms'],
       dependsOn: ['context-analyst'],
     })
@@ -300,12 +300,12 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
   if (needSchedule) {
     experts.push({
       id: 'director-scheduler',
-      name: '厅长日程专家',
+      name: '厅长日程管理专家',
       role: '查询并安排厅长日程',
       title: '厅长日程安排',
       objective:
         '查询厅长当日日程与空档，将人员调度会等事项写入厅长日程，时间与会议室安排对齐。',
-      prompt: `你是厅长日程安排专家。必须查询厅长日程、查找空档，再调用安排工具写入事项；地点优先使用已预定的完整会议室名称。勿覆盖厅长固定不可协调日程。`,
+      prompt: `你是厅长日程管理专家。必须查询厅长日程、查找空档，再调用安排工具写入事项；地点优先使用已预定的完整会议室名称。勿覆盖厅长固定不可协调日程。`,
       capabilities: ['schedule'],
       // 与会议室预定并行（都依赖情境分析）；通知依赖二者
       dependsOn: ['context-analyst'],
@@ -314,12 +314,13 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
 
   if (needKnowledge) {
     experts.push({
-      id: 'archive-researcher',
-      name: '档案研究专家',
-      role: '检索并汇编相关会议背景',
-      title: '背景资料汇编',
-      objective: '检索历年相关会议资料，整理可供会前阅读的背景资料。',
-      prompt: `你是档案研究专家。必须使用知识库工具检索并汇编会议背景资料，注明引用档案，勿编造。`,
+      id: 'security-management-expert',
+      name: '安保管理专家',
+      role: '梳理机关安保与人员防护安排并整理会前资料',
+      title: '安保资料汇编',
+      objective:
+        '从安保管理视角检索历年相似会议与防护安排，整理并生成《本次会议资料》全文，供分发给全体参会人。',
+      prompt: `你是安保管理专家。面向机关人员调度、现场防护与安保管理场景，必须使用档案检索工具查阅历年相似会议与安保安排并汇编；必须输出标题为《{会议简称}会议资料》的完整资料（含历次对照、可借鉴安保与防护决议、会前阅读要点），注明引用档案，勿编造。`,
       capabilities: ['knowledge'],
       // 与会议室选型并行
       dependsOn: ['context-analyst'],
@@ -330,16 +331,16 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
     const deps: string[] = []
     if (needRoom) deps.push('room-coordinator')
     if (needSchedule) deps.push('director-scheduler')
-    if (needKnowledge) deps.push('archive-researcher')
+    if (needKnowledge) deps.push('security-management-expert')
     if (!deps.length) deps.push('context-analyst')
     experts.push({
       id: 'notice-dispatcher',
-      name: '通知分发专家',
-      role: '汇讯通知并附带背景资料',
+      name: '通知联络专家',
+      role: '汇讯通知并附带会议议程与会议资料',
       title: '汇讯通知',
       objective:
-        '通过汇讯向相关人员发送会议通知，并附上背景资料；时间与地点须引用厅长日程与已预定会议室全名；出差者注明数智助手代参会。',
-      prompt: `你是通知分发专家。必须调用汇讯工具发送通知与背景资料；location / meetingTime 优先填写前序专家预定的会议室与厅长日程安排。写明投递结果。`,
+        '通过汇讯向全体参会人（必须含领导人/陈厅长）发送会议通知；发出前须呈请领导人确认；附上《会议议程》与《会议资料》。',
+      prompt: `你是通知联络专家。先拟好汇讯通知与附件，必须等领导人确认后再真正发出；附上《xxx会议议程》与《xxx会议资料》；收件人覆盖全部参会人含领导人。写明确认结果与投递结果。`,
       capabilities: ['huixun'],
       dependsOn: deps,
     })
@@ -374,7 +375,7 @@ export function xiaozhiPlannerSystemPrompt(): string {
 ${CAPABILITY_HINT}
 
 硬性要求：
-1. 若领导只是询问今日安排/重点事项/进度，experts 可为 [] 或仅 1 名综合参谋，禁止默认生成会议室/通知/日程专家
+1. 若领导只是询问今日安排/重点事项/进度，experts 可为 [] 或仅 1 名综合参谋，禁止默认生成会议室/通知/日程管理专家
 2. 仅当领导明确要求准备会议、预定、通知、写入日程等动作时，才调度相应能力专家
 3. experts 由你原创命名与设计，不要使用预置角色清单
 4. 数量按需（通常 0-5 个）；用 dependsOn 表达依赖，无依赖的任务必须并行

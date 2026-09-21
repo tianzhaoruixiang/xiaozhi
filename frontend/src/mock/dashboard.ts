@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   BorderFlowData,
   BorderRecord,
   CollabItem,
@@ -93,7 +93,7 @@ function createTracks(): TrackPoint[] {
   return [
     {
       id: 'T1',
-      color: '#00f2ff',
+      color: '#4cc9e0',
       points: [
         { x: 14, y: 72 }, { x: 28, y: 62 }, { x: 42, y: 52 },
         { x: 55, y: 42 }, { x: 72, y: 34 },
@@ -101,7 +101,7 @@ function createTracks(): TrackPoint[] {
     },
     {
       id: 'T2',
-      color: '#3d7cff',
+      color: '#5a9fd6',
       points: [
         { x: 86, y: 70 }, { x: 74, y: 58 }, { x: 62, y: 50 },
         { x: 50, y: 42 }, { x: 36, y: 32 },
@@ -109,7 +109,7 @@ function createTracks(): TrackPoint[] {
     },
     {
       id: 'T3',
-      color: '#ffb020',
+      color: '#e8a94e',
       points: [
         { x: 18, y: 30 }, { x: 32, y: 38 }, { x: 48, y: 55 },
         { x: 64, y: 66 }, { x: 82, y: 74 },
@@ -120,10 +120,10 @@ function createTracks(): TrackPoint[] {
 
 function createKeyGroups(): KeyGroupStat[] {
   return [
-    { type: 'A', label: '核心关注', count: 12, warning: 0, color: '#2ee6a6' },
-    { type: 'B', label: '重点核查', count: 18, warning: 1, color: '#ff9f1a' },
-    { type: 'C', label: '持续监测', count: 46, warning: 0, color: '#a78bfa' },
-    { type: 'D', label: '常规关注', count: 50, warning: 0, color: '#3d9bff' },
+    { type: 'A', label: '核心关注', count: 12, warning: 0, color: '#7ad4e8' },
+    { type: 'B', label: '重点核查', count: 18, warning: 1, color: '#58b4d4' },
+    { type: 'C', label: '持续监测', count: 46, warning: 0, color: '#4290c0' },
+    { type: 'D', label: '常规关注', count: 50, warning: 0, color: '#3570a8' },
   ]
 }
 

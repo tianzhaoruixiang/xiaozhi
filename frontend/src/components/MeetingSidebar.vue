@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { ArrowRight, Check, Clock, DocumentChecked, UserFilled } from '@element-plus/icons-vue'
 import { planDocument } from '../mock/meeting'
 import type { Participant } from '../types/meeting'
+import { getAvatar } from '../utils/avatars'
 
-defineProps<{
+const props = defineProps<{
   participants: Participant[]
   activeSpeakerId: string
   planVersion: string
@@ -12,6 +13,37 @@ defineProps<{
 
 const planVisible = ref(false)
 const planTab = ref('security')
+const participantList = ref<HTMLElement | null>(null)
+
+const keepActiveSpeakerInView = async (speakerId: string) => {
+  await nextTick()
+  const list = participantList.value
+  if (!list) return
+
+  const speaker = Array.from(list.querySelectorAll<HTMLElement>('.participant-item'))
+    .find((item) => item.dataset.participantId === speakerId)
+  if (!speaker) return
+
+  const listRect = list.getBoundingClientRect()
+  const speakerRect = speaker.getBoundingClientRect()
+  let offset = 0
+
+  if (speakerRect.top < listRect.top) offset = speakerRect.top - listRect.top
+  else if (speakerRect.bottom > listRect.bottom) offset = speakerRect.bottom - listRect.bottom
+  if (Math.abs(offset) < 1) return
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  list.scrollTo({
+    top: Math.max(0, list.scrollTop + offset),
+    behavior: reducedMotion ? 'auto' : 'smooth',
+  })
+}
+
+watch(
+  () => props.activeSpeakerId,
+  (speakerId) => { void keepActiveSpeakerInView(speakerId) },
+  { immediate: true, flush: 'post' },
+)
 
 const agenda = [
   { title: '通报前期筹备情况', time: '10:00', done: true },
@@ -47,10 +79,10 @@ const agenda = [
         <span><el-icon><UserFilled /></el-icon>参会人员</span>
         <small>{{ participants.length }} 人在线</small>
       </div>
-      <div class="participant-list">
-        <div v-for="person in participants" :key="person.id" class="participant-item" :class="{ speaking: person.id === activeSpeakerId }">
-          <div class="avatar" :style="{ '--avatar-color': person.color }">
-            {{ person.initial }}
+      <div ref="participantList" class="participant-list">
+        <div v-for="person in participants" :key="person.id" class="participant-item" :data-participant-id="person.id" :class="{ speaking: person.id === activeSpeakerId }">
+          <div class="avatar-wrap">
+            <img class="avatar" :src="getAvatar(person.name)" :alt="person.name" />
             <span class="online-dot" />
           </div>
           <div class="participant-copy">

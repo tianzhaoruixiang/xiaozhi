@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { Microphone, Mute, VideoCamera } from '@element-plus/icons-vue'
 import type { Participant, TranscriptEntry } from '../types/meeting'
+import { getAvatar } from '../utils/avatars'
 
 const props = defineProps<{
   participants: Participant[]
@@ -39,9 +40,7 @@ watch(
 
     <div ref="scrollArea" class="transcript-stream">
       <article v-for="entry in transcripts" :key="entry.id" class="speech-entry" :class="entry.status">
-        <div class="speech-avatar" :style="{ '--avatar-color': personMap.get(entry.speakerId)?.color }">
-          {{ personMap.get(entry.speakerId)?.initial }}
-        </div>
+        <img class="speech-avatar" :src="getAvatar(personMap.get(entry.speakerId)?.name ?? '')" :alt="personMap.get(entry.speakerId)?.name" />
         <div class="speech-body">
           <div class="speech-meta">
             <strong>{{ personMap.get(entry.speakerId)?.name }}</strong>
@@ -58,10 +57,7 @@ watch(
       </article>
 
       <article class="speech-entry live-entry">
-        <div class="speech-avatar active" :style="{ '--avatar-color': activeSpeaker.color }">
-          {{ activeSpeaker.initial }}
-          <span class="avatar-radar" />
-        </div>
+        <img class="speech-avatar active" :src="getAvatar(activeSpeaker.name)" :alt="activeSpeaker.name" />
         <div class="speech-body">
           <div class="speech-meta">
             <strong>{{ activeSpeaker.name }}</strong>

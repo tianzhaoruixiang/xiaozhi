@@ -2,3 +2,6 @@
 *.tar.bz2
 *.tar.gz
 __pycache__/
+# CUDA wheel ~900MB，无 NVIDIA 的默认 CPU 构建不必打进上下文。
+# 需要 GPU 镜像时去掉下一行，或 --build-arg TTS_TORCH=cuda 让 Dockerfile 自行下载。
+.wheels/*cu124*

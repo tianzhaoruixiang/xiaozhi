@@ -15,6 +15,13 @@ export interface AttendeeStatus {
  */
 export const ATTENDEE_STATUS: AttendeeStatus[] = [
   {
+    name: '陈厅长',
+    role: '厅长',
+    dept: '厅领导',
+    mode: 'in_person',
+    note: '领导人出席',
+  },
+  {
     name: '王主任',
     role: '办公室主任',
     dept: '市政府办公室',
@@ -79,6 +86,6 @@ export function formatAttendeeStatusHint(): string {
     if (a.mode === 'remote') {
       return `${a.name}（${a.role}/${a.dept}）：远程视频参会。${a.note ?? ''}`
     }
-    return `${a.name}（${a.role}/${a.dept}）：现场参会`
+    return `${a.name}（${a.role}/${a.dept}）：现场参会${a.note ? `。${a.note}` : ''}`
   }).join('\n')
 }

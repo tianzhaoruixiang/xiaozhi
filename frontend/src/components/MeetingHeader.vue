@@ -5,7 +5,6 @@ withDefaults(defineProps<{
   elapsed: string
   currentStep?: number
   statusLabel?: string
-  assistLabel?: string
   clockLabel?: string
   statusTone?: 'live' | 'revision'
   meetingTitle?: string
@@ -15,7 +14,6 @@ withDefaults(defineProps<{
 }>(), {
   currentStep: 1,
   statusLabel: '会议进行中',
-  assistLabel: '智能记录中',
   clockLabel: '会议时长',
   statusTone: 'live',
   meetingTitle: '大型会议保障动员会',
@@ -45,7 +43,6 @@ const steps = [
     <div class="meeting-clock">
       <span>{{ clockLabel }}</span>
       <strong>{{ elapsed }}</strong>
-      <small>{{ assistLabel }}</small>
     </div>
 
     <ProcessRibbon :steps="steps" :current-step="currentStep" />

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PanelFrame title="任务执行清单">
     <template #extra>
       <span class="panel-badge">销号 {{ summary.done }}/{{ summary.total }}</span>
@@ -98,7 +98,7 @@ function statusClass(status: TaskStatus) {
   width: 84px;
   text-align: center;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
 }
 
 .ring-box svg {
@@ -128,32 +128,38 @@ function statusClass(status: TaskStatus) {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   opacity: 0.9;
   pointer-events: none;
 }
 
+.stat-card > * {
+  position: relative;
+  z-index: 1;
+}
+
 .stat-card.doing {
-  border-color: oklch(0.84 0.145 207 / .38);
+  border-color: oklch(0.82 0.12 207 / .38);
   background:
-    linear-gradient(160deg, oklch(0.5 0.11 220 / .22), oklch(0.2 0.065 248 / .46)),
-    oklch(0.22 0.075 245 / .42);
-  box-shadow: inset 0 0 16px oklch(0.7 0.14 215 / .1);
+    linear-gradient(160deg, oklch(0.48 0.08 215 / .18), oklch(0.2 0.028 248 / .46)),
+    oklch(0.22 0.03 245 / .42);
+  box-shadow: inset 0 0 16px oklch(0.68 0.1 215 / .06);
 }
 
 .stat-card.done {
-  border-color: oklch(0.79 0.17 162 / .38);
+  border-color: oklch(0.52 0.09 232 / .38);
   background:
-    linear-gradient(160deg, oklch(0.56 0.11 162 / .18), oklch(0.2 0.055 170 / .44)),
-    oklch(0.22 0.065 170 / .38);
-  box-shadow: inset 0 0 16px oklch(0.79 0.17 162 / .08);
+    linear-gradient(160deg, oklch(0.46 0.07 232 / .16), oklch(0.2 0.028 248 / .46)),
+    oklch(0.22 0.03 245 / .38);
+  box-shadow: inset 0 0 16px oklch(0.52 0.09 232 / .05);
 }
 
 .stat-card.pending {
-  border-color: oklch(0.82 0.16 83 / .38);
+  border-color: oklch(0.46 0.075 240 / .38);
   background:
-    linear-gradient(160deg, oklch(0.62 0.1 83 / .18), oklch(0.2 0.045 72 / .44)),
-    oklch(0.22 0.055 72 / .38);
-  box-shadow: inset 0 0 16px oklch(0.82 0.16 83 / .08);
+    linear-gradient(160deg, oklch(0.42 0.065 240 / .16), oklch(0.2 0.028 248 / .46)),
+    oklch(0.22 0.03 245 / .38);
+  box-shadow: inset 0 0 16px oklch(0.46 0.075 240 / .05);
 }
 
 .stat-card em {
@@ -167,9 +173,9 @@ function statusClass(status: TaskStatus) {
   letter-spacing: 0.03em;
 }
 
-.stat-card.doing em { color: var(--cyan); text-shadow: 0 0 10px oklch(0.84 0.145 207 / .28); }
-.stat-card.done em { color: var(--green); text-shadow: 0 0 10px oklch(0.79 0.17 162 / .28); }
-.stat-card.pending em { color: var(--amber); text-shadow: 0 0 10px oklch(0.82 0.16 83 / .28); }
+.stat-card.doing em { color: var(--cyan); text-shadow: 0 0 10px oklch(0.82 0.12 207 / .22); }
+.stat-card.done em { color: oklch(0.52 0.09 232); text-shadow: 0 0 10px oklch(0.52 0.09 232 / .2); }
+.stat-card.pending em { color: oklch(0.46 0.075 240); text-shadow: 0 0 10px oklch(0.46 0.075 240 / .18); }
 
 .stat-card span {
   position: relative;
@@ -204,7 +210,7 @@ function statusClass(status: TaskStatus) {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
 }
 
 .progress-row .progress {

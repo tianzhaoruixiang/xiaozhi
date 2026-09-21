@@ -15,12 +15,39 @@ RUN npm run build
 FROM ${NODE_IMAGE}
 WORKDIR /app
 
-# 使用国内 Debian 镜像，避免 deb.debian.org 超时
-RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|security.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null \
-  || sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|security.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends git bash ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+# 国内构建：改写 Deb822 / mirror+file，并在多家镜像间回退
+RUN set -eux; \
+  printf '%s\n' \
+    'Acquire::ForceIPv4 "true";' \
+    'Acquire::Retries "5";' \
+    'Acquire::http::Timeout "30";' \
+    'Acquire::http::Pipeline-Depth "0";' \
+    > /etc/apt/apt.conf.d/99build; \
+  rewrite() { \
+    host="$1"; \
+    for f in /etc/apt/sources.list \
+             /etc/apt/sources.list.d/*.list \
+             /etc/apt/sources.list.d/*.sources \
+             /etc/apt/mirrors/*.list; do \
+      [ -f "$f" ] || continue; \
+      sed -i \
+        -e "s|https\\?://deb.debian.org|http://${host}|g" \
+        -e "s|https\\?://security.debian.org|http://${host}|g" \
+        -e "s|https\\?://mirrors.aliyun.com|http://${host}|g" \
+        -e "s|https\\?://mirrors.cloud.tencent.com|http://${host}|g" \
+        -e "s|https\\?://mirrors.ustc.edu.cn|http://${host}|g" \
+        -e "s|https\\?://mirrors.tuna.tsinghua.edu.cn|http://${host}|g" \
+        "$f"; \
+    done; \
+  }; \
+  ok=0; \
+  for host in mirrors.aliyun.com mirrors.cloud.tencent.com mirrors.ustc.edu.cn mirrors.tuna.tsinghua.edu.cn; do \
+    rewrite "$host"; \
+    if apt-get update; then ok=1; break; fi; \
+  done; \
+  [ "$ok" = 1 ]; \
+  apt-get install -y --no-install-recommends git bash ca-certificates; \
+  rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -u 10001 -s /bin/bash appuser
 

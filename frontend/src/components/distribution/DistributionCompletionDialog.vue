@@ -76,11 +76,12 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+/* 弹窗传送门挂载于 body，颜色需显式声明浅色值（不继承 .meeting-shell 变量） */
 :global(.distribution-completion-dialog) {
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(21, 139, 161, 0.4);
   border-radius: 0.75rem;
-  background: oklch(0.18 0.045 246);
-  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.42);
+  background: #ffffff;
+  box-shadow: 0 1.5rem 4rem rgba(6, 20, 31, 0.24);
 }
 
 :global(.distribution-completion-dialog .el-dialog__header) {
@@ -96,34 +97,34 @@ const emit = defineEmits<{
   align-items: center;
   gap: 1rem;
   padding: 0 0 1.375rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(20, 40, 58, 0.12);
 }
 
 .completion-summary > .el-icon {
   flex: 0 0 auto;
   width: 3.25rem;
   height: 3.25rem;
-  color: var(--green);
+  color: #2f7d5a;
   font-size: 3.25rem;
-  filter: drop-shadow(0 0 0.75rem oklch(0.76 0.17 162 / 0.26));
+  filter: drop-shadow(0 0 0.75rem rgba(47, 125, 90, 0.24));
 }
 
 .completion-summary span {
-  color: var(--green);
+  color: #2f7d5a;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
 }
 
 .completion-summary h2 {
   margin: 0.2rem 0 0.3rem;
-  color: var(--text);
+  color: #14283a;
   font-size: 1.375rem;
 }
 
 .completion-summary p,
 .completion-destination-title span {
   margin: 0;
-  color: var(--muted);
+  color: #5a7084;
   font-size: 0.8125rem;
 }
 
@@ -135,7 +136,7 @@ const emit = defineEmits<{
 }
 
 .completion-destination-title strong {
-  color: var(--text);
+  color: #14283a;
   font-size: 0.875rem;
 }
 
@@ -153,10 +154,10 @@ const emit = defineEmits<{
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(20, 40, 58, 0.14);
   border-radius: 0.625rem;
-  color: var(--text);
-  background: oklch(0.15 0.04 246 / 0.74);
+  color: #14283a;
+  background: #f8fbfd;
   text-align: left;
   cursor: pointer;
   transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
@@ -164,16 +165,16 @@ const emit = defineEmits<{
 
 .completion-option:hover,
 .completion-option:focus-visible {
-  border-color: var(--cyan);
-  background: oklch(0.23 0.055 235 / 0.88);
+  border-color: #158ba1;
+  background: #eef6f9;
   outline: none;
   transform: translateY(-0.125rem);
 }
 
 .completion-option.recognized {
-  border-color: oklch(0.73 0.14 214 / 0.65);
-  background: linear-gradient(145deg, oklch(0.25 0.075 228 / 0.9), oklch(0.19 0.055 246 / 0.96));
-  box-shadow: inset 0 0 0 1px oklch(0.73 0.14 214 / 0.08);
+  border-color: rgba(21, 139, 161, 0.55);
+  background: linear-gradient(145deg, #ffffff, #e9f4f7);
+  box-shadow: inset 0 0 0 1px rgba(21, 139, 161, 0.12), 0 8px 22px rgba(21, 139, 161, 0.12);
 }
 
 .completion-option-icon {
@@ -182,8 +183,8 @@ const emit = defineEmits<{
   height: 2.25rem;
   place-items: center;
   border-radius: 0.5rem;
-  color: var(--cyan);
-  background: oklch(0.72 0.14 214 / 0.12);
+  color: #158ba1;
+  background: rgba(21, 139, 161, 0.1);
   font-size: 1.125rem;
 }
 
@@ -194,7 +195,7 @@ const emit = defineEmits<{
 }
 
 .completion-option-copy em {
-  color: var(--cyan);
+  color: #158ba1;
   font-size: 0.625rem;
   font-style: normal;
 }
@@ -205,7 +206,7 @@ const emit = defineEmits<{
 }
 
 .completion-option-copy small {
-  color: var(--muted);
+  color: #5a7084;
   font-size: 0.6875rem;
   line-height: 1.55;
 }
@@ -214,7 +215,7 @@ const emit = defineEmits<{
   position: absolute;
   right: 0.875rem;
   bottom: 0.875rem;
-  color: var(--quiet);
+  color: #7d93a6;
 }
 
 @media (max-width: 760px) {

@@ -27,8 +27,8 @@ import { RouterLink } from 'vue-router'
           <em>专项任务 · 当前组任务与成员进度</em>
         </RouterLink>
         <RouterLink class="desk team" to="/team">
-          <span class="role">张处</span>
-          <strong>张处工作台</strong>
+          <span class="role">王处</span>
+          <strong>王处工作台</strong>
           <em>专项任务 · 各组任务进展</em>
         </RouterLink>
         <RouterLink class="desk personal" to="/personal">
@@ -165,7 +165,7 @@ h1 {
   border-color: rgba(46, 196, 214, 0.28);
 }
 
-/* 张处：组织与执行，浅色卡 + 绿色调 */
+/* 王处：组织与执行，浅色卡 + 绿色调 */
 .desk.team {
   background: linear-gradient(155deg, rgba(255, 255, 255, 0.92), rgba(226, 242, 235, 0.86));
   border-color: rgba(47, 125, 90, 0.22);

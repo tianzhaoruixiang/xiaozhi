@@ -384,6 +384,13 @@ const stats = computed(() => {
   background: rgba(184, 122, 53, 0.12);
 }
 
+.chip[data-status='unassigned'] {
+  color: #6b7c8c;
+  border-color: rgba(107, 124, 140, 0.36);
+  border-style: dashed;
+  background: rgba(107, 124, 140, 0.08);
+}
+
 .g-progress {
   margin-top: 10px;
 }

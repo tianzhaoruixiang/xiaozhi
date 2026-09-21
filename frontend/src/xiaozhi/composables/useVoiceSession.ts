@@ -5,10 +5,12 @@ import { useVoiceWake } from './useVoiceWake'
 /** 唤醒应答语，参考「小爱同学」：喊一声就回「我在」 */
 export const WAKE_ACK_PHRASE = '我在，请讲。'
 
-/** 唤醒应答播报结束后的静默期，挡掉应答声尾音回采 */
+/** 唤醒应答 / 汇报播报结束后的静默期，挡掉尾音回采 */
 const ECHO_GUARD_MS = 800
 /** 上报完一段指令后的冷却，避免同一句话被切成两段重复发送 */
 const SUBMIT_COOLDOWN_MS = 1600
+/** 播报结束后继续听下一条指示的窗口 */
+const FOLLOWUP_LISTEN_MS = 45000
 
 type VoiceSessionOptions = {
   /** 听到完整指令（停顿后自动上报） */
@@ -21,11 +23,12 @@ type VoiceSessionOptions = {
 }
 
 /**
- * 待机 → 唤醒 → 听指令 → 自动发送 的完整语音链路。
+ * 待机 → 唤醒 → 听指令 → 自动发送 → 播报完成后继续聆听 的语音链路。
  *
  * 平时不被唤醒：麦克风只做本地 VAD + 唤醒词判定，
  * 只有「你好小智」才唤醒，随即播报「我在，请讲」，
  * 然后开始收领导这一整段话，停嘴即自动把识别文本交出去。
+ * 汇报播报结束后默认再进入聆听，无需重新喊唤醒词。
  */
 export function useVoiceSession(options: VoiceSessionOptions) {
   const {
@@ -126,6 +129,16 @@ export function useVoiceSession(options: VoiceSessionOptions) {
     syncFromWake,
   )
 
+  const listenForReply = (timeoutMs = FOLLOWUP_LISTEN_MS) => {
+    wake.listenForReply(timeoutMs)
+    listening.value = true
+    clearEchoTimer()
+    echoTimer = window.setTimeout(() => {
+      echoTimer = null
+      wake.resume()
+    }, ECHO_GUARD_MS)
+  }
+
   const start = () => wake.start()
 
   const stop = () => {
@@ -181,5 +194,6 @@ export function useVoiceSession(options: VoiceSessionOptions) {
     stop,
     pause,
     resume,
+    listenForReply,
   }
 }

@@ -25,7 +25,13 @@ const router = createRouter({
       path: '/team',
       name: 'team',
       component: () => import('../xiaozhi/views/TeamWorkbench.vue'),
-      meta: { title: '小智 · 张处工作台' },
+      meta: { title: '小智 · 王处工作台' },
+    },
+    {
+      path: '/team/task',
+      name: 'team-task',
+      component: () => import('../xiaozhi/views/TeamTaskWorkspace.vue'),
+      meta: { title: '小智 · 任务执行' },
     },
     {
       // 高总工作台；/command/task 为「总结材料生成」交互页（参考 writing.html）
@@ -72,6 +78,7 @@ router.afterEach((to) => {
     to.name === 'leader' ||
     to.name === 'personal' ||
     to.name === 'team' ||
+    to.name === 'team-task' ||
     to.name === 'command' ||
     to.name === 'library'
   document.documentElement.classList.toggle('xiaozhi-desk', xiaozhiDesk)

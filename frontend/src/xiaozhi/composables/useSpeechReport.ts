@@ -26,7 +26,7 @@ function splitSpeakUnits(text: string): string[] {
 }
 
 /**
- * 本地神经 TTS（唯一优先通道）。
+ * 本地神经 TTS（OmniVoice 中国女性音色，唯一优先通道）。
  * 分句流水线：首句合成完即播，边播边预取下一句，缩短「写完 → 开声」等待。
  */
 export function useSpeechReport() {

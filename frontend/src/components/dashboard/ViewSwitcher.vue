@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="footer-bar">
     <button
       v-for="item in views"

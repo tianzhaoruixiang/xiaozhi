@@ -41,16 +41,25 @@ services:
   tts:
     build:
       context: ./tts
+      args:
+        TTS_TORCH: ${TTS_TORCH:-cpu}
+        INSTALL_NVIDIA_LIBS: ${TTS_INSTALL_NVIDIA_LIBS:-0}
     environment:
-      TTS_MODEL_DIR: /data/models/vits-melo-tts-zh_en
+      TTS_MODEL_ID: k2-fsa/OmniVoice
+      TTS_MODEL_DIR: /data/models/OmniVoice
+      HF_HOME: /data/models/.hf
       ASR_MODEL_DIR: /data/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17
       TTS_NUM_THREADS: "4"
-      TTS_SPEED: "0.92"
-      TTS_PAUSE_SEC: "0.32"
+      TTS_SPEED: "1.0"
+      TTS_PAUSE_SEC: "0.22"
+      TTS_DEVICE: cuda
+      TTS_INFERENCE_STEPS: "16"
+      TTS_VOICE_PROMPT: 女，青年
     volumes:
-      - ./data:/data:ro
+      - ./data:/data
     expose:
       - "8090"
+    gpus: all
     healthcheck:
       test:
         [
@@ -60,9 +69,9 @@ services:
           "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')",
         ]
       interval: 20s
-      timeout: 5s
-      retries: 8
-      start_period: 60s
+      timeout: 8s
+      retries: 12
+      start_period: 180s
     restart: unless-stopped
 
   web:

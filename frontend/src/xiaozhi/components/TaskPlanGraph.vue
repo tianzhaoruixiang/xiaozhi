@@ -17,6 +17,7 @@ const statusLabel: Record<CollabStatus | 'pending', string> = {
   pending: '待揭示',
   queued: '待命',
   running: '执行中',
+  awaiting: '待确认',
   done: '完成',
   error: '失败',
 }
@@ -206,22 +207,23 @@ const waveDone = (waveIndex: number) => {
 .dag-meta {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 6px 8px;
   font-size: 0.72rem;
-  color: rgba(237, 244, 248, 0.55);
+  color: var(--color-ink-muted);
 }
 
 .meta-label {
   font-family: var(--font-mono);
   letter-spacing: 0.1em;
-  color: rgba(158, 216, 234, 0.8);
+  color: var(--color-accent);
 }
 
 .dag-meta strong {
   font-family: var(--font-mono);
   font-size: 0.92rem;
-  color: #9ad8ea;
+  color: var(--color-accent);
 }
 
 .dag-meta em {
@@ -234,12 +236,15 @@ const waveDone = (waveIndex: number) => {
   letter-spacing: 0.04em;
   padding: 2px 7px;
   border-radius: 999px;
-  color: var(--color-gold-soft);
-  background: rgba(196, 163, 90, 0.14);
-  border: 1px solid rgba(196, 163, 90, 0.35);
+  color: #7a5a22;
+  background: rgba(201, 168, 108, 0.14);
+  border: 1px solid rgba(201, 168, 108, 0.4);
 }
 
 .dag-scroll {
+  display: flex;
+  justify-content: center;
+  justify-content: safe center;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 10px 2px 14px;
@@ -252,8 +257,11 @@ const waveDone = (waveIndex: number) => {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 0;
+  width: max-content;
   min-width: max-content;
+  margin-inline: auto;
   padding: 4px 0;
 }
 
@@ -270,9 +278,9 @@ const waveDone = (waveIndex: number) => {
 }
 
 .wave-col.parallel {
-  background: rgba(196, 163, 90, 0.06);
-  border: 1px dashed rgba(196, 163, 90, 0.35);
-  box-shadow: inset 0 0 20px rgba(196, 163, 90, 0.05);
+  background: rgba(201, 168, 108, 0.08);
+  border: 1px dashed rgba(201, 168, 108, 0.4);
+  box-shadow: inset 0 0 20px rgba(201, 168, 108, 0.05);
 }
 
 .wave-label {
@@ -283,12 +291,12 @@ const waveDone = (waveIndex: number) => {
   font-family: var(--font-mono);
   font-size: 0.58rem;
   letter-spacing: 0.1em;
-  color: rgba(232, 213, 163, 0.9);
+  color: #8a6a2e;
   white-space: nowrap;
 }
 
 .wave-label.soft {
-  color: rgba(158, 216, 234, 0.55);
+  color: var(--color-ink-muted);
 }
 
 .wave-stack {
@@ -319,16 +327,16 @@ const waveDone = (waveIndex: number) => {
   padding: 10px 12px;
   border-radius: 12px;
   background:
-    linear-gradient(135deg, rgba(196, 163, 90, 0.18), rgba(42, 180, 210, 0.08));
-  border: 1px solid rgba(232, 213, 163, 0.4);
-  box-shadow: 0 0 18px rgba(196, 163, 90, 0.1);
+    linear-gradient(135deg, rgba(201, 168, 108, 0.18), rgba(46, 196, 214, 0.08));
+  border: 1px solid rgba(201, 168, 108, 0.4);
+  box-shadow: 0 0 18px rgba(201, 168, 108, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 .node.goal.active {
-  border-color: rgba(232, 213, 163, 0.55);
+  border-color: rgba(201, 168, 108, 0.6);
 }
 
 .goal-text {
@@ -339,7 +347,7 @@ const waveDone = (waveIndex: number) => {
   font-size: 0.72rem;
   line-height: 1.4;
   font-weight: 600;
-  color: #eef7fc;
+  color: var(--color-ink);
 }
 
 .node.agent {
@@ -347,8 +355,8 @@ const waveDone = (waveIndex: number) => {
   min-height: 148px;
   padding: 10px 12px 12px;
   border-radius: 12px;
-  background: rgba(12, 28, 42, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #fff;
+  border: 1px solid rgba(20, 40, 58, 0.12);
   display: grid;
   gap: 5px;
   align-content: start;
@@ -357,7 +365,7 @@ const waveDone = (waveIndex: number) => {
   text-align: left;
   cursor: pointer;
   overflow: visible;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 8px 20px rgba(20, 40, 58, 0.08);
   transition:
     border-color var(--dur-fast) var(--ease-soft),
     box-shadow var(--dur-fast) var(--ease-soft),
@@ -366,12 +374,12 @@ const waveDone = (waveIndex: number) => {
 
 .node.agent:hover:not(:disabled) {
   z-index: 2;
-  background: rgba(18, 48, 68, 0.96);
-  border-color: rgba(94, 200, 232, 0.45);
+  background: #f7fbfd;
+  border-color: rgba(46, 196, 214, 0.45);
 }
 
 .node.agent:focus-visible {
-  outline: 2px solid rgba(232, 213, 163, 0.65);
+  outline: 2px solid rgba(201, 168, 108, 0.65);
   outline-offset: 2px;
   z-index: 2;
 }
@@ -396,7 +404,7 @@ const waveDone = (waveIndex: number) => {
   font-size: 0.8rem;
   font-weight: 650;
   line-height: 1.25;
-  color: #eef7fc;
+  color: var(--color-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -406,7 +414,7 @@ const waveDone = (waveIndex: number) => {
   font-style: normal;
   font-size: 0.68rem;
   line-height: 1.35;
-  color: rgba(158, 216, 234, 0.88);
+  color: var(--color-accent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -416,7 +424,7 @@ const waveDone = (waveIndex: number) => {
   margin: 0;
   font-size: 0.68rem;
   line-height: 1.4;
-  color: rgba(237, 244, 248, 0.62);
+  color: var(--color-ink-muted);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -428,7 +436,7 @@ const waveDone = (waveIndex: number) => {
   font-family: var(--font-mono);
   font-size: 0.58rem;
   letter-spacing: 0.06em;
-  color: rgba(158, 216, 234, 0.55);
+  color: var(--color-ink-muted);
 }
 
 .badge {
@@ -437,8 +445,8 @@ const waveDone = (waveIndex: number) => {
   letter-spacing: 0.04em;
   padding: 2px 5px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(237, 244, 248, 0.55);
+  background: rgba(20, 40, 58, 0.06);
+  color: var(--color-ink-muted);
   white-space: nowrap;
 }
 
@@ -448,7 +456,7 @@ const waveDone = (waveIndex: number) => {
   font-family: var(--font-mono);
   font-size: 0.58rem;
   letter-spacing: 0.12em;
-  color: rgba(232, 213, 163, 0.85);
+  color: #8a6a2e;
 }
 
 .node.sink {
@@ -456,8 +464,8 @@ const waveDone = (waveIndex: number) => {
   min-height: 96px;
   padding: 10px 11px;
   border-radius: 12px;
-  background: rgba(12, 36, 32, 0.88);
-  border: 1px dashed rgba(93, 202, 160, 0.28);
+  background: rgba(47, 125, 90, 0.08);
+  border: 1px dashed rgba(47, 125, 90, 0.32);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -465,7 +473,7 @@ const waveDone = (waveIndex: number) => {
 }
 
 .node.sink .tag {
-  color: rgba(155, 228, 196, 0.85);
+  color: var(--color-success);
 }
 
 .node.sink strong {
@@ -473,7 +481,7 @@ const waveDone = (waveIndex: number) => {
   font-size: 0.72rem;
   line-height: 1.35;
   font-weight: 600;
-  color: rgba(237, 244, 248, 0.7);
+  color: var(--color-ink-muted);
 }
 
 .node.sink.active {
@@ -483,12 +491,12 @@ const waveDone = (waveIndex: number) => {
 }
 
 .node.sink.active strong {
-  color: #9be4c4;
+  color: var(--color-success);
 }
 
 .agent[data-status='queued'] {
   border-style: dashed;
-  border-color: rgba(94, 200, 232, 0.28);
+  border-color: rgba(26, 122, 146, 0.28);
 }
 
 .agent[data-status='running'] {
@@ -501,7 +509,7 @@ const waveDone = (waveIndex: number) => {
 
 .agent[data-status='running'] .badge {
   background: rgba(196, 163, 90, 0.2);
-  color: var(--color-gold-soft);
+  color: #7a5a22;
   animation: blink 1.1s ease-in-out infinite;
 }
 
@@ -511,7 +519,7 @@ const waveDone = (waveIndex: number) => {
 
 .agent[data-status='done'] .badge {
   background: rgba(93, 202, 160, 0.16);
-  color: #9be4c4;
+  color: var(--color-success);
 }
 
 .agent[data-status='error'] {
@@ -520,7 +528,7 @@ const waveDone = (waveIndex: number) => {
 
 .agent[data-status='error'] .badge {
   background: rgba(168, 72, 72, 0.18);
-  color: #ffb4b4;
+  color: var(--color-danger);
 }
 
 .edge {

@@ -7,6 +7,8 @@ import { useAgentCatalog } from '../composables/useAgentCatalog'
 import MarkdownView from '../components/MarkdownView.vue'
 import PersonalCollabProcess from '../components/PersonalCollabProcess.vue'
 import SourcingShortlistCard from '../components/SourcingShortlistCard.vue'
+import DispatchConfirmCard from '../components/DispatchConfirmCard.vue'
+import XiaozhiWorkingHint from '../components/XiaozhiWorkingHint.vue'
 
 const props = defineProps<{
   taskId: string
@@ -78,7 +80,8 @@ const contextPlans = computed<PlanItem[]>(() => {
 const draft = ref('')
 const scroller = ref<HTMLElement | null>(null)
 
-const { state, messages, streaming, error, send } = useAssistantChat()
+const { state, messages, streaming, error, pendingConfirm, send, confirmDispatch } =
+  useAssistantChat()
 
 const { catalog, selectedTeam, selectedWorkflow, selectedMode, onTeamChange } =
   useAgentCatalog()
@@ -150,7 +153,15 @@ const orchestration = () => ({
 
 function onSubmit(text?: string) {
   const content = (text ?? draft.value).trim()
-  if (!content || streaming.value) return
+  if (!content) return
+  if (pendingConfirm.value) {
+    draft.value = ''
+    void send(content, contextPlans.value, orchestration(), {
+      enableOralReport: false,
+    })
+    return
+  }
+  if (streaming.value) return
   draft.value = ''
   void send(content, contextPlans.value, orchestration(), {
     enableOralReport: false,
@@ -307,6 +318,16 @@ onUnmounted(() => {
                 :source="msg.content"
               />
               <p v-else-if="msg.content" class="plain">{{ msg.content }}</p>
+              <XiaozhiWorkingHint
+                v-else-if="
+                  msg.role === 'assistant' &&
+                  isLiveMessage(msg.id) &&
+                  msg.taskPlan?.phase === 'executing'
+                "
+                tone="light"
+                :steps="msg.steps ?? []"
+                caption="正在办理中…"
+              />
               <p
                 v-else-if="msg.role === 'assistant' && isLiveMessage(msg.id)"
                 class="plain muted"
@@ -320,6 +341,14 @@ onUnmounted(() => {
                 :task-id="selected?.id"
                 :task-title="selected?.title"
                 @reported="onHrbpReported"
+              />
+
+              <DispatchConfirmCard
+                v-if="msg.dispatchConfirm"
+                tone="light"
+                :confirm="msg.dispatchConfirm"
+                @approve="confirmDispatch(true)"
+                @reject="confirmDispatch(false)"
               />
             </article>
           </div>
@@ -380,11 +409,11 @@ onUnmounted(() => {
             :value="draft"
             rows="2"
             placeholder="输入指令，例如：梳理候选人短名单…"
-            :disabled="streaming"
+            :disabled="streaming && !pendingConfirm"
             @keydown.enter.exact.prevent="onSubmit()"
             @input="draft = ($event.target as HTMLTextAreaElement).value"
           />
-          <button type="submit" :disabled="streaming || !draft.trim()">发送</button>
+          <button type="submit" :disabled="(streaming && !pendingConfirm) || !draft.trim()">发送</button>
         </form>
       </div>
     </section>

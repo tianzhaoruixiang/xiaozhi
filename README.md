@@ -43,7 +43,7 @@ cp .env.example .env
 # 容器访问宿主机模型时，将 OPENAI_BASE_URL 设为：
 # OPENAI_BASE_URL=http://host.docker.internal:11434/v1
 
-# 预下载语音模型到 data/models（首次）
+# 预下载语音模型到 data/models（首次；TTS 现为 OmniVoice）
 bash tts/download_model.sh
 bash tts/download_asr_model.sh
 

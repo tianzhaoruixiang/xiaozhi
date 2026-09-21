@@ -37,9 +37,15 @@ ttsRoute.get('/asr/health', async (c) => {
   }
 })
 
-/** 代理本地神经 TTS，返回 wav */
+/** 代理本地神经 TTS（OmniVoice），返回 wav */
 ttsRoute.post('/speak', async (c) => {
-  let body: { text?: string; speed?: number; speaker_id?: number }
+  let body: {
+    text?: string
+    speed?: number
+    speaker_id?: number
+    voice_prompt?: string
+    seed?: number
+  }
   try {
     body = await c.req.json()
   } catch {
@@ -56,6 +62,8 @@ ttsRoute.post('/speak', async (c) => {
         text,
         speed: body.speed,
         speaker_id: body.speaker_id,
+        voice_prompt: body.voice_prompt,
+        seed: body.seed,
       }),
     })
     if (!res.ok) {

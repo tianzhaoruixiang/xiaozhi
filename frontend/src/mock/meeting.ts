@@ -1,14 +1,14 @@
 import type { AssistantActivity, AssistantTask, Participant, PlanDocument, ScriptLine, Suggestion, TranscriptEntry } from '../types/meeting'
 
 export const participants: Participant[] = [
-  { id: 'leader', name: '张伟', department: '市局指挥中心', role: '指挥长 · 会议主持', initial: '张', color: 'oklch(0.43 0.07 245)' },
-  { id: 'zhou', name: '周宁', department: '情报支队', role: '情报负责人', initial: '周', color: 'oklch(0.44 0.08 175)' },
-  { id: 'lin', name: '林珊', department: '市局指挥中心', role: '情况通报负责人', initial: '林', color: 'oklch(0.44 0.06 290)' },
-  { id: 'chen', name: '陈立', department: '出入境管理支队', role: '审核负责人', initial: '陈', color: 'oklch(0.43 0.08 200)' },
-  { id: 'zhao', name: '赵敏', department: '网安支队', role: '研判负责人', initial: '赵', color: 'oklch(0.42 0.07 270)' },
-  { id: 'wang', name: '王凯', department: '治安支队', role: '现场安保负责人', initial: '王', color: 'oklch(0.43 0.07 55)' },
-  { id: 'liu', name: '刘超', department: '特警支队', role: '机动力量负责人', initial: '刘', color: 'oklch(0.43 0.07 30)' },
-  { id: 'sun', name: '孙梅', department: '内保支队', role: '场馆检查负责人', initial: '孙', color: 'oklch(0.44 0.07 100)' },
+  { id: 'leader', name: '张卫明', department: '市局指挥中心', role: '指挥长 · 会议主持', initial: '张', color: 'oklch(0.43 0.07 245)', avatar: 1 },
+  { id: 'zhou', name: '周晓宁', department: '情报支队', role: '情报负责人', initial: '周', color: 'oklch(0.44 0.08 175)', avatar: 2 },
+  { id: 'lin', name: '林珊琪', department: '市局指挥中心', role: '情况通报负责人', initial: '林', color: 'oklch(0.44 0.06 290)', avatar: 3 },
+  { id: 'chen', name: '陈立文', department: '出入境管理支队', role: '审核负责人', initial: '陈', color: 'oklch(0.43 0.08 200)', avatar: 4 },
+  { id: 'zhao', name: '赵敏婕', department: '网安支队', role: '研判负责人', initial: '赵', color: 'oklch(0.42 0.07 270)', avatar: 5 },
+  { id: 'wang', name: '王凯铭', department: '治安支队', role: '现场安保负责人', initial: '王', color: 'oklch(0.43 0.07 55)', avatar: 6 },
+  { id: 'liu', name: '刘超群', department: '特警支队', role: '机动力量负责人', initial: '刘', color: 'oklch(0.43 0.07 30)', avatar: 8 },
+  { id: 'sun', name: '孙梅芳', department: '内保支队', role: '场馆检查负责人', initial: '孙', color: 'oklch(0.44 0.07 100)', avatar: 7 },
 ]
 
 export const initialTranscripts: TranscriptEntry[] = [
@@ -97,7 +97,7 @@ export const assistantTasks: AssistantTask[] = [
 
 export const initialActivities: AssistantActivity[] = [
   { id: 1, time: '10:32', title: '正在查询历史安保案例', detail: '已找到3份材料，正在比对场馆适用性', type: 'running' },
-  { id: 2, time: '10:31', title: '提取刘超发言要点', detail: '已形成 1 条方案更新建议，等待领导确认', type: 'success' },
+  { id: 2, time: '10:31', title: '提取刘超群发言要点', detail: '已形成 1 条方案更新建议，等待领导确认', type: 'success' },
   { id: 3, time: '10:29', title: '安保方案已更新至版本 1.3', detail: '已补充联合指挥专席与境外人员审核节点', type: 'success' },
 ]
 
@@ -175,7 +175,7 @@ export const planDocument: PlanDocument = {
     {
       id: 'group-x',
       name: '人员审核组',
-      lead: '陈立',
+      lead: '陈立文',
       department: '出入境管理支队',
       size: 8,
       tasks: [
@@ -187,7 +187,7 @@ export const planDocument: PlanDocument = {
     {
       id: 'group-y',
       name: '舆情监测组',
-      lead: '赵敏',
+      lead: '赵敏婕',
       department: '网安支队',
       size: 12,
       tasks: [
@@ -199,7 +199,7 @@ export const planDocument: PlanDocument = {
     {
       id: 'group-z',
       name: '现场安保组',
-      lead: '王凯',
+      lead: '王凯铭',
       department: '治安支队',
       size: 46,
       tasks: [
@@ -211,7 +211,7 @@ export const planDocument: PlanDocument = {
     {
       id: 'group-e',
       name: '场馆检查组',
-      lead: '孙梅',
+      lead: '孙梅芳',
       department: '内保支队',
       size: 10,
       tasks: [
@@ -223,7 +223,7 @@ export const planDocument: PlanDocument = {
     {
       id: 'group-f',
       name: '重点监测组',
-      lead: '周宁',
+      lead: '周晓宁',
       department: '情报支队',
       size: 9,
       tasks: [
@@ -235,7 +235,7 @@ export const planDocument: PlanDocument = {
     {
       id: 'group-g',
       name: '情况通报组',
-      lead: '林珊',
+      lead: '林珊琪',
       department: '市局指挥中心',
       size: 6,
       tasks: [

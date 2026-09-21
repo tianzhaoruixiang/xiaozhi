@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PanelFrame title="参会人员审核与出入境">
     <template #extra>
       <span class="panel-badge">广东 · 深圳</span>
@@ -124,35 +124,35 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
 }
 
 .stat.gd {
-  border-color: oklch(0.84 0.145 207 / .38);
+  border-color: oklch(0.82 0.12 207 / .38);
   background:
-    linear-gradient(160deg, oklch(0.5 0.11 220 / .22), oklch(0.2 0.065 248 / .46)),
-    oklch(0.22 0.075 245 / .42);
-  box-shadow: inset 0 0 16px oklch(0.7 0.14 215 / .1);
+    linear-gradient(160deg, oklch(0.48 0.08 215 / .18), oklch(0.2 0.028 248 / .46)),
+    oklch(0.22 0.03 245 / .42);
+  box-shadow: inset 0 0 16px oklch(0.68 0.1 215 / .06);
 }
 
 .stat.sz {
-  border-color: oklch(0.62 0.21 254 / .42);
+  border-color: oklch(0.6 0.1 225 / .42);
   background:
-    linear-gradient(160deg, oklch(0.52 0.15 254 / .22), oklch(0.2 0.07 250 / .48)),
-    oklch(0.22 0.08 250 / .4);
-  box-shadow: inset 0 0 16px oklch(0.62 0.21 254 / .1);
+    linear-gradient(160deg, oklch(0.5 0.09 225 / .18), oklch(0.2 0.028 248 / .46)),
+    oklch(0.22 0.03 245 / .4);
+  box-shadow: inset 0 0 16px oklch(0.6 0.1 225 / .06);
 }
 
 .stat.out {
-  border-color: oklch(0.82 0.16 83 / .38);
+  border-color: oklch(0.52 0.09 232 / .38);
   background:
-    linear-gradient(160deg, oklch(0.62 0.1 83 / .18), oklch(0.2 0.045 72 / .44)),
-    oklch(0.22 0.055 72 / .38);
-  box-shadow: inset 0 0 16px oklch(0.82 0.16 83 / .08);
+    linear-gradient(160deg, oklch(0.46 0.07 232 / .16), oklch(0.2 0.028 248 / .46)),
+    oklch(0.22 0.03 245 / .38);
+  box-shadow: inset 0 0 16px oklch(0.52 0.09 232 / .05);
 }
 
 .stat.stay {
-  border-color: oklch(0.79 0.17 162 / .38);
+  border-color: oklch(0.46 0.075 240 / .38);
   background:
-    linear-gradient(160deg, oklch(0.56 0.11 162 / .18), oklch(0.2 0.055 170 / .44)),
-    oklch(0.22 0.065 170 / .38);
-  box-shadow: inset 0 0 16px oklch(0.79 0.17 162 / .08);
+    linear-gradient(160deg, oklch(0.42 0.065 240 / .16), oklch(0.2 0.028 248 / .46)),
+    oklch(0.22 0.03 245 / .38);
+  box-shadow: inset 0 0 16px oklch(0.46 0.075 240 / .05);
 }
 
 .stat span {
@@ -172,10 +172,10 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   letter-spacing: 0.03em;
 }
 
-.stat.gd em { color: var(--cyan); text-shadow: 0 0 10px oklch(0.84 0.145 207 / .28); }
-.stat.sz em { color: var(--blue); text-shadow: 0 0 10px oklch(0.62 0.21 254 / .3); }
-.stat.out em { color: var(--amber); text-shadow: 0 0 10px oklch(0.82 0.16 83 / .28); }
-.stat.stay em { color: var(--green); text-shadow: 0 0 10px oklch(0.79 0.17 162 / .28); }
+.stat.gd em { color: var(--cyan); text-shadow: 0 0 10px oklch(0.82 0.12 207 / .22); }
+.stat.sz em { color: var(--blue); text-shadow: 0 0 10px oklch(0.6 0.12 225 / .24); }
+.stat.out em { color: oklch(0.52 0.09 232); text-shadow: 0 0 10px oklch(0.52 0.09 232 / .2); }
+.stat.stay em { color: oklch(0.46 0.075 240); text-shadow: 0 0 10px oklch(0.46 0.075 240 / .18); }
 
 .charts {
   display: grid;
@@ -188,16 +188,16 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   padding: 8px 8px 4px;
   border: 1px solid var(--line);
   background:
-    linear-gradient(160deg, oklch(0.36 0.09 228 / .2), oklch(0.18 0.06 249 / .5)),
-    oklch(0.19 0.065 248 / .48);
-  box-shadow: inset 0 0 14px oklch(0.62 0.15 225 / .08);
+    linear-gradient(160deg, oklch(0.34 0.05 228 / .18), oklch(0.18 0.032 249 / .5)),
+    oklch(0.19 0.035 248 / .48);
+  box-shadow: inset 0 0 14px oklch(0.55 0.06 225 / .05);
 }
 
 .chart-card:last-child {
-  border-color: oklch(0.62 0.21 254 / .3);
+  border-color: oklch(0.6 0.07 225 / .28);
   background:
-    linear-gradient(160deg, oklch(0.4 0.12 254 / .18), oklch(0.18 0.065 250 / .5)),
-    oklch(0.2 0.07 250 / .44);
+    linear-gradient(160deg, oklch(0.36 0.055 225 / .16), oklch(0.18 0.035 250 / .5)),
+    oklch(0.2 0.035 250 / .44);
 }
 
 .chart-head {
@@ -214,7 +214,7 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
 }
 
 .chart-head span {
-  color: var(--text-dim);
+  color: var(--muted);
   font-size: 11px;
 }
 
@@ -230,7 +230,7 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
 }
 
 .area.sz {
-  fill: oklch(0.62 0.21 254 / .16);
+  fill: oklch(0.62 0.15 225 / .16);
   stroke: none;
 }
 
@@ -250,7 +250,7 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--muted);
   letter-spacing: 0.06em;
   flex-shrink: 0;
 }
@@ -272,9 +272,9 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   padding: 7px 8px;
   border: 1px solid var(--line);
   background:
-    linear-gradient(135deg, oklch(0.34 0.08 228 / .22), oklch(0.18 0.06 249 / .5)),
-    oklch(0.19 0.065 248 / .46);
-  box-shadow: inset 0 0 12px oklch(0.62 0.15 225 / .07);
+    linear-gradient(135deg, oklch(0.32 0.045 228 / .2), oklch(0.18 0.032 249 / .5)),
+    oklch(0.19 0.035 248 / .46);
+  box-shadow: inset 0 0 12px oklch(0.55 0.06 225 / .04);
 }
 
 .row {
@@ -296,10 +296,10 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   color: #fff;
 }
 
-.badge.type[data-type='A'] { background: oklch(0.57 0.13 162); }
-.badge.type[data-type='B'] { background: oklch(0.62 0.13 83); }
-.badge.type[data-type='C'] { background: #7a5fd0; }
-.badge.type[data-type='D'] { background: oklch(0.52 0.17 254); }
+.badge.type[data-type='A'] { background: oklch(0.62 0.14 210); }
+.badge.type[data-type='B'] { background: oklch(0.52 0.12 216); }
+.badge.type[data-type='C'] { background: oklch(0.43 0.1 224); }
+.badge.type[data-type='D'] { background: oklch(0.35 0.08 232); }
 
 .badge.dir[data-dir='入境广东'] { background: oklch(0.55 0.1 207); }
 .badge.dir[data-dir='入境深圳'] { background: var(--blue); }
@@ -309,6 +309,6 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   display: flex;
   gap: 10px;
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--muted);
 }
 </style>

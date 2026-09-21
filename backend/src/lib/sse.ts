@@ -10,6 +10,9 @@ export type SseEventType =
   | 'tool_done'
   | 'assistant_delta'
   | 'oral_report'
+  | 'await_confirm'
+  | 'confirm_resolved'
+  | 'heartbeat'
   | 'final'
   | 'error'
 
@@ -41,6 +44,12 @@ export interface SsePayload {
   ok?: boolean
   /** 通知收件人 */
   recipients?: string[]
+  /** 领导人确认票据 */
+  confirmId?: string
+  meetingTime?: string
+  location?: string
+  agendaTitle?: string
+  briefingTitle?: string
 }
 
 export function createSseStream() {
@@ -61,6 +70,11 @@ export function createSseStream() {
     controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
   }
 
+  const ping = () => {
+    if (!controller) return
+    controller.enqueue(encoder.encode(`: ping\n\n`))
+  }
+
   const close = () => {
     try {
       controller?.close()
@@ -70,7 +84,7 @@ export function createSseStream() {
     controller = null
   }
 
-  return { stream, send, close }
+  return { stream, send, ping, close }
 }
 
 export function sleep(ms: number) {

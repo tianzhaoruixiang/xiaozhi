@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   compileMeetingBackground,
   formatArchiveBrief,
+  formatMeetingMaterialsPacket,
   getMeetingArchiveById,
   searchMeetingArchives,
 } from './knowledge.js'
@@ -20,20 +21,22 @@ export const COMPILE_TOOL_FQN = `mcp__${KNOWLEDGE_MCP_SERVER}__${COMPILE_TOOL}`
 type Emit = (payload: SsePayload) => void
 
 /**
- * 知识助手专用：历年会议资料检索 / 取档 / 汇编背景材料。
+ * 安保管理专家专用：历年相似会议与安保安排检索 / 取档 / 汇编《xxx会议资料》。
  */
 export function createKnowledgeMcpServer(options?: {
   onEmit?: Emit
   agentId?: string
+  agentName?: string
 }) {
-  const agentId = options?.agentId ?? 'knowledge-expert'
+  const agentId = options?.agentId ?? 'security-management-expert'
+  const agentName = options?.agentName ?? '安保管理专家'
   const onEmit = options?.onEmit
 
   const emitStart = (toolName: string, toolLabel: string, summary: string) => {
     onEmit?.({
       type: 'tool_start',
       agentId,
-      agentName: '知识助手',
+      agentName,
       toolName,
       toolLabel,
       summary,
@@ -49,7 +52,7 @@ export function createKnowledgeMcpServer(options?: {
     onEmit?.({
       type: 'tool_done',
       agentId,
-      agentName: '知识助手',
+      agentName,
       toolName,
       toolLabel,
       summary,
@@ -124,7 +127,7 @@ export function createKnowledgeMcpServer(options?: {
 
   const compileTool = tool(
     COMPILE_TOOL,
-    '将多份会议档案汇编成「会议背景资料」正文，供联络助手通过汇讯分发给参会人。',
+    '将多份历年相似会议档案汇编成《xxx会议资料》正文，供通知联络专家通过汇讯发给全体参会人（含领导人）。',
     {
       ids: z
         .array(z.string())
@@ -133,33 +136,34 @@ export function createKnowledgeMcpServer(options?: {
       focus: z
         .string()
         .optional()
-        .describe('本轮会议关注点，写入背景导语，如 人员调度会/跨部门抽调'),
+        .describe('本轮会议名称或关注点，写入《xxx会议资料》标题，如 人员调度会'),
     },
     async (args) => {
       emitStart(
         COMPILE_TOOL,
-        '知识库 · 汇编背景资料',
+        '知识库 · 汇编会议资料',
         `汇编 ${args.ids.length} 份档案`,
       )
       const docs = args.ids
         .map((id) => getMeetingArchiveById(id))
         .filter((d): d is NonNullable<typeof d> => Boolean(d))
 
-      const intro = args.focus
-        ? `## 会议背景资料（聚焦：${args.focus}）\n以下根据历年相关会议档案整理，供参会人会前阅读。\n\n`
-        : `## 会议背景资料\n以下根据历年相关会议档案整理，供参会人会前阅读。\n\n`
-
-      const body = intro + compileMeetingBackground(docs)
+      const packet = formatMeetingMaterialsPacket(
+        args.focus?.trim() || '工作会',
+        compileMeetingBackground(docs),
+      )
+      const body = packet.text
       emitDone(
         COMPILE_TOOL,
-        '知识库 · 汇编背景资料',
-        `已汇编 ${docs.length} 份背景资料`,
+        '知识库 · 汇编会议资料',
+        `已汇编 ${docs.length} 份，生成${packet.title}`,
       )
       return {
         content: [{ type: 'text' as const, text: body }],
         structuredContent: {
           docIds: docs.map((d) => d.id),
           titles: docs.map((d) => d.title),
+          briefingTitle: packet.title,
           background: body,
         } as Record<string, unknown>,
       }
