@@ -1,7 +1,7 @@
 import type { AgendaPhase, AssistantActivity, AssistantTask, Participant, PlanDocument, ScriptLine, Suggestion, TranscriptEntry } from '../types/meeting'
 
 export const participants: Participant[] = [
-  { id: 'leader', name: '王卫明', department: '市局指挥中心', role: '指挥长 · 会议主持', initial: '王', color: 'oklch(0.43 0.07 245)', avatar: 1, signedIn: false, isMe: true },
+  { id: 'leader', name: '高卫明', department: '市局指挥中心', role: '指挥长 · 会议主持', initial: '高', color: 'oklch(0.43 0.07 245)', avatar: 4, signedIn: false, isMe: true },
   { id: 'zhou', name: '周晓宁', department: '情报支队', role: '情报负责人', initial: '周', color: 'oklch(0.44 0.08 175)', avatar: 2, signedIn: true },
   { id: 'lin', name: '林珊琪', department: '市局指挥中心', role: '情况通报负责人', initial: '林', color: 'oklch(0.44 0.06 290)', avatar: 3, signedIn: true },
   { id: 'chen', name: '陈立文', department: '出入境管理支队', role: '审核负责人', initial: '陈', color: 'oklch(0.43 0.08 200)', avatar: 4, signedIn: true },

@@ -78,6 +78,15 @@ export function usePlanRevision() {
     addActivity('决议本次不纳入', `${change.section}已记录会议裁决结果`, 'info')
   }
 
+  const finalizeAll = () => {
+    const pending = changes.value.filter((change) => change.status === 'pending')
+    pending.forEach((change) => { change.status = 'accepted' })
+    if (pending.length) {
+      addActivity('会议助手完成方案归并', `${pending.length} 项待定表述已依据会议决议写入定稿 ${revisionVersion.value}`)
+    }
+    return pending.length
+  }
+
   const statusLabel: Record<RevisionStatus, string> = {
     pending: '待确认表述',
     accepted: '已写入统稿',
@@ -109,7 +118,7 @@ export function usePlanRevision() {
             original: clause.text,
             revised: `${clause.text.replace(/。$/, '')}；结合会话指令补充：${text.replace(clauseNo, '').trim()}。`,
             reason: `来自会议现场补充指令：“${text}”，已定位至对应条文并登记为统稿补充事项。`,
-            speaker: '王卫明',
+            speaker: '高卫明',
             department: '市局指挥中心',
             time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }),
             references: ['会议现场补充指令', `安保方案版本 ${sourceVersion.value}`],
@@ -159,6 +168,7 @@ export function usePlanRevision() {
     startConsolidation,
     acceptChange,
     keepOriginal,
+    finalizeAll,
     sendCommand,
   }
 }

@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import ProcessRibbon from './ProcessRibbon.vue'
-
 withDefaults(defineProps<{
   elapsed: string
-  currentStep?: number
   statusLabel?: string
   clockLabel?: string
   statusTone?: 'live' | 'revision' | 'wait'
@@ -12,7 +9,6 @@ withDefaults(defineProps<{
   location?: string
   participantCount?: number
 }>(), {
-  currentStep: 1,
   statusLabel: '会议进行中',
   clockLabel: '会议时长',
   statusTone: 'live',
@@ -22,12 +18,6 @@ withDefaults(defineProps<{
   participantCount: 12,
 })
 
-const steps = [
-  '会议讨论',
-  '统稿确认',
-  '联合会签',
-  '任务部署',
-]
 </script>
 
 <template>
@@ -44,7 +34,9 @@ const steps = [
       <span>{{ clockLabel }}</span>
       <strong>{{ elapsed }}</strong>
     </div>
-
-    <ProcessRibbon :steps="steps" :current-step="currentStep" />
   </section>
 </template>
+
+<style scoped>
+.meeting-hero { min-height: 5.25rem; grid-template-rows: auto; padding-bottom: .75rem; }
+</style>
