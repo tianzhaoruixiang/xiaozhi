@@ -3,9 +3,9 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useGroupTasks } from '../data/groupTasks'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
-import CurrentGroupBoard from '../components/CurrentGroupBoard.vue'
+import MultiGroupTaskBoard from '../components/MultiGroupTaskBoard.vue'
 
-const { currentGroup } = useGroupTasks()
+const { groups } = useGroupTasks()
 const route = useRoute()
 const router = useRouter()
 
@@ -19,6 +19,9 @@ const writingSrc = computed(() => {
   const q = typeof route.query.q === 'string' && route.query.q ? route.query.q : ''
   return q ? `/writing.html?q=${encodeURIComponent(q)}` : '/writing.html'
 })
+
+/** 页头右上角按钮：跳转指挥态势大屏 */
+const SCREEN_PATH = '/dashboard'
 
 /** 底部输入框：进入 /command/task 交给小智办理 */
 const homeDraft = ref('')
@@ -49,14 +52,17 @@ const startFreeTask = () => {
       </template>
 
       <template v-else>
-        <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 当前组任务与成员进展">
+        <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 各工作组任务与成员进展">
           <template #actions>
-            <RouterLink class="desk-link" to="/team">张处工作台</RouterLink>
-            <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
+            <RouterLink class="screen-link" :to="SCREEN_PATH">
+              <span class="screen-mark" aria-hidden="true" />
+              大屏看板
+              <b aria-hidden="true">→</b>
+            </RouterLink>
           </template>
         </WorkbenchHeader>
 
-        <CurrentGroupBoard :group="currentGroup" />
+        <MultiGroupTaskBoard :groups="groups" />
 
         <form class="home-dock" @submit.prevent="startFreeTask">
           <textarea
@@ -396,6 +402,59 @@ const startFreeTask = () => {
 .later-button { border: 1px solid rgba(20, 40, 58, 0.12); color: #5a7084; background: #fff; }
 .meeting-button { border: 0; color: #fff; background: linear-gradient(145deg, #16798f, #0f5368); box-shadow: 0 9px 22px rgba(15, 83, 104, 0.22); }
 .meeting-button span { margin-left: 8px; }
+
+/* 页头右上角：跳转指挥态势大屏 */
+.screen-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px 9px 14px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, #1f8ea8, #176f84);
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(23, 111, 132, 0.24);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.screen-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(23, 111, 132, 0.32);
+}
+
+/* 小屏图标 */
+.screen-mark {
+  position: relative;
+  width: 16px;
+  height: 11px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.92;
+}
+
+.screen-mark::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 7px;
+  height: 4px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  border-left: 1.5px solid currentColor;
+  border-radius: 0 0 1px 1px;
+  content: '';
+  transform: translateX(-50%);
+}
+
+.screen-link b {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+}
 
 @media (max-width: 640px) {
   .home-dock {
