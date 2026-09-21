@@ -6,9 +6,15 @@ import { quickCommandsForTask, type QuickCommand } from '../data/quickCommands'
 import WorkbenchHeader from '../components/WorkbenchHeader.vue'
 import GroupProgressBoard from '../components/GroupProgressBoard.vue'
 import MeetingReminderDialog from '../components/MeetingReminderDialog.vue'
+import ReviewQueueDialog from '../components/ReviewQueueDialog.vue'
+import { useReviews } from '../data/reviews'
 
 const { currentGroup } = useGroupTasks()
+const { pendingCount } = useReviews()
 const router = useRouter()
+
+/** 张磊提交的成果待审核 */
+const reviewVisible = ref(false)
 
 /** 进入本台后弹出「大型会议保障动员会」提醒 */
 const reminderVisible = ref(false)
@@ -91,6 +97,13 @@ const startFreeTask = () => {
             <b aria-hidden="true">↗</b>
           </RouterLink>
         </template>
+        <template #head-action>
+          <!-- 待审核：张磊提交的成果，右上角显示待审数量 -->
+          <button type="button" class="review-entry" @click="reviewVisible = true">
+            待审核
+            <span v-if="pendingCount > 0" class="review-badge">+{{ pendingCount }}</span>
+          </button>
+        </template>
       </GroupProgressBoard>
 
       <form class="home-dock" @submit.prevent="startFreeTask">
@@ -126,6 +139,7 @@ const startFreeTask = () => {
     </div>
 
     <MeetingReminderDialog v-model="reminderVisible" />
+    <ReviewQueueDialog v-model="reviewVisible" />
   </div>
 </template>
 
@@ -330,7 +344,8 @@ const startFreeTask = () => {
   opacity: 1;
 }
 
-.home-dock button {
+/* 仅提交按钮用按钮样式；不要命中框内的快捷指令标签 */
+.home-dock button[type='submit'] {
   border: 0;
   border-radius: 12px;
   padding: 12px 22px;
@@ -341,45 +356,94 @@ const startFreeTask = () => {
   transition: opacity 160ms ease;
 }
 
-.home-dock button:disabled {
+.home-dock button[type='submit']:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* 点击任务后出现在输入框内部下方的快捷指令 */
+/* 点击任务后出现在输入框内部的快捷指令（行内标签） */
 .quick-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin: 4px 8px 0;
-  padding-top: 6px;
-  border-top: 1px dashed rgba(20, 40, 58, 0.1);
+  gap: 6px;
+  margin: 5px 8px 1px;
 }
 
-/* 按钮格式，无底色 */
-.quick-chip {
-  padding: 5px 14px;
-  border: 1px solid rgba(26, 122, 146, 0.34);
-  border-radius: 8px;
+/* 标签形式：与文字同高、虚线描边、两端半圆、无底色（限定在输入框内，避免被提交按钮样式覆盖） */
+.home-dock .quick-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px dashed rgba(26, 122, 146, 0.5);
+  border-radius: 999px;
   background: transparent;
   color: var(--color-accent);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1.5;
   cursor: pointer;
   transition:
-    background 160ms ease,
     border-color 160ms ease,
     color 160ms ease;
 }
 
-.quick-chip:hover {
-  background: rgba(26, 122, 146, 0.07);
-  border-color: rgba(26, 122, 146, 0.55);
+.home-dock .quick-chip:hover {
+  border-color: rgba(26, 122, 146, 0.9);
+  color: #12606f;
 }
 
-.quick-chip:active {
-  background: rgba(26, 122, 146, 0.12);
+/* 待审核入口（右上角带 +N 角标） */
+.review-entry {
+  position: relative;
+  padding: 6px 14px;
+  border: 1px solid rgba(26, 122, 146, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.review-entry:hover {
+  border-color: rgba(26, 122, 146, 0.6);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.review-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  min-width: 1.4rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, #d9534f, #a84848);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 4px 12px rgba(168, 72, 72, 0.38);
+  animation: badge-pop 460ms var(--ease-out) both;
+}
+
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .group-entry {

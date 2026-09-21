@@ -5,5 +5,9 @@ import './styles/base.css'
 import './xiaozhi/styles/tokens.css'
 import AppRoot from './AppRoot.vue'
 import router from './router'
+import { installDebugBridge } from './xiaozhi/data/debug'
 
 createApp(AppRoot).use(ElementPlus).use(router).mount('#app')
+
+// 开发模式下挂出调试入口：window.__xiaozhi
+installDebugBridge()
