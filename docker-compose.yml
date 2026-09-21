@@ -41,6 +41,9 @@ services:
   tts:
     build:
       context: ./tts
+      args:
+        TTS_TORCH: ${TTS_TORCH:-cpu}
+        INSTALL_NVIDIA_LIBS: ${TTS_INSTALL_NVIDIA_LIBS:-0}
     environment:
       TTS_MODEL_ID: k2-fsa/OmniVoice
       TTS_MODEL_DIR: /data/models/OmniVoice

@@ -31,7 +31,7 @@ export const CAPABILITY_HINT = `可选能力（填入 capabilities，可多选�
 - huixun：通过汇讯向全体参会人（含领导人）发送会议通知，发出前须领导人确认，并附上《会议议程》与《会议资料》（须实际调用 send_meeting_notice）`
 
 export interface DynamicExpert {
-  /** Claude Code 风格 slug，由小智生成，如 archive-researcher */
+  /** Claude Code 风格 slug，由小智生成，如 security-management-expert */
   id: string
   /** 展示名，由小智生成 */
   name: string
@@ -314,12 +314,13 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
 
   if (needKnowledge) {
     experts.push({
-      id: 'archive-researcher',
-      name: '知识管理专家',
-      role: '检索历史相似会议并整理会议资料',
-      title: '会议资料汇编',
-      objective: '检索知识库中历年相似会议档案，整理并生成《本次会议资料》全文，供分发给全体参会人。',
-      prompt: `你是知识管理专家。必须使用知识库工具检索历年相似会议并汇编；必须输出标题为《{会议简称}会议资料》的完整资料（含历次对照、可借鉴决议、会前阅读要点），注明引用档案，勿编造。`,
+      id: 'security-management-expert',
+      name: '安保管理专家',
+      role: '梳理机关安保与人员防护安排并整理会前资料',
+      title: '安保资料汇编',
+      objective:
+        '从安保管理视角检索历年相似会议与防护安排，整理并生成《本次会议资料》全文，供分发给全体参会人。',
+      prompt: `你是安保管理专家。面向机关人员调度、现场防护与安保管理场景，必须使用档案检索工具查阅历年相似会议与安保安排并汇编；必须输出标题为《{会议简称}会议资料》的完整资料（含历次对照、可借鉴安保与防护决议、会前阅读要点），注明引用档案，勿编造。`,
       capabilities: ['knowledge'],
       // 与会议室选型并行
       dependsOn: ['context-analyst'],
@@ -330,7 +331,7 @@ export function fallbackDynamicPlan(message: string): DynamicPlan {
     const deps: string[] = []
     if (needRoom) deps.push('room-coordinator')
     if (needSchedule) deps.push('director-scheduler')
-    if (needKnowledge) deps.push('archive-researcher')
+    if (needKnowledge) deps.push('security-management-expert')
     if (!deps.length) deps.push('context-analyst')
     experts.push({
       id: 'notice-dispatcher',

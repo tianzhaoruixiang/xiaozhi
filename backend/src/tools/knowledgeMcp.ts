@@ -21,20 +21,22 @@ export const COMPILE_TOOL_FQN = `mcp__${KNOWLEDGE_MCP_SERVER}__${COMPILE_TOOL}`
 type Emit = (payload: SsePayload) => void
 
 /**
- * 知识管理专家专用：历年相似会议资料检索 / 取档 / 汇编《xxx会议资料》。
+ * 安保管理专家专用：历年相似会议与安保安排检索 / 取档 / 汇编《xxx会议资料》。
  */
 export function createKnowledgeMcpServer(options?: {
   onEmit?: Emit
   agentId?: string
+  agentName?: string
 }) {
-  const agentId = options?.agentId ?? 'archive-researcher'
+  const agentId = options?.agentId ?? 'security-management-expert'
+  const agentName = options?.agentName ?? '安保管理专家'
   const onEmit = options?.onEmit
 
   const emitStart = (toolName: string, toolLabel: string, summary: string) => {
     onEmit?.({
       type: 'tool_start',
       agentId,
-      agentName: '知识管理专家',
+      agentName,
       toolName,
       toolLabel,
       summary,
@@ -50,7 +52,7 @@ export function createKnowledgeMcpServer(options?: {
     onEmit?.({
       type: 'tool_done',
       agentId,
-      agentName: '知识管理专家',
+      agentName,
       toolName,
       toolLabel,
       summary,

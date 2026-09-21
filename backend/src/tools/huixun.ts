@@ -32,7 +32,7 @@ export interface HuixunNoticeInput {
   content: string
   meetingTime?: string
   location?: string
-  /** 知识管理专家汇编的《xxx会议资料》全文 */
+  /** 安保管理专家汇编的《xxx会议资料》全文 */
   backgroundBrief?: string
   /** 资料标题，如《人员调度会会议资料》 */
   briefingTitle?: string

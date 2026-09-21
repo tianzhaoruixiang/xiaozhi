@@ -84,7 +84,7 @@ capabilities: [rooms]           # knowledge | rooms | schedule | huixun
 
 | 专家团 | 用途 |
 |--------|------|
-| `personnel-dispatch` | 人员调度会：情境、会议室、日程、档案、汇讯 |
+| `personnel-dispatch` | 人员调度会：情境、会议室、日程、安保管理、汇讯 |
 | `domain-expert-sourcing` | 领域专家寻访：小红书 / 领英 / 脉脉并行挖人 → 综合短名单 |
 | `online-communication` | 线上沟通：话术 + 会议安排 → 综合方案（可上报 HRBP） |
 | `offline-meetup` | 线下沟通：邀约 + 接待协调 → 综合方案（可上报 HRBP） |

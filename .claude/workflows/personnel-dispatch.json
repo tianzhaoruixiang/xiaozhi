@@ -1,7 +1,7 @@
 {
   "name": "personnel-dispatch",
   "displayName": "人员调度会标准流程",
-  "description": "情境分析后，会议室预定与议程、厅长日程、历史会议资料汇编并行，最后汇讯通知汇总。",
+  "description": "情境分析后，会议室预定与议程、厅长日程、安保管理资料汇编并行，最后汇讯通知汇总。",
   "goalTemplate": "围绕「{{shortMessage}}」完成人员调度会准备与通知",
   "steps": [
     {
@@ -23,9 +23,9 @@
       "dependsOn": ["context-analyst"]
     },
     {
-      "agent": "archive-researcher",
-      "title": "会议资料汇编",
-      "objectiveTemplate": "围绕「{{shortMessage}}」检索知识库中历年相似会议档案，整理并生成《相应会议资料》全文。",
+      "agent": "security-management-expert",
+      "title": "安保资料汇编",
+      "objectiveTemplate": "围绕「{{shortMessage}}」从安保管理视角检索历年相似会议与防护安排，整理并生成《相应会议资料》全文。",
       "dependsOn": ["context-analyst"]
     },
     {
@@ -35,7 +35,7 @@
       "dependsOn": [
         "room-coordinator",
         "director-scheduler",
-        "archive-researcher"
+        "security-management-expert"
       ]
     }
   ]

@@ -1,7 +1,6 @@
-# 默认 python 3.11 slim（本机已缓存）。CUDA 版 torch 从阿里云 wheel 安装。
+# 默认 python 3.11 slim。本机无 NVIDIA 时用 CPU torch（最快能跑）。
+# NVIDIA 机器：docker compose build tts --build-arg TTS_TORCH=cuda --build-arg INSTALL_NVIDIA_LIBS=1
 ARG PYTHON_IMAGE=python:3.11-slim-bookworm
-ARG TORCH_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cu124/torch-2.5.1%2Bcu124-cp311-cp311-linux_x86_64.whl
-ARG TORCHAUDIO_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cu124/torchaudio-2.5.1%2Bcu124-cp311-cp311-linux_x86_64.whl
 
 FROM ${PYTHON_IMAGE}
 
@@ -44,43 +43,93 @@ RUN set -eux; \
 
 COPY requirements.txt ./
 COPY .wheels /opt/wheels
-ARG TORCH_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cu124/torch-2.5.1%2Bcu124-cp311-cp311-linux_x86_64.whl
-ARG TORCHAUDIO_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cu124/torchaudio-2.5.1%2Bcu124-cp311-cp311-linux_x86_64.whl
 
-RUN set +e; \
-  set -x; \
+ARG TTS_TORCH=cpu
+ARG INSTALL_NVIDIA_LIBS=0
+ARG TORCH_CUDA_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cu124/torch-2.5.1%2Bcu124-cp311-cp311-linux_x86_64.whl
+ARG TORCHAUDIO_CUDA_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cu124/torchaudio-2.5.1%2Bcu124-cp311-cp311-linux_x86_64.whl
+ARG TORCH_CPU_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cpu/torch-2.5.1%2Bcpu-cp311-cp311-linux_x86_64.whl
+ARG TORCHAUDIO_CPU_WHEEL=https://mirrors.aliyun.com/pytorch-wheels/cpu/torchaudio-2.5.1%2Bcpu-cp311-cp311-linux_x86_64.whl
+
+RUN set -eux; \
   fetch_whl() { \
     url="$1"; dest="$2"; \
     i=0; \
     while [ "$i" -lt 8 ]; do \
-      curl -fL --retry 20 --retry-all-errors --retry-delay 3 -C - --connect-timeout 30 -o "$dest" "$url"; \
-      cr=$?; \
-      python -c "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); raise SystemExit(1 if z.testzip() else 0)" "$dest"; \
-      pr=$?; \
-      if [ "$cr" -eq 0 ] && [ "$pr" -eq 0 ]; then return 0; fi; \
+      if curl -fL --retry 20 --retry-all-errors --retry-delay 3 -C - --connect-timeout 30 -o "$dest" "$url" \
+        && python -c "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); raise SystemExit(1 if z.testzip() else 0)" "$dest"; then \
+        return 0; \
+      fi; \
       i=$((i+1)); \
       rm -f "$dest"; \
       sleep 3; \
     done; \
     return 1; \
   }; \
-  if ls /opt/wheels/*.whl >/dev/null 2>&1; then \
-    python -c "import glob,zipfile,sys; \
-ps=glob.glob('/opt/wheels/*.whl'); \
-assert ps, 'no wheels'; \
-[zipfile.ZipFile(p).testzip() or True for p in ps]" \
-      && pip install --no-cache-dir /opt/wheels/*.whl; \
-    inst=$?; \
+  pip_base() { \
+    pip install --no-cache-dir --timeout 300 --retries 15 \
+      --trusted-host mirrors.aliyun.com \
+      --trusted-host pypi.tuna.tsinghua.edu.cn \
+      --trusted-host pypi.org \
+      -i https://mirrors.aliyun.com/pypi/simple/ \
+      "$@"; \
+  }; \
+  strip_nvidia_requires() { \
+    python - <<'PY'
+from pathlib import Path
+root = Path("/usr/local/lib/python3.11/site-packages")
+for meta in list(root.glob("torch*.dist-info/METADATA")) + list(root.glob("triton*.dist-info/METADATA")):
+    lines = []
+    for line in meta.read_text(encoding="utf-8").splitlines(True):
+        low = line.lower()
+        if line.startswith("Requires-Dist:") and "nvidia-" in low:
+            continue
+        lines.append(line)
+    meta.write_text("".join(lines), encoding="utf-8")
+PY
+  }; \
+  install_pair() { \
+    torch_whl="$1"; audio_whl="$2"; \
+    pip_base --no-deps "$torch_whl" "$audio_whl"; \
+  }; \
+  flavor="${TTS_TORCH}"; \
+  if [ "$flavor" = "cuda" ]; then \
+    if ls /opt/wheels/torch-2.5.1+cu124*.whl >/dev/null 2>&1 && ls /opt/wheels/torchaudio-2.5.1+cu124*.whl >/dev/null 2>&1; then \
+      install_pair /opt/wheels/torch-2.5.1+cu124*.whl /opt/wheels/torchaudio-2.5.1+cu124*.whl; \
+    else \
+      fetch_whl "${TORCH_CUDA_WHEEL}" /tmp/torch.whl; \
+      fetch_whl "${TORCHAUDIO_CUDA_WHEEL}" /tmp/torchaudio.whl; \
+      install_pair /tmp/torch.whl /tmp/torchaudio.whl; \
+      rm -f /tmp/torch.whl /tmp/torchaudio.whl; \
+    fi; \
   else \
-    inst=1; \
+    if ls /opt/wheels/torch-2.5.1+cpu*.whl >/dev/null 2>&1 && ls /opt/wheels/torchaudio-2.5.1+cpu*.whl >/dev/null 2>&1; then \
+      install_pair /opt/wheels/torch-2.5.1+cpu*.whl /opt/wheels/torchaudio-2.5.1+cpu*.whl; \
+    else \
+      fetch_whl "${TORCH_CPU_WHEEL}" /tmp/torch.whl; \
+      fetch_whl "${TORCHAUDIO_CPU_WHEEL}" /tmp/torchaudio.whl; \
+      install_pair /tmp/torch.whl /tmp/torchaudio.whl; \
+      rm -f /tmp/torch.whl /tmp/torchaudio.whl; \
+    fi; \
   fi; \
-  if [ "$inst" -ne 0 ]; then \
-    fetch_whl "${TORCH_WHEEL}" /tmp/torch.whl || exit 1; \
-    fetch_whl "${TORCHAUDIO_WHEEL}" /tmp/torchaudio.whl || exit 1; \
-    pip install --no-cache-dir /tmp/torch.whl /tmp/torchaudio.whl || exit 1; \
+  pip_base filelock "typing-extensions>=4.8.0" networkx jinja2 fsspec "sympy==1.13.1" mpmath MarkupSafe; \
+  if [ "$flavor" = "cuda" ] && [ "${INSTALL_NVIDIA_LIBS}" = "1" ]; then \
+    pip_base nvidia-cuda-runtime-cu12==12.4.127 nvidia-cuda-nvrtc-cu12==12.4.127 nvidia-nvtx-cu12==12.4.127 \
+      nvidia-cuda-cupti-cu12==12.4.127 nvidia-cudnn-cu12==9.1.0.70 nvidia-cublas-cu12==12.4.5.8 \
+      nvidia-cufft-cu12==11.2.1.3 nvidia-curand-cu12==10.3.5.147 nvidia-cusolver-cu12==11.6.1.9 \
+      nvidia-cusparse-cu12==12.3.1.170 nvidia-nccl-cu12==2.21.5 nvidia-nvjitlink-cu12==12.4.127; \
+  else \
+    strip_nvidia_requires; \
+  fi; \
+  if ! python -c "import torch, torchaudio; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"; then \
+    echo "[tts] CUDA torch 无法 import，改装 CPU wheel"; \
+    fetch_whl "${TORCH_CPU_WHEEL}" /tmp/torch.whl; \
+    fetch_whl "${TORCHAUDIO_CPU_WHEEL}" /tmp/torchaudio.whl; \
+    install_pair /tmp/torch.whl /tmp/torchaudio.whl; \
     rm -f /tmp/torch.whl /tmp/torchaudio.whl; \
+    strip_nvidia_requires; \
+    python -c "import torch, torchaudio; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"; \
   fi; \
-  set -e; \
   pip_req() { \
     pip install --no-cache-dir --timeout 300 --retries 15 \
       --trusted-host mirrors.aliyun.com \
@@ -90,7 +139,8 @@ assert ps, 'no wheels'; \
   }; \
   pip_req -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt \
     || pip_req -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt \
-    || pip_req -i https://pypi.org/simple -r requirements.txt
+    || pip_req -i https://pypi.org/simple -r requirements.txt; \
+  python -c "import torch, fastapi, omnivoice; print('ok', torch.__version__)"
 
 COPY download_model.sh download_asr_model.sh ./
 RUN sed -i 's/\r$//' ./download_model.sh ./download_asr_model.sh \

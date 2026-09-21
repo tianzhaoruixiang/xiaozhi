@@ -46,7 +46,7 @@ export function createHuixunMcpServer(options?: {
       backgroundBrief: z
         .string()
         .optional()
-        .describe('知识管理专家整理的《xxx会议资料》全文，将附在通知后发给每位收件人（含领导人）'),
+        .describe('安保管理专家整理的《xxx会议资料》全文，将附在通知后发给每位收件人（含领导人）'),
       briefingTitle: z
         .string()
         .optional()

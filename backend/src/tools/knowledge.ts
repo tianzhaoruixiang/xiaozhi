@@ -117,7 +117,7 @@ export function formatMeetingMaterialsPacket(
       .trim() || '工作会'
   const title = `《${label}会议资料》`
   const text = `## ${title}
-以下根据知识库中历年相似会议档案整理，供全体参会人（含领导人）会前阅知。引用如下档案，勿当作未检索事实。
+以下由安保管理专家根据历年相似会议与安保安排整理，供全体参会人（含领导人）会前阅知。引用如下档案，勿当作未检索事实。
 
 ${docsBody}`
   return { title, text }
