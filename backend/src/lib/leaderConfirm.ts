@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SsePayload } from './sse.js'
 import type { HuixunNoticeInput } from '../tools/huixun.js'
+import { arabicToSpoken } from './spokenChinese.js'
 
 export type ConfirmDecision = {
   approved: boolean
@@ -53,7 +54,9 @@ export function buildConfirmOral(draft: HuixunNoticeInput): string {
   const where = draft.location ? `地点${draft.location}。` : ''
   const agenda = draft.agendaTitle || (draft.agenda ? '会议议程' : '')
   const extra = agenda ? `将一并附上${agenda}。` : ''
-  return `厅长，会议通知已经拟好，标题是「${draft.title}」。${when}${where}${extra}是否确认发给全体参会人？您可以说「确认发出」，或在页面上点击确认。`
+  return arabicToSpoken(
+    `厅长，会议通知已经拟好，标题是「${draft.title}」。${when}${where}${extra}是否确认发给全体参会人？您可以说「确认发出」，或在页面上点击确认。`,
+  )
 }
 
 export function registerLeaderConfirm(draft: HuixunNoticeInput): {

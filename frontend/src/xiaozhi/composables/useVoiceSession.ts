@@ -23,12 +23,11 @@ type VoiceSessionOptions = {
 }
 
 /**
- * 待机 → 唤醒 → 听指令 → 自动发送 → 播报完成后继续聆听 的语音链路。
+ * 待机 → 唤醒词 → 听指令 → 自动发送 → 播报完成后回到待机。
  *
- * 平时不被唤醒：麦克风只做本地 VAD + 唤醒词判定，
- * 只有「你好智枢」才唤醒，随即播报「我在，请讲」，
- * 然后开始收领导这一整段话，停嘴即自动把识别文本交出去。
- * 汇报播报结束后默认再进入聆听，无需重新喊唤醒词。
+ * 默认不开麦、不处于听指令状态。用户点头像后麦克风才进入唤醒词检测；
+ * 只有「你好智枢」才唤醒并播报「我在，请讲」，收完这一段即休眠，
+ * 下一轮必须重新喊唤醒词。
  */
 export function useVoiceSession(options: VoiceSessionOptions) {
   const {
@@ -60,29 +59,28 @@ export function useVoiceSession(options: VoiceSessionOptions) {
     }
   }
 
-  /** 应答播报中 / 刚播完 / 刚发过指令，都不接收新指令 */
-  const canAcceptCommand = () => {
-    if (ackPlaying.value) return false
-    if (Date.now() - lastSubmitAt < SUBMIT_COOLDOWN_MS) return false
-    return true
-  }
+  /** 刚发过指令的冷却期内不接收新指令 */
+  const canAcceptCommand = () => Date.now() - lastSubmitAt >= SUBMIT_COOLDOWN_MS
 
   const wake = useVoiceWake({
     onWake: ({ hasFollowUp }) => {
       if (!hasFollowUp) options.onWakeDetected?.()
       if (hasFollowUp || !ackSupported.value) {
-        // 一句话说完，或本地 TTS 不可用：不播「我在」，直接等指令
         return
       }
       ackSeq += 1
       const seq = ackSeq
       ackPlaying.value = true
-      wake.pause()
-      void playAck(WAKE_ACK_PHRASE)
+      // 合成「我在」期间继续开麦：领导常在应答响起前就把指令说完
+      void playAck(WAKE_ACK_PHRASE, {
+        onStart: () => {
+          if (seq !== ackSeq) return
+          wake.pause()
+        },
+      })
         .catch(() => undefined)
         .then(() => {
           if (seq !== ackSeq) return
-          // 应答声尾音可能被回采，短静默后再开麦
           clearEchoTimer()
           echoTimer = window.setTimeout(() => {
             echoTimer = null
@@ -93,7 +91,17 @@ export function useVoiceSession(options: VoiceSessionOptions) {
         })
     },
     onTranscript: (text) => {
+      const compact = text.replace(/[\s，,。.!！？?]/g, '')
+      if (/我在|请讲/.test(compact) && compact.length <= 8) return
       if (!canAcceptCommand()) return
+      if (ackPlaying.value) {
+        ackSeq += 1
+        clearEchoTimer()
+        ackPlaying.value = false
+        stopAck()
+        wake.resume()
+      }
+      lastSubmitAt = Date.now()
       lastSubmitAt = Date.now()
       options.onCommandStart?.()
       options.onCommand(text)
@@ -137,6 +145,17 @@ export function useVoiceSession(options: VoiceSessionOptions) {
       echoTimer = null
       wake.resume()
     }, ECHO_GUARD_MS)
+  }
+
+  /** 结束本轮听指令，麦克风若已开则只继续检测唤醒词 */
+  const standby = () => {
+    ackSeq += 1
+    clearEchoTimer()
+    ackPlaying.value = false
+    stopAck()
+    wake.standby()
+    listening.value = false
+    wake.resume()
   }
 
   const start = () => wake.start()
@@ -195,5 +214,6 @@ export function useVoiceSession(options: VoiceSessionOptions) {
     pause,
     resume,
     listenForReply,
+    standby,
   }
 }

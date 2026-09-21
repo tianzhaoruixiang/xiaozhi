@@ -16,9 +16,9 @@ services:
       XIAOZHI_DEFAULT_WORKFLOW: personnel-dispatch
       # 语音模型在宿主机固定运行，容器经 host.docker.internal 访问
       TTS_URL: ${TTS_URL_DOCKER:-http://host.docker.internal:8090}
-      TTS_SPEECH_URL: ${TTS_SPEECH_URL_DOCKER:-http://host.docker.internal:8091}
-      TTS_MODEL: ${TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice}
-      TTS_VOICE: ${TTS_VOICE:-vivian}
+      TTS_SPEECH_URL: ${TTS_SPEECH_URL_DOCKER:-http://host.docker.internal:8090}
+      TTS_MODEL: ${TTS_MODEL:-kokoro-int8-multi-lang-v1_1}
+      TTS_VOICE: ${TTS_VOICE:-zf_001}
       LLM_TIMEOUT_MS: "45000"
       HRBP_REPORT_DIR: /data/hrbp-reports
     extra_hosts:
@@ -95,18 +95,14 @@ services:
     build:
       context: ./tts
     environment:
-      TTS_MODEL_DIR: /data/models/HiggsAudio-V2/generation-3B-base
-      TTS_TOKENIZER_DIR: /data/models/HiggsAudio-V2/tokenizer
+      TTS_MODEL_DIR: /data/models/kokoro-int8-multi-lang-v1_1
       ASR_MODEL_DIR: /data/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17
       ASR_NUM_THREADS: "6"
       ASR_PROVIDER: cpu
-      HF_HOME: /data/models/hf-home
-      HF_ENDPOINT: https://hf-mirror.com
       TTS_NUM_THREADS: "4"
       TTS_SPEED: "1.0"
-      TTS_DEVICE: auto
-      TTS_VOICE_PROMPT: "feminine, young Chinese woman, clear Mandarin"
-      TTS_TEMPERATURE: "0.3"
+      TTS_PROVIDER: cpu
+      TTS_SPEAKER_ID: "3"
     volumes:
       - ./data:/data
     expose:

@@ -17,6 +17,8 @@ const WAKE_CANONICAL = ['你好智枢', '你好，智枢'] as const
 const WAKE_ALIASES: string[] = [
   '你好智枢',
   '您好智枢',
+  '嗨智枢',
+  '嘿智枢',
   '你好智书',
   '你好智树',
   '你好知枢',
@@ -24,7 +26,24 @@ const WAKE_ALIASES: string[] = [
   '你好支枢',
   '您好智书',
   '您好智树',
+  // SenseVoice 常见误听
+  '你好知识',
+  '您好知识',
+  '你好指数',
+  '您好指数',
+  '你好芝士',
+  '您好芝士',
+  '你好智数',
+  '你好之数',
+  '你好之书',
+  '你好知书',
+  '你好只书',
+  '你好纸书',
+  '你好直书',
+  '你好智叔',
+  '你好枝枢',
   'nihaozhishu',
+  'nihaozhishi',
   'hellozhishu',
   // 旧唤醒词误听兼容
   '你好小智',
@@ -52,7 +71,10 @@ function stripNoise(text: string): string {
 
 /** 「你好/您好 + 可选字 + 智枢/小智」松匹配，仅句首 */
 function looseWake(compact: string): { hit: boolean; prefixLen: number } {
-  const m = /^(你好|您好)[\u4e00-\u9fff]{0,1}(智[枢书树舒殊]|小[智至知枝纸只质])/.exec(compact)
+  const m =
+    /^(你好|您好|嗨|嘿)(啊|呀)?((智|知|之|只|纸|直|枝)[枢书树舒殊数识士叔]|芝士|小[智至知枝纸只质止志])/.exec(
+      compact,
+    )
   if (!m) return { hit: false, prefixLen: 0 }
   return { hit: true, prefixLen: m[0].length }
 }

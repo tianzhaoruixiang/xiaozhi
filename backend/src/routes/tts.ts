@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { getQwenTtsConfig, qwenTtsHealth, synthesizeQwenSpeech } from '../lib/qwenTts.js'
+import { arabicToSpoken } from '../lib/spokenChinese.js'
 
 const ASR_URL = (process.env.TTS_URL || 'http://127.0.0.1:8090').replace(/\/$/, '')
 
@@ -27,7 +28,7 @@ ttsRoute.get('/asr/health', async (c) => {
   }
 })
 
-/** 代理本地 vLLM-Omni（Qwen3-TTS CustomVoice），返回 wav */
+/** 代理本机 sherpa-onnx MeloTTS，返回 wav */
 ttsRoute.post('/speak', async (c) => {
   let body: {
     text?: string
@@ -41,7 +42,7 @@ ttsRoute.post('/speak', async (c) => {
   } catch {
     return c.json({ error: '无效 JSON' }, 400)
   }
-  const text = body.text?.trim()
+  const text = arabicToSpoken(body.text?.trim() || '')
   if (!text) return c.json({ error: 'text 不能为空' }, 400)
 
   const rate =

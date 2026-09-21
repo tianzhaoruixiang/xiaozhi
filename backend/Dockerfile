@@ -14,6 +14,7 @@ RUN npm run build
 # 外网一次性：生产 node_modules + 系统依赖，打成 xiaozhi-api:base
 FROM ${NODE_IMAGE} AS runtime-base
 WORKDIR /app
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
 
 RUN set -eux; \
   printf '%s\n' \
@@ -51,8 +52,9 @@ RUN set -eux; \
 RUN useradd -m -u 10001 -s /bin/bash appuser
 
 COPY package.json ./
-RUN npm config set registry https://registry.npmmirror.com \
-  && npm install --omit=dev
+# 生产层不再二次拉包（npmmirror/npmjs 易 ECONNRESET），复用 builder 已装好的依赖
+COPY --from=builder /app/node_modules ./node_modules
+RUN npm prune --omit=dev
 
 RUN mkdir -p /data /home/appuser/.claude /app/dist \
   && chown -R appuser:appuser /app /data /home/appuser

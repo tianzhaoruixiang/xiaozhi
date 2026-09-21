@@ -1,4 +1,5 @@
 import { onUnmounted, ref } from 'vue'
+import { arabicToSpoken } from '../utils/spokenChinese'
 
 /** 按句切分，保证首句尽快开播 */
 function splitSpeakUnits(text: string): string[] {
@@ -78,7 +79,11 @@ export function useSpeechReport() {
     speaking.value = false
   }
 
-  const speakBrowser = (clean: string, seq: number): Promise<void> => {
+  const speakBrowser = (
+    clean: string,
+    seq: number,
+    onStart?: () => void,
+  ): Promise<void> => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       error.value = '当前环境无可用语音引擎'
       engine.value = 'none'
@@ -117,6 +122,7 @@ export function useSpeechReport() {
           return
         }
         speaking.value = true
+        onStart?.()
       }
       utter.onend = finish
       utter.onerror = finish
@@ -163,7 +169,11 @@ export function useSpeechReport() {
     return blob
   }
 
-  const playBlob = (blob: Blob, seq: number): Promise<'ok' | 'fail'> => {
+  const playBlob = (
+    blob: Blob,
+    seq: number,
+    onStart?: () => void,
+  ): Promise<'ok' | 'fail'> => {
     try {
       window.speechSynthesis?.cancel()
     } catch {
@@ -186,6 +196,7 @@ export function useSpeechReport() {
           return
         }
         speaking.value = true
+        onStart?.()
       }
       audio.onended = () => {
         resolve(started ? 'ok' : 'fail')
@@ -202,20 +213,34 @@ export function useSpeechReport() {
   }
 
   /** 整段合成（短文或回退） */
-  const speakLocalFull = async (clean: string, seq: number): Promise<'ok' | 'fail'> => {
-    const payload = clean.length > 500 ? `${clean.slice(0, 500)}……` : clean
+  const speakLocalFull = async (
+    clean: string,
+    seq: number,
+    onStart?: () => void,
+  ): Promise<'ok' | 'fail'> => {
+    const payload = arabicToSpoken(clean.length > 500 ? `${clean.slice(0, 500)}……` : clean)
     const blob = await fetchWav(payload, seq)
     if (seq !== speakSeq) return 'fail'
-    return playBlob(blob, seq)
+    return playBlob(blob, seq, onStart)
   }
 
   /** 分句：首句先播，边播边预取 */
-  const speakLocalPipelined = async (clean: string, seq: number): Promise<'ok' | 'fail'> => {
+  const speakLocalPipelined = async (
+    clean: string,
+    seq: number,
+    onStart?: () => void,
+  ): Promise<'ok' | 'fail'> => {
     const units = splitSpeakUnits(clean.length > 500 ? `${clean.slice(0, 500)}……` : clean)
-    if (units.length <= 1) return speakLocalFull(clean, seq)
+    if (units.length <= 1) return speakLocalFull(clean, seq, onStart)
 
     let nextFetch = fetchWav(units[0], seq)
     let anyOk = false
+    let started = false
+    const markStart = () => {
+      if (started) return
+      started = true
+      onStart?.()
+    }
 
     for (let i = 0; i < units.length; i += 1) {
       if (seq !== speakSeq) return anyOk ? 'ok' : 'fail'
@@ -224,7 +249,7 @@ export function useSpeechReport() {
       if (i + 1 < units.length) {
         nextFetch = fetchWav(units[i + 1], seq)
       }
-      const result = await playBlob(blob, seq)
+      const result = await playBlob(blob, seq, markStart)
       if (result === 'ok') anyOk = true
       else if (!anyOk) return 'fail'
       if (seq !== speakSeq) return anyOk ? 'ok' : 'fail'
@@ -234,15 +259,18 @@ export function useSpeechReport() {
     return anyOk ? 'ok' : 'fail'
   }
 
-  const speak = async (text: string): Promise<void> => {
-    const clean = text.replace(/[#*`>_]/g, '').replace(/\s+/g, ' ').trim()
+  const speak = async (text: string, options?: { onStart?: () => void }): Promise<void> => {
+    const clean = arabicToSpoken(
+      text.replace(/[#*`>_]/g, '').replace(/\s+/g, ' ').trim(),
+    )
     if (!clean) return
 
     stop()
     const seq = speakSeq
+    const onStart = options?.onStart
 
     try {
-      const result = await speakLocalPipelined(clean, seq)
+      const result = await speakLocalPipelined(clean, seq, onStart)
       if (seq !== speakSeq) return
       if (result === 'ok') return
     } catch (err) {
@@ -255,7 +283,7 @@ export function useSpeechReport() {
     if (seq !== speakSeq) return
     if (speaking.value && engine.value === 'local') return
 
-    await speakBrowser(clean, seq)
+    await speakBrowser(clean, seq, onStart)
   }
 
   onUnmounted(() => stop())

@@ -186,10 +186,18 @@ def _peak_normalize(samples: np.ndarray, target: float = 0.9, max_gain: float = 
     return (samples * gain).astype(np.float32)
 
 
+# 「你好智枢」常被听成知识 / 指数 / 芝士 等，句首纠正便于唤醒
+_WAKE_FIX = re.compile(
+    r"^(你好|您好|嗨|嘿)([啊呀]?)[，,\s]*(知识|指数|芝士|智数|之数|之书|知书|只书|纸书|直书|智叔|枝枢)"
+)
+
+
 def _clean_text(text: str) -> str:
     for tag in _SV_KNOWN_TAGS:
         text = text.replace(tag, "")
     text = _SV_TAG.sub("", text)
+    text = text.strip()
+    text = _WAKE_FIX.sub(r"\1\2智枢", text, count=1)
     return text.strip()
 
 

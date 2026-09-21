@@ -78,7 +78,7 @@ capabilities: [rooms]           # knowledge | rooms | schedule | huixun
 - schedule：厅长日程安排
 - huixun：汇讯通知投递
 
-前端头像按专家 `name` 稳定映射豆包风 3D Q 版预设（如 `context-analyst`→青芽、`room-coordinator`→豆米）；也可在 frontmatter 写 `avatar: taoyao` 指定预设 id。
+前端头像按专家 `name` 稳定映射豆包风 3D 正装预设（如 `context-analyst`→青芽、`room-coordinator`→豆米）；也可在 frontmatter 写 `avatar: taoyao` 指定预设 id。
 
 ## 内置专家团
 

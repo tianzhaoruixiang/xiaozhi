@@ -1,4 +1,4 @@
-/** 豆包风 3D Q 版智能体头像（原创插画，非官方 IP） */
+/** 豆包风 3D 正装头像：成人比例、自然发色、庄重肃穆（原创，非官方 IP） */
 import imgQingya from '../assets/avatars/avatar-qingya.png'
 import imgDoumi from '../assets/avatars/avatar-doumi.png'
 import imgLanxin from '../assets/avatars/avatar-lanxin.png'
@@ -17,7 +17,7 @@ export interface AgentAvatarPreset {
   label: string
   /** 圆形底色（兜底 / 边框光晕） */
   bg: [string, string]
-  /** 3D 头像图 */
+  /** 3D 正装头像图 */
   src: string
 }
 
@@ -102,7 +102,7 @@ export const AGENT_AVATAR_PRESETS: AgentAvatarPreset[] = [
   },
 ]
 
-/** 智枢固定头像（青绿豆包风妹子） */
+/** 智枢固定头像（青绿正装） */
 export const XIAOZHI_AVATAR_ID = 'cuiwei'
 
 /** 已知专家 → 固定头像，保证每次协作视觉稳定 */

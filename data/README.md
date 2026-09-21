@@ -4,7 +4,7 @@
 
 ```
 data/
-  models/           # TTS（Higgs Audio V2）/ ASR（SenseVoice）离线模型
+  models/           # TTS（kokoro-int8-multi-lang-v1_1）/ ASR（SenseVoice）离线模型
   hrbp-reports/     # 上报 HRBP 的 Markdown 存档
   runtime/          # 进程运行时写入（HOME 等）
 ```

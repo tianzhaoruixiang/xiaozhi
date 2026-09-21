@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import {
   DEFAULT_WAKE_WORDS,
   matchWakePhrase,
@@ -182,13 +182,19 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     callbacks.onWake({ hasFollowUp })
   }
 
-  /** 不经过唤醒词，直接听下一句（用于确认发出） */
+  /** 不经过唤醒词，直接听下一句（厅长工作台默认不用：每轮须重新唤醒） */
   const listenForReply = (timeoutMs = 45000) => {
     awaitingCommand.value = true
     clearArmedTimer()
     armedTimer = window.setTimeout(() => {
       awaitingCommand.value = false
     }, timeoutMs)
+  }
+
+  /** 回到仅检测唤醒词的待机，不再收指令 */
+  const standby = () => {
+    disarm()
+    capturing.value = false
   }
 
   const handleRecognizedText = (raw: string) => {
@@ -266,7 +272,7 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
       const res = await fetch('/api/tts/asr/health')
       if (!res.ok) return false
       const data = (await res.json()) as { ok?: boolean; ready?: boolean }
-      return Boolean(data.ok && data.ready)
+      return Boolean(data.ready ?? data.ok)
     } catch {
       return false
     }
@@ -378,10 +384,15 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
         }
         const input = ev.inputBuffer.getChannelData(0)
         if (recognizeBusy) {
-          // 识别中继续攒帧 + 更新声强，避免领导接着说的前半句被丢掉
           updateSoundLevel(rms(input))
           if (speechChunks.length < 400) speechChunks.push(new Float32Array(input))
           return
+        }
+        // 识别期间攒下的语音不要丢掉，接着当一段话收完
+        if (!inSpeech && speechChunks.length >= speechNeed) {
+          inSpeech = true
+          capturing.value = true
+          silenceFrames = 0
         }
         const level = rms(input)
         updateSoundLevel(level)
@@ -567,10 +578,6 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     void start()
   }
 
-  onMounted(() => {
-    void start()
-  })
-
   onUnmounted(() => stop())
 
   return {
@@ -588,6 +595,7 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     pause,
     resume,
     listenForReply,
+    standby,
     isSecureContext: isSecureContextNow,
   }
 }

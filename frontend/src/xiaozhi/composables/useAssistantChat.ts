@@ -8,6 +8,7 @@ import type {
 } from '../types/assistant'
 import type { PlanItem } from '../data/mockPlans'
 import { classifyConfirmUtterance } from '../utils/confirmUtterance'
+import { arabicToSpoken } from '../utils/spokenChinese'
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -384,7 +385,7 @@ export function useAssistantChat(options?: { welcome?: boolean }) {
                 agendaTitle: payload.agendaTitle,
                 briefingTitle: payload.briefingTitle,
                 recipients: payload.recipients,
-                oral: payload.text,
+                oral: payload.text ? arabicToSpoken(payload.text) : undefined,
               }
             }
             break
@@ -413,7 +414,7 @@ export function useAssistantChat(options?: { welcome?: boolean }) {
             state.value = 'speaking'
             plan.phase = 'done'
             plan.statusText = '智枢正在向领导语音汇报'
-            if (payload.text) msg.oralReport = payload.text
+            if (payload.text) msg.oralReport = arabicToSpoken(payload.text)
             break
           }
           case 'final': {
@@ -436,7 +437,9 @@ export function useAssistantChat(options?: { welcome?: boolean }) {
             if (enableOral && !msg.oralReport && payload.text) {
               const section = payload.text.match(/【口述汇报】\s*([\s\S]*)$/)?.[1]
               if (section) {
-                msg.oralReport = section.replace(/[#*`]/g, '').replace(/\n+/g, ' ').trim()
+                msg.oralReport = arabicToSpoken(
+                  section.replace(/[#*`]/g, '').replace(/\n+/g, ' ').trim(),
+                )
               }
             }
             break
