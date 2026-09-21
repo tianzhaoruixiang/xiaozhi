@@ -4,33 +4,39 @@ import type { ChatMessage } from '../types/assistant'
 import AgentCollabTimeline from './AgentCollabTimeline.vue'
 import MarkdownView from './MarkdownView.vue'
 import DispatchConfirmCard from './DispatchConfirmCard.vue'
+import XiaozhiWorkingHint from './XiaozhiWorkingHint.vue'
 
-const props = defineProps<{
-  open: boolean
-  messages: ChatMessage[]
-  streaming: boolean
-  error: string | null
-  draft: string
-  voiceSupported: boolean
-  voiceListening: boolean
-  voiceAwaiting?: boolean
-  /** 正在播报唤醒应答「我在，请讲」 */
-  voiceAckPlaying?: boolean
-  voiceCapturing?: boolean
-  voiceRecognizing?: boolean
-  voiceMode?: 'local-asr' | 'browser-cloud' | 'unavailable'
-  /** 0~1 声强，驱动聆听呼吸闪光 */
-  soundLevel?: number
-  hearing?: boolean
-  reportSpeaking?: boolean
-  ttsSupported?: boolean
-  ttsEngine?: string
-  teams?: Array<{ name: string; displayName: string; defaultWorkflow?: string }>
-  workflows?: Array<{ name: string; displayName: string }>
-  selectedTeam?: string
-  selectedWorkflow?: string
-  selectedMode?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    messages: ChatMessage[]
+    streaming: boolean
+    error: string | null
+    draft: string
+    voiceSupported: boolean
+    voiceListening: boolean
+    voiceAwaiting?: boolean
+    /** 正在播报唤醒应答「我在，请讲」 */
+    voiceAckPlaying?: boolean
+    voiceCapturing?: boolean
+    voiceRecognizing?: boolean
+    voiceMode?: 'local-asr' | 'browser-cloud' | 'unavailable'
+    /** 0~1 声强，驱动聆听呼吸闪光 */
+    soundLevel?: number
+    hearing?: boolean
+    reportSpeaking?: boolean
+    ttsSupported?: boolean
+    ttsEngine?: string
+    teams?: Array<{ name: string; displayName: string; defaultWorkflow?: string }>
+    workflows?: Array<{ name: string; displayName: string }>
+    selectedTeam?: string
+    selectedWorkflow?: string
+    selectedMode?: string
+    /** 厅长工作台：默认只保留对话，协作过程收入弹窗 */
+    chatOnly?: boolean
+  }>(),
+  { chatOnly: false },
+)
 
 const emit = defineEmits<{
   close: []
@@ -45,6 +51,7 @@ const emit = defineEmits<{
 
 const shortcuts = ['今天重点事项', '准备下午人员调度会并通知相关部门']
 const scroller = ref<HTMLElement | null>(null)
+const collabOpen = ref(false)
 
 const activeCollab = computed(() => {
   for (let i = props.messages.length - 1; i >= 0; i -= 1) {
@@ -70,6 +77,15 @@ const showCollab = computed(() => {
     activeCollab.value.steps.length > 0 ||
     (plan && plan.phase !== 'idle')
   )
+})
+
+const collabPeekLabel = computed(() => {
+  const phase = activeCollab.value.taskPlan?.phase
+  if (phase === 'planning') return '正在安排'
+  if (phase === 'awaiting_confirm') return '待您确认'
+  if (phase === 'executing') return '正在办理'
+  if (phase === 'done') return '办理过程'
+  return '办理过程'
 })
 
 /** 协作台接受语音时：声强 → 呼吸周期（大声更快） */
@@ -116,20 +132,27 @@ watch(
   },
   { deep: true },
 )
+
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) collabOpen.value = false
+  },
+)
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="layer" :class="{ open }" aria-hidden="true">
-      <button type="button" class="backdrop" aria-label="关闭协作台" @click="emit('close')" />
+    <div class="layer" :class="{ open, 'collab-up': chatOnly && collabOpen }" aria-hidden="true">
+      <button type="button" class="backdrop" :aria-label="chatOnly ? '关闭对话' : '关闭协作台'" @click="emit('close')" />
 
       <aside
         class="workspace"
-        :class="{ open, 'voice-listen': voiceActive }"
+        :class="{ open, 'voice-listen': voiceActive, 'chat-only': chatOnly }"
         :style="voiceBreathStyle"
         role="dialog"
         aria-modal="true"
-        aria-label="小智协作台"
+        :aria-label="chatOnly ? '与小智对话' : '小智协作台'"
         aria-live="polite"
       >
         <div class="hud-frame" aria-hidden="true">
@@ -142,10 +165,10 @@ watch(
           <div class="head-left">
             <p class="eyebrow">
               <span class="live-dot" :class="{ voice: voiceActive }" />
-              {{ voiceActive ? '正在聆听' : '协作进行中' }}
+              {{ voiceActive ? '正在聆听' : chatOnly ? '对话' : '协作进行中' }}
             </p>
             <div class="head-title">
-              <h2>小智协作台</h2>
+              <h2>{{ chatOnly ? '小智' : '小智协作台' }}</h2>
               <p class="status">
                 <template v-if="reportSpeaking">
                   小智正在向您语音汇报
@@ -153,15 +176,16 @@ watch(
                   <span v-else-if="ttsEngine === 'browser'" class="voice-tag dim">系统音色</span>
                 </template>
                 <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'planning'">
-                  正在设计本轮专家团队…
+                  {{ chatOnly ? '正在为您安排…' : '正在设计本轮专家团队…' }}
                 </template>
                 <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'awaiting_confirm'">
                   通知已拟好，请您确认是否发出
                 </template>
                 <template v-else-if="streaming && activeCollab.taskPlan?.phase === 'executing'">
-                  专家正按调度执行任务
+                  <span class="working-inline" aria-hidden="true" />
+                  {{ chatOnly ? '正在为您办理' : '专家正按调度执行任务' }}
                 </template>
-                <template v-else-if="streaming">多智能体协作进行中</template>
+                <template v-else-if="streaming">{{ chatOnly ? '正在办理…' : '多智能体协作进行中' }}</template>
                 <template v-else-if="voiceAckPlaying">
                   <span class="listen-live">小智应答「我在，请讲」…</span>
                   <span class="voice-tag">已唤醒</span>
@@ -175,13 +199,25 @@ watch(
                   待命中，说「你好，小智」唤醒
                   <span v-if="voiceMode === 'local-asr'" class="voice-tag">本地唤醒</span>
                 </template>
-                <template v-else>说出需求后，小智会调度专家并完成汇报</template>
+                <template v-else>
+                  {{ chatOnly ? '说出需求即可，办完会向您汇报' : '说出需求后，小智会调度专家并完成汇报' }}
+                </template>
               </p>
             </div>
           </div>
 
           <div class="head-right">
-            <div v-if="teams?.length" class="orch-bar" aria-label="编排设置">
+            <button
+              v-if="chatOnly && showCollab"
+              type="button"
+              class="collab-peek"
+              :class="{ live: streaming }"
+              @click="collabOpen = true"
+            >
+              <span class="peek-dot" aria-hidden="true" />
+              {{ collabPeekLabel }}
+            </button>
+            <div v-if="!chatOnly && teams?.length" class="orch-bar" aria-label="编排设置">
               <label>
                 专家团
                 <select
@@ -226,7 +262,7 @@ watch(
         </header>
 
         <div class="workspace-body">
-          <section class="collab-pane">
+          <section v-if="!chatOnly" class="collab-pane">
             <AgentCollabTimeline
               v-if="showCollab"
               :steps="activeCollab.steps"
@@ -255,11 +291,17 @@ watch(
                   :source="msg.content"
                 />
                 <p v-else-if="msg.content" class="plain">{{ msg.content }}</p>
+                <XiaozhiWorkingHint
+                  v-else-if="msg.role === 'assistant' && streaming && msg.taskPlan?.phase === 'executing'"
+                  :steps="msg.steps ?? []"
+                  caption="正在办理中…"
+                />
                 <p v-else-if="msg.role === 'assistant' && streaming" class="plain muted">
-                  <template v-if="msg.taskPlan?.phase === 'planning'">小智正在生成多智能体任务规划…</template>
+                  <template v-if="msg.taskPlan?.phase === 'planning'">
+                    {{ chatOnly ? '正在为您安排办理…' : '小智正在生成多智能体任务规划…' }}
+                  </template>
                   <template v-else-if="msg.taskPlan?.phase === 'awaiting_confirm'">通知已拟好，请您确认是否发出…</template>
-                  <template v-else-if="msg.taskPlan?.phase === 'executing'">智能体正在逐步执行，请看左侧协作过程…</template>
-                  <template v-else>正在启动协同流程…</template>
+                  <template v-else>{{ chatOnly ? '正在办理…' : '正在启动协同流程…' }}</template>
                 </p>
 
                 <div v-if="msg.oralReport" class="oral-card" :class="{ live: reportSpeaking }">
@@ -323,6 +365,36 @@ watch(
           </section>
         </div>
       </aside>
+
+      <div
+        v-if="chatOnly && collabOpen"
+        class="collab-layer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="办理过程"
+      >
+        <button type="button" class="collab-scrim" aria-label="关闭办理过程" @click="collabOpen = false" />
+        <div class="collab-dialog">
+          <header class="collab-dialog-head">
+            <div>
+              <p class="eyebrow">办理过程</p>
+              <h3>小智正在协调各方</h3>
+            </div>
+            <button type="button" class="icon-btn" aria-label="关闭" @click="collabOpen = false">×</button>
+          </header>
+          <div class="collab-dialog-body">
+            <AgentCollabTimeline
+              v-if="showCollab"
+              :steps="activeCollab.steps"
+              :task-plan="activeCollab.taskPlan"
+            />
+            <div v-else class="empty-collab">
+              <strong>暂无办理过程</strong>
+              <p>发出指示后，如需多方协同，可在此查看进展。</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </Teleport>
 </template>
@@ -339,6 +411,10 @@ watch(
 
 .layer.open {
   pointer-events: auto;
+}
+
+.layer.collab-up {
+  z-index: 80;
 }
 
 .backdrop {
@@ -387,6 +463,142 @@ watch(
 .workspace.open {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
+}
+
+.workspace.chat-only {
+  inset: 16px 16px 16px auto;
+  width: min(440px, calc(100vw - 24px));
+  height: auto;
+  border-radius: 22px;
+  transform: translate3d(24px, 0, 0) scale(0.985);
+}
+
+.workspace.chat-only.open {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.workspace.chat-only .workspace-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace.chat-only .workspace-head {
+  padding: 14px 14px 10px 16px;
+  align-items: flex-start;
+}
+
+.workspace.chat-only .head-title {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.workspace.chat-only .chat-pane {
+  padding: 12px 16px 16px;
+}
+
+.collab-peek {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 213, 163, 0.4);
+  background: rgba(196, 163, 90, 0.12);
+  color: #f0e0b0;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease-soft),
+    border-color var(--dur-fast) var(--ease-soft),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.collab-peek:hover {
+  background: rgba(196, 163, 90, 0.22);
+  border-color: rgba(232, 213, 163, 0.7);
+  transform: translate3d(0, -1px, 0);
+}
+
+.collab-peek.live {
+  box-shadow: 0 0 16px rgba(196, 163, 90, 0.28);
+}
+
+.peek-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e8d5a3;
+  box-shadow: 0 0 8px rgba(232, 213, 163, 0.9);
+}
+
+.collab-peek.live .peek-dot {
+  animation: status-blink 1.2s ease-in-out infinite;
+}
+
+.collab-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: stretch;
+  padding: 8px;
+}
+
+.collab-scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(4, 12, 20, 0.55);
+  cursor: pointer;
+}
+
+.collab-dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border-radius: 12px;
+  background:
+    radial-gradient(700px 280px at 8% -10%, rgba(42, 180, 210, 0.16), transparent 55%),
+    linear-gradient(165deg, rgba(12, 28, 42, 0.98), rgba(8, 18, 30, 0.99));
+  border: 1px solid rgba(94, 200, 232, 0.28);
+  box-shadow: 0 24px 64px rgba(4, 12, 20, 0.55);
+  overflow: hidden;
+}
+
+.collab-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px 18px;
+  border-bottom: 1px solid rgba(94, 200, 232, 0.12);
+}
+
+.collab-dialog-head h3 {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.collab-dialog-body {
+  min-height: 0;
+  padding: 10px 12px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.collab-dialog-body :deep(.rail) {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 .workspace.voice-listen {
@@ -568,6 +780,30 @@ watch(
   font-size: 0.78rem;
   color: rgba(237, 244, 248, 0.62);
   min-width: 0;
+}
+
+.working-inline {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(154, 220, 232, 0.28);
+  border-top-color: #9adce8;
+  animation: orbit 0.7s linear infinite;
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .working-inline {
+    animation: none;
+  }
 }
 
 .voice-tag {
@@ -939,9 +1175,26 @@ watch(
     border-radius: 18px;
   }
 
+  .workspace.chat-only {
+    inset: 8px;
+    width: auto;
+  }
+
+  .collab-layer {
+    padding: 4px;
+  }
+
+  .collab-dialog {
+    border-radius: 10px;
+  }
+
   .workspace-body {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(280px, 48%) 1fr;
+  }
+
+  .workspace.chat-only .workspace-body {
+    grid-template-rows: minmax(0, 1fr);
   }
 
   .collab-pane {

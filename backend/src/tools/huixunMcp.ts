@@ -26,7 +26,7 @@ export function createHuixunMcpServer(options?: {
   agentName?: string
 }) {
   const agentId = options?.agentId ?? 'notice-dispatcher'
-  const agentName = options?.agentName ?? '通知专家'
+  const agentName = options?.agentName ?? '通知联络专家'
   const onEmit = options?.onEmit
 
   const sendMeetingNotice = tool(
@@ -46,7 +46,7 @@ export function createHuixunMcpServer(options?: {
       backgroundBrief: z
         .string()
         .optional()
-        .describe('知识专家整理的《xxx会议资料》全文，将附在通知后发给每位收件人（含领导人）'),
+        .describe('知识管理专家整理的《xxx会议资料》全文，将附在通知后发给每位收件人（含领导人）'),
       briefingTitle: z
         .string()
         .optional()
@@ -54,7 +54,7 @@ export function createHuixunMcpServer(options?: {
       agenda: z
         .string()
         .optional()
-        .describe('会议专家起草的《xxx会议议程》全文，须原样附在通知中发给每位收件人（含领导人）'),
+        .describe('会议管理专家起草的《xxx会议议程》全文，须原样附在通知中发给每位收件人（含领导人）'),
       agendaTitle: z
         .string()
         .optional()

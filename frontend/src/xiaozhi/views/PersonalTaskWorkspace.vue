@@ -8,6 +8,7 @@ import MarkdownView from '../components/MarkdownView.vue'
 import PersonalCollabProcess from '../components/PersonalCollabProcess.vue'
 import SourcingShortlistCard from '../components/SourcingShortlistCard.vue'
 import DispatchConfirmCard from '../components/DispatchConfirmCard.vue'
+import XiaozhiWorkingHint from '../components/XiaozhiWorkingHint.vue'
 
 const props = defineProps<{
   taskId: string
@@ -317,6 +318,16 @@ onUnmounted(() => {
                 :source="msg.content"
               />
               <p v-else-if="msg.content" class="plain">{{ msg.content }}</p>
+              <XiaozhiWorkingHint
+                v-else-if="
+                  msg.role === 'assistant' &&
+                  isLiveMessage(msg.id) &&
+                  msg.taskPlan?.phase === 'executing'
+                "
+                tone="light"
+                :steps="msg.steps ?? []"
+                caption="正在办理中…"
+              />
               <p
                 v-else-if="msg.role === 'assistant' && isLiveMessage(msg.id)"
                 class="plain muted"

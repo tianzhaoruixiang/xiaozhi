@@ -27,7 +27,7 @@ export function createScheduleMcpServer(options?: {
   agentName?: string
 }) {
   const agentId = options?.agentId ?? 'schedule-coordinator'
-  const agentName = options?.agentName ?? '厅长日程'
+  const agentName = options?.agentName ?? '日程管理专家'
   const onEmit = options?.onEmit
 
   const emitStart = (toolName: string, toolLabel: string, summary: string) => {

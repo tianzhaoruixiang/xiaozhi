@@ -13,20 +13,16 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section class="seal" :data-tone="tone || 'dark'" :data-status="confirm.status">
-    <header class="seal-head">
-      <span class="stamp">呈</span>
+  <section
+    v-if="confirm.status === 'pending'"
+    class="confirm"
+    :data-tone="tone || 'dark'"
+  >
+    <header class="head">
+      <span class="mark" aria-hidden="true">确</span>
       <div>
         <strong>请您确认后再发出</strong>
-        <p>
-          {{
-            confirm.status === 'pending'
-              ? '口头说「确认发出」或「先不发」，也可直接点选。'
-              : confirm.status === 'approved'
-                ? '您已确认，正在发出。'
-                : '未发出。'
-          }}
-        </p>
+        <p>口头说「确认发出」或「先不发」，也可直接点选。</p>
       </div>
     </header>
 
@@ -57,7 +53,7 @@ const emit = defineEmits<{
       </div>
     </dl>
 
-    <div v-if="confirm.status === 'pending'" class="actions">
+    <div class="actions">
       <button type="button" class="approve" @click="emit('approve')">确认发出</button>
       <button type="button" class="reject" @click="emit('reject')">暂不发送</button>
     </div>
@@ -65,34 +61,32 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.seal {
+.confirm {
   margin-top: 14px;
   padding: 16px 16px 14px;
-  border-radius: 4px 18px 18px 4px;
-  position: relative;
+  border-radius: 14px;
 }
 
-.seal[data-tone='dark'] {
-  background:
-    linear-gradient(165deg, rgba(58, 22, 18, 0.55), rgba(18, 28, 36, 0.72));
-  border: 1px solid rgba(196, 72, 54, 0.45);
-  box-shadow: inset 3px 0 0 rgba(196, 72, 54, 0.85);
+.confirm[data-tone='dark'] {
+  background: linear-gradient(160deg, rgba(28, 52, 68, 0.72), rgba(16, 28, 38, 0.78));
+  border: 1px solid rgba(94, 200, 232, 0.32);
+  box-shadow: inset 3px 0 0 rgba(94, 200, 232, 0.55);
 }
 
-.seal[data-tone='light'] {
-  background: linear-gradient(165deg, #fbf4ea, #f3ebe0);
-  border: 1px solid rgba(148, 52, 38, 0.28);
-  box-shadow: inset 3px 0 0 #9c3a2a;
+.confirm[data-tone='light'] {
+  background: linear-gradient(165deg, #f4f8fb, #e8eef4);
+  border: 1px solid rgba(46, 110, 138, 0.22);
+  box-shadow: inset 3px 0 0 #3d7a96;
 }
 
-.seal-head {
+.head {
   display: flex;
   gap: 12px;
   align-items: flex-start;
   margin-bottom: 12px;
 }
 
-.stamp {
+.mark {
   flex: none;
   width: 36px;
   height: 36px;
@@ -100,38 +94,38 @@ const emit = defineEmits<{
   place-items: center;
   font-family: 'Songti SC', 'STSong', 'Noto Serif SC', serif;
   font-size: 1.15rem;
-  letter-spacing: 0;
-  color: #f3d6c8;
-  border: 1.5px solid rgba(214, 92, 72, 0.85);
-  background: rgba(154, 42, 32, 0.35);
+  color: #c9edf6;
+  border: 1.5px solid rgba(94, 200, 232, 0.7);
+  background: rgba(42, 140, 168, 0.28);
+  border-radius: 8px;
 }
 
-.seal[data-tone='light'] .stamp {
-  color: #8a2418;
-  background: rgba(154, 42, 32, 0.08);
-  border-color: #9c3a2a;
+.confirm[data-tone='light'] .mark {
+  color: #1e5a72;
+  background: rgba(61, 122, 150, 0.1);
+  border-color: #3d7a96;
 }
 
-.seal-head strong {
+.head strong {
   display: block;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
-  color: #f6e6d8;
+  color: #e8f4f8;
 }
 
-.seal[data-tone='light'] .seal-head strong {
-  color: #3a1c14;
+.confirm[data-tone='light'] .head strong {
+  color: #163848;
 }
 
-.seal-head p {
+.head p {
   margin: 4px 0 0;
   font-size: 0.78rem;
   line-height: 1.5;
-  color: rgba(246, 230, 216, 0.62);
+  color: rgba(201, 237, 246, 0.62);
 }
 
-.seal[data-tone='light'] .seal-head p {
-  color: rgba(58, 28, 20, 0.62);
+.confirm[data-tone='light'] .head p {
+  color: rgba(22, 56, 72, 0.62);
 }
 
 .facts {
@@ -151,22 +145,22 @@ const emit = defineEmits<{
   margin: 0;
   font-size: 0.72rem;
   letter-spacing: 0.12em;
-  color: rgba(214, 92, 72, 0.9);
+  color: #7ec8dc;
 }
 
-.seal[data-tone='light'] .facts dt {
-  color: #9c3a2a;
+.confirm[data-tone='light'] .facts dt {
+  color: #3d7a96;
 }
 
 .facts dd {
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.55;
-  color: #f4ece4;
+  color: #eef6f8;
 }
 
-.seal[data-tone='light'] .facts dd {
-  color: #2c1a14;
+.confirm[data-tone='light'] .facts dd {
+  color: #1c3440;
 }
 
 .actions {
@@ -177,38 +171,30 @@ const emit = defineEmits<{
 
 .actions button {
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 8px;
   padding: 8px 16px;
   font-size: 0.86rem;
   letter-spacing: 0.08em;
 }
 
 .approve {
-  border: 1px solid rgba(196, 72, 54, 0.9);
-  background: #9c3226;
-  color: #f8e6dc;
+  border: 1px solid rgba(94, 200, 232, 0.85);
+  background: #2a7a96;
+  color: #f2fbfe;
 }
 
 .approve:hover {
-  background: #b03c2e;
+  background: #348aa8;
 }
 
 .reject {
-  border: 1px solid rgba(232, 213, 163, 0.35);
+  border: 1px solid rgba(201, 237, 246, 0.28);
   background: transparent;
-  color: rgba(232, 213, 163, 0.88);
+  color: rgba(201, 237, 246, 0.88);
 }
 
-.seal[data-tone='light'] .reject {
-  border-color: rgba(58, 28, 20, 0.2);
-  color: #5a3a30;
-}
-
-.seal[data-status='approved'] {
-  border-color: rgba(94, 160, 120, 0.5);
-}
-
-.seal[data-status='rejected'] {
-  opacity: 0.78;
+.confirm[data-tone='light'] .reject {
+  border-color: rgba(22, 56, 72, 0.2);
+  color: #3a5864;
 }
 </style>

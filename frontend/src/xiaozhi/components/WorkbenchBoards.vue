@@ -21,11 +21,14 @@ withDefaults(
     columns?: number
     /** 占满剩余视口，列表在卡片内滚动 */
     fill?: boolean
+    /** 厅长主屏：少装饰、大字号、宽留白 */
+    brief?: boolean
   }>(),
   {
     clickableVariants: () => [],
     columns: 3,
     fill: false,
+    brief: false,
   },
 )
 
@@ -37,7 +40,7 @@ const emit = defineEmits<{
 <template>
   <section
     class="boards"
-    :class="{ fill }"
+    :class="{ fill, brief }"
     :style="{ '--board-columns': String(columns) }"
     :aria-label="label || '工作台'"
   >
@@ -50,9 +53,9 @@ const emit = defineEmits<{
       <header class="panel-head">
         <div>
           <h2>{{ panel.title }}</h2>
-          <p>{{ panel.subtitle }}</p>
+          <p v-if="panel.subtitle && !brief">{{ panel.subtitle }}</p>
         </div>
-        <span class="badge" :class="{ warn: panel.warn }">{{ panel.items.length }}</span>
+        <span v-if="!brief" class="badge" :class="{ warn: panel.warn }">{{ panel.items.length }}</span>
       </header>
       <ol v-if="panel.items.length" class="list">
         <BoardRow
@@ -60,6 +63,7 @@ const emit = defineEmits<{
           :key="item.id"
           :item="item"
           :variant="item.kind || panel.variant"
+          :brief="brief"
           :clickable="clickableVariants.includes(item.kind || panel.variant)"
           @select="emit('select', { item: $event, panel })"
         />
@@ -198,6 +202,37 @@ const emit = defineEmits<{
   font-size: 0.86rem;
   color: var(--color-ink-muted);
   flex: 1;
+}
+
+.boards.brief .panel {
+  padding: 28px 32px 24px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.boards.brief .panel::before {
+  top: 28px;
+  bottom: 28px;
+  width: 2px;
+}
+
+.boards.brief .panel-head {
+  margin-bottom: 6px;
+  padding-left: 14px;
+}
+
+.boards.brief .panel-head h2 {
+  font-size: clamp(1.5rem, 2.4vw, 1.85rem);
+  letter-spacing: 0.02em;
+}
+
+.boards.brief .list {
+  padding: 10px 0 0 14px;
+}
+
+.boards.brief .empty {
+  font-size: 1.05rem;
+  padding-top: 28px;
 }
 
 @media (max-width: 1100px) {

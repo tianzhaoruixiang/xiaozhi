@@ -16,6 +16,7 @@ const props = defineProps<{
   variant?: 'todo' | 'focus' | 'key' | 'reminder'
   clickable?: boolean
   active?: boolean
+  brief?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,7 +38,7 @@ const onActivate = () => {
 <template>
   <li
     class="row"
-    :class="{ clickable, active }"
+    :class="{ clickable, active, brief }"
     :data-variant="item.kind || variant || 'todo'"
     :data-status="item.status"
     :role="clickable ? 'button' : undefined"
@@ -51,10 +52,13 @@ const onActivate = () => {
     <div class="main">
       <div class="title-row">
         <h3>{{ item.title }}</h3>
-        <span v-if="item.kind === 'focus'" class="mark">重点</span>
-        <span v-if="(item.kind || variant) !== 'reminder'" class="status">{{ statusLabel[item.status] }}</span>
+        <span v-if="!brief && item.kind === 'focus'" class="mark">重点</span>
+        <span
+          v-if="brief ? item.status === 'doing' : (item.kind || variant) !== 'reminder'"
+          class="status"
+        >{{ statusLabel[item.status] }}</span>
       </div>
-      <p>{{ item.detail }}</p>
+      <p v-if="!brief">{{ item.detail }}</p>
     </div>
   </li>
 </template>
@@ -176,6 +180,34 @@ const onActivate = () => {
 .row.clickable.active {
   background: rgba(46, 196, 214, 0.12);
   box-shadow: inset 0 0 0 1px rgba(46, 196, 214, 0.35);
+}
+
+.row.brief {
+  grid-template-columns: 88px 1fr;
+  gap: 8px 22px;
+  padding: 18px 0;
+  border-bottom-color: rgba(20, 40, 58, 0.06);
+}
+
+.row.brief .when {
+  font-size: 1.05rem;
+  padding-top: 6px;
+}
+
+.row.brief .main h3 {
+  font-size: clamp(1.18rem, 2vw, 1.38rem);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.row.brief .title-row {
+  margin-bottom: 0;
+  gap: 12px;
+}
+
+.row.brief .status {
+  font-size: 0.78rem;
+  padding: 3px 9px;
 }
 
 @media (max-width: 720px) {

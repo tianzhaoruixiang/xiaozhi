@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { mockPlans, mockTodos, mockFocusWork, mockReminders } from '../data/mockPlans'
+import type { PlanItem } from '../data/mockPlans'
 import { useAssistantChat } from '../composables/useAssistantChat'
 import { useAgentCatalog } from '../composables/useAgentCatalog'
 import { useVoiceSession } from '../composables/useVoiceSession'
@@ -13,16 +14,38 @@ import AssistantAvatar from '../components/AssistantAvatar.vue'
 import AssistantPanel from '../components/AssistantPanel.vue'
 
 const plans = mockPlans
+
+/** 主屏只展示最要紧的几条，完整计划仍交给小智上下文 */
+const DESK_LIMIT = 6
+const deskSeed = [
+  mockFocusWork[0],
+  mockTodos[0],
+  mockReminders[0],
+  mockTodos[1],
+].filter(Boolean) as PlanItem[]
+
+const deskRank = (item: PlanItem) => {
+  let score = 0
+  if (item.category === 'focus') score += 4
+  if (item.status === 'doing') score += 2
+  if (item.priority === 'high') score += 2
+  else if (item.priority === 'medium') score += 1
+  return score
+}
+
+const seenIds = new Set(deskSeed.map((item) => item.id))
+const deskExtras = [...mockFocusWork, ...mockTodos, ...mockReminders]
+  .filter((item) => !seenIds.has(item.id))
+  .sort((a, b) => deskRank(b) - deskRank(a))
+
+const deskHighlights = [...deskSeed, ...deskExtras].slice(0, DESK_LIMIT)
+
 const boardPanels: WorkbenchPanel[] = [
   {
-    title: '待办事项',
-    subtitle: '今日须办理',
+    title: '今日安排',
+    subtitle: '',
     variant: 'todo',
-    items: [
-      ...mockFocusWork.map((item) => ({ ...item, kind: 'focus' as const })),
-      ...mockTodos.map((item) => ({ ...item, kind: 'todo' as const })),
-      ...mockReminders.map((item) => ({ ...item, kind: 'reminder' as const })),
-    ],
+    items: deskHighlights.map((item) => ({ ...item, kind: item.category })),
   },
 ]
 const draft = ref('')
@@ -67,7 +90,7 @@ const orchestration = () => ({
 
 /**
  * 语音链路：待机（说「你好小智」才醒）→ 播报「我在，请讲」→ 听领导这一整段话
- * → 停嘴自动上报并进入推演。
+ * → 停嘴自动上报并进入推演 → 播报完成后默认继续聆听下一条。
  */
 const {
   supported: voiceSupported,
@@ -81,7 +104,6 @@ const {
   error: voiceError,
   mode: voiceMode,
   pause: pauseListen,
-  resume: resumeListen,
   listenForReply,
   start: startListen,
 } = useVoiceSession({
@@ -100,6 +122,17 @@ const {
   },
 })
 
+const beginFollowupListen = (timeoutMs?: number) => {
+  state.value = 'listening'
+  listenForReply(timeoutMs)
+}
+
+const replayReport = (text: string) => {
+  pauseListen()
+  stopReport()
+  void speak(text).then(() => beginFollowupListen())
+}
+
 const onAvatarToggle = () => {
   toggle()
   void startListen()
@@ -117,12 +150,9 @@ const listenBreathStyle = computed(() => {
 })
 
 const avatarState = computed(() => {
-  // 唤醒收听优先，避免应答/汇报播报盖掉收听态
-  if (voiceAwake.value && !voiceAckPlaying.value) return 'listening'
-  if (pendingConfirm.value?.confirm.status === 'pending' && !reportSpeaking.value) {
-    return 'listening'
-  }
-  if (reportSpeaking.value) return 'speaking'
+  if (voiceAckPlaying.value || reportSpeaking.value) return 'speaking'
+  if (voiceAwake.value) return 'listening'
+  if (pendingConfirm.value?.confirm.status === 'pending') return 'listening'
   if (streaming.value) return state.value === 'speaking' ? 'speaking' : 'thinking'
   return state.value === 'listening' ? 'idle' : state.value
 })
@@ -145,8 +175,8 @@ watch(
     setOpen(true)
     await speak(curr.oral)
     if (lastSpokenId.value === curr.id) {
-      state.value = streaming.value ? 'thinking' : 'idle'
-      if (!streaming.value) resumeListen()
+      if (streaming.value) state.value = 'thinking'
+      else beginFollowupListen()
     }
   },
 )
@@ -168,23 +198,20 @@ watch(
     state.value = 'speaking'
     setOpen(true)
     await speak(curr.oral)
-    if (lastSpokenConfirmId.value === curr.id) {
-      state.value = 'listening'
-      listenForReply(45000)
-    }
+    if (lastSpokenConfirmId.value === curr.id) beginFollowupListen(45000)
   },
 )
 
 watch(streaming, (isStreaming) => {
   if (pendingConfirm.value?.confirm.status === 'pending') return
   if (isStreaming) pauseListen()
-  else if (!reportSpeaking.value) resumeListen()
+  else if (!reportSpeaking.value) beginFollowupListen()
 })
 
 watch(reportSpeaking, (speaking) => {
   if (speaking) pauseListen()
-  else if (pendingConfirm.value?.confirm.status === 'pending') resumeListen()
-  else if (!streaming.value) resumeListen()
+  else if (pendingConfirm.value?.confirm.status === 'pending') beginFollowupListen(45000)
+  else if (!streaming.value) beginFollowupListen()
 })
 
 const onSubmit = (text: string) => {
@@ -213,23 +240,24 @@ const onModeChange = (mode: string) => {
       <div class="mesh" />
       <div class="orb orb-a" />
       <div class="orb orb-b" />
-      <div class="orb orb-c" />
-      <div class="grid-layer" />
       <div class="grain" />
-      <div class="vignette" />
-      <div class="horizon" />
     </div>
 
     <div class="shell">
-      <WorkbenchHeader>
+      <WorkbenchHeader
+        compact
+        brand="厅长工作台"
+        tagline="今日须过目的几件事"
+      >
         <template #actions>
           <RouterLink class="desk-link" to="/personal">个人工作台</RouterLink>
         </template>
       </WorkbenchHeader>
-      <WorkbenchBoards fill :panels="boardPanels" :columns="1" label="今日工作台" />
+      <WorkbenchBoards fill brief :panels="boardPanels" :columns="1" label="今日工作台" />
     </div>
 
     <AssistantPanel
+      chat-only
       :open="open"
       :messages="messages"
       :streaming="streaming"
@@ -255,7 +283,7 @@ const onModeChange = (mode: string) => {
       @close="setOpen(false)"
       @update:draft="draft = $event"
       @submit="onSubmit"
-      @replay-report="(text: string) => { pauseListen(); stopReport(); void speak(text).then(() => resumeListen()) }"
+      @replay-report="replayReport"
       @confirm-dispatch="(approved: boolean) => { void confirmDispatch(approved) }"
       @update:team="onTeamChange"
       @update:workflow="selectedWorkflow = $event"
@@ -319,92 +347,42 @@ const onModeChange = (mode: string) => {
 
 .mesh {
   position: absolute;
-  inset: -10%;
+  inset: -8%;
   background:
-    conic-gradient(from 210deg at 30% 20%, rgba(46, 196, 214, 0.08), transparent 40%),
-    conic-gradient(from 40deg at 78% 18%, rgba(201, 168, 108, 0.07), transparent 35%);
-  filter: blur(8px);
-  opacity: 0.9;
+    radial-gradient(ellipse at 18% 8%, rgba(46, 196, 214, 0.12), transparent 52%),
+    radial-gradient(ellipse at 88% 12%, rgba(201, 168, 108, 0.1), transparent 48%);
+  filter: blur(12px);
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(44px);
-  animation: float-orb 16s ease-in-out infinite;
-  opacity: 0.75;
+  filter: blur(52px);
+  opacity: 0.55;
 }
 
 .orb-a {
-  width: 340px;
-  height: 340px;
-  top: 6%;
-  left: -5%;
-  background: radial-gradient(circle, rgba(46, 196, 214, 0.38), transparent 70%);
+  width: 280px;
+  height: 280px;
+  top: 4%;
+  left: -6%;
+  background: radial-gradient(circle, rgba(46, 196, 214, 0.28), transparent 70%);
 }
 
 .orb-b {
-  width: 280px;
-  height: 280px;
-  top: 10%;
-  right: -3%;
-  background: radial-gradient(circle, rgba(201, 168, 108, 0.3), transparent 70%);
-  animation-duration: 19s;
-  animation-delay: -5s;
-}
-
-.orb-c {
-  width: 400px;
-  height: 240px;
-  bottom: 4%;
-  left: 26%;
-  background: radial-gradient(circle, rgba(26, 122, 146, 0.2), transparent 70%);
-  animation-duration: 22s;
-  animation-delay: -9s;
-}
-
-.grid-layer {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(20, 40, 58, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20, 40, 58, 0.04) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 78% 68% at 50% 26%, black, transparent 78%);
-  animation: grid-drift 32s linear infinite;
-  opacity: 0.8;
+  width: 220px;
+  height: 220px;
+  top: 8%;
+  right: -4%;
+  background: radial-gradient(circle, rgba(201, 168, 108, 0.22), transparent 70%);
 }
 
 .grain {
   position: absolute;
   inset: 0;
-  opacity: 0.035;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
-}
-
-.vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(6, 20, 31, 0.16) 100%);
-}
-
-.horizon {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 42%;
-  background:
-    linear-gradient(180deg, transparent, rgba(6, 20, 31, 0.05) 45%, rgba(6, 20, 31, 0.1)),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 96px,
-      rgba(46, 196, 214, 0.035) 96px,
-      rgba(46, 196, 214, 0.035) 97px
-    );
-  mask-image: linear-gradient(180deg, transparent, black 48%);
 }
 
 .shell {
@@ -413,9 +391,9 @@ const onModeChange = (mode: string) => {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 920px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 14px clamp(16px, 3vw, 32px) 20px;
+  padding: 22px clamp(20px, 4vw, 40px) 28px;
   display: flex;
   flex-direction: column;
 }

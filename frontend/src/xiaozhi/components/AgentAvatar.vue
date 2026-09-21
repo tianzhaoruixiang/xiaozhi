@@ -90,8 +90,8 @@ const ring = computed(
 
 .agent-avatar[data-status='awaiting'] {
   box-shadow:
-    0 0 0 2px rgba(196, 72, 54, 0.8),
-    0 0 16px rgba(154, 42, 32, 0.35);
+    0 0 0 2px rgba(94, 200, 232, 0.85),
+    0 0 16px rgba(42, 140, 168, 0.4);
 }
 
 .agent-avatar[data-status='done'] {

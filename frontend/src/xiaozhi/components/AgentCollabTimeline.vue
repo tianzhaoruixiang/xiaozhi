@@ -643,10 +643,10 @@ onUnmounted(() => {
 }
 
 .card[data-status='awaiting'] {
-  border-color: rgba(196, 72, 54, 0.55);
+  border-color: rgba(94, 200, 232, 0.5);
   box-shadow:
-    inset 3px 0 0 rgba(196, 72, 54, 0.75),
-    0 0 22px rgba(154, 42, 32, 0.18);
+    inset 3px 0 0 rgba(94, 200, 232, 0.65),
+    0 0 22px rgba(42, 140, 168, 0.18);
 }
 
 .card[data-status='done'] {
@@ -735,8 +735,8 @@ onUnmounted(() => {
 }
 
 .card[data-status='awaiting'] .badge {
-  background: rgba(196, 72, 54, 0.22);
-  color: #f0c4b8;
+  background: rgba(94, 200, 232, 0.2);
+  color: #b8e8f4;
 }
 
 .card[data-status='done'] .badge {

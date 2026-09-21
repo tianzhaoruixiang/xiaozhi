@@ -4,7 +4,7 @@
 
 ```
 data/
-  models/           # TTS / ASR 离线模型
+  models/           # TTS（OmniVoice）/ ASR（SenseVoice）离线模型
   hrbp-reports/     # 上报 HRBP 的 Markdown 存档
   runtime/          # 进程运行时写入（HOME 等）
 ```

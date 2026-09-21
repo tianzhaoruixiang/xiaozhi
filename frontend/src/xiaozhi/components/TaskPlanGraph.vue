@@ -207,6 +207,7 @@ const waveDone = (waveIndex: number) => {
 .dag-meta {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 6px 8px;
   font-size: 0.72rem;
@@ -241,6 +242,9 @@ const waveDone = (waveIndex: number) => {
 }
 
 .dag-scroll {
+  display: flex;
+  justify-content: center;
+  justify-content: safe center;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 10px 2px 14px;
@@ -253,8 +257,11 @@ const waveDone = (waveIndex: number) => {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 0;
+  width: max-content;
   min-width: max-content;
+  margin-inline: auto;
   padding: 4px 0;
 }
 

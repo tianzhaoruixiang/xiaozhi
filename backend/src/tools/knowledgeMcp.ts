@@ -21,7 +21,7 @@ export const COMPILE_TOOL_FQN = `mcp__${KNOWLEDGE_MCP_SERVER}__${COMPILE_TOOL}`
 type Emit = (payload: SsePayload) => void
 
 /**
- * 知识专家专用：历年相似会议资料检索 / 取档 / 汇编《xxx会议资料》。
+ * 知识管理专家专用：历年相似会议资料检索 / 取档 / 汇编《xxx会议资料》。
  */
 export function createKnowledgeMcpServer(options?: {
   onEmit?: Emit
@@ -34,7 +34,7 @@ export function createKnowledgeMcpServer(options?: {
     onEmit?.({
       type: 'tool_start',
       agentId,
-      agentName: '知识专家',
+      agentName: '知识管理专家',
       toolName,
       toolLabel,
       summary,
@@ -50,7 +50,7 @@ export function createKnowledgeMcpServer(options?: {
     onEmit?.({
       type: 'tool_done',
       agentId,
-      agentName: '知识专家',
+      agentName: '知识管理专家',
       toolName,
       toolLabel,
       summary,
@@ -125,7 +125,7 @@ export function createKnowledgeMcpServer(options?: {
 
   const compileTool = tool(
     COMPILE_TOOL,
-    '将多份历年相似会议档案汇编成《xxx会议资料》正文，供通知专家通过汇讯发给全体参会人（含领导人）。',
+    '将多份历年相似会议档案汇编成《xxx会议资料》正文，供通知联络专家通过汇讯发给全体参会人（含领导人）。',
     {
       ids: z
         .array(z.string())
