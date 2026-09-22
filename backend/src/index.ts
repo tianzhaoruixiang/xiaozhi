@@ -34,6 +34,7 @@ app.route('/api/meeting-sessions', meetingSessionsRoute)
 
 const port = Number(process.env.PORT || 3000)
 
+// 本地叠包验证标记：仅启动日志文案，无逻辑变更
 serve({ fetch: app.fetch, port }, () => {
-  console.log(`[xiaozhi-api] listening on http://127.0.0.1:${port}`)
+  console.log(`[xiaozhi-api] 离线叠包构建已生效 · listening on http://127.0.0.1:${port}`)
 })
