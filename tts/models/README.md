@@ -1,6 +1,6 @@
 模型已统一放到项目根目录 **`data/models/`**。
 
-TTS 为 **Higgs Audio V2**（`data/models/HiggsAudio-V2`），ASR 仍为 SenseVoice。
+TTS 为 **kokoro-int8-multi-lang-v1_1**，ASR 为 SenseVoice。
 
 ```bash
 python tts/download_model.py

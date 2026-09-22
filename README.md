@@ -46,36 +46,76 @@ cp .env.example .env
 # OPENAI_BASE_URL=http://host.docker.internal:11434/v1
 ```
 
-### 外网：打底包
+完整联网构建（仅开发机）：`docker compose up --build -d web api`
+
+运行时数据在项目根目录 `data/`（见 `data/README.md`），compose 挂载为容器内 `/data`。
+
+浏览器：http://localhost:8080
+
+### 外网：打底包（可选，一次即可）
+
+无网络环境若已有 `xiaozhi-web:local` / `xiaozhi-api:local`，可跳过本步，直接叠包。
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/docker-base.ps1
 docker save xiaozhi-web:base xiaozhi-web-builder:base xiaozhi-api:base xiaozhi-api-builder:base -o xiaozhi-web-api-base.tar
 ```
 
-内网：`docker load -i xiaozhi-web-api-base.tar`
+内网导入：`docker load -i xiaozhi-web-api-base.tar`
 
-### 内网：改代码后叠 dist
+### 本地离线打包（改代码后）
+
+内网改完前端或后端后，**不要**再执行 `docker compose build` 全量构建（会拉 npm/apt）。用叠包脚本只编 `dist` 并覆盖进已有镜像。
+
+**前提（满足其一即可编译）：**
+
+- 宿主机已有 `node_modules`（仓库根目录、`frontend/`、`backend/`），脚本走 `npm --offline`
+- 或本机已有 `xiaozhi-web-builder:base` / `xiaozhi-api-builder:base`，脚本在容器内离线编译
+
+**底包（满足其一即可叠层）：**
+
+- `xiaozhi-web:base` + `xiaozhi-api:base`（外网底包）
+- 或已有 `xiaozhi-web:local` + `xiaozhi-api:local`（脚本自动回退）
 
 ```powershell
+# 离线编 dist + 叠进镜像
 powershell -ExecutionPolicy Bypass -File scripts/docker-app.ps1
-docker compose up -d web api
+
+# 叠包并导出 tar（推荐）
+powershell -ExecutionPolicy Bypass -File scripts/docker-app.ps1 -Save
 ```
 
-本机已装 Node 时脚本会直接 `npm run build`；否则用 `*-builder:base` 在容器里离线编译。
+脚本会：
 
-完整联网构建（开发机）：`docker compose up --build -d web api`
+1. 优先宿主机 `npm --offline` 编 `frontend/dist`、`backend/dist`；失败再走 `*-builder:base`（`--network none`）
+2. 用 `docker-compose.offline.yml` + `Dockerfile.overlay` 把 `dist` 叠进底包（构建网络为 `none`）
+3. 打出 `xiaozhi-web:local`、`xiaozhi-api:local`
 
-运行时数据在项目根目录 `data/`（见 `data/README.md`），compose 挂载为容器内 `/data`。
+加 `-Save` 时额外导出：
 
-浏览器：http://localhost:8080
+| 文件 | 说明 |
+|------|------|
+| `data/docker-images/xiaozhi-web-local.tar` | 前端镜像 |
+| `data/docker-images/xiaozhi-api-local.tar` | 后端镜像 |
+
+TTS 镜像不在本流程内，权重也不打进业务镜像。
+
+```powershell
+# 本机启动
+docker compose up -d web api
+
+# 拷到另一台机器
+docker load -i data/docker-images/xiaozhi-api-local.tar
+docker load -i data/docker-images/xiaozhi-web-local.tar
+docker compose up -d web api
+```
 
 ## 功能
 
 - 领导助手工作台与今日政务安排
 - 右下角「智枢」虚拟形象，语音唤醒（默认「你好，智枢」）
   - 平时处于待机，麦克风只做本地 VAD 与唤醒词判定；闲聊、电视、噪声都不会误唤醒
-  - 听到「你好，智枢」后应答「我在，请讲」，随即开始收领导这一整段话
+  - 听到「你好，智枢」后应答「我在」，随即开始收领导这一整段话
   - 领导停嘴约 0.7s 自动把识别文本作为指令发出，无需点按发送
   - 唤醒后 12s 无人说话自动回到待机；一句话说成「你好智枢，明天几点开会」则直接执行，不播应答
 - 智枢按需动态生成专家团队并展示协作流程

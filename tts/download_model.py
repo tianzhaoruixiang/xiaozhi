@@ -1,57 +1,61 @@
-"""Download Higgs Audio V2 weights into data/models/HiggsAudio-V2."""
+"""Download kokoro-int8-multi-lang-v1_1 into data/models."""
 
 from __future__ import annotations
 
-import os
 import sys
+import tarfile
+import urllib.request
 from pathlib import Path
 
-os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
-os.environ.setdefault("HF_ENDPOINT", os.environ.get("HF_ENDPOINT", "https://hf-mirror.com"))
+NAME = "kokoro-int8-multi-lang-v1_1"
+DEFAULT_URL = (
+    "https://ghfast.top/https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/"
+    f"{NAME}.tar.bz2"
+)
+FALLBACK_URL = (
+    "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/"
+    f"{NAME}.tar.bz2"
+)
 
-from huggingface_hub import snapshot_download
 
-
-def ready(path: Path) -> bool:
-    if not (path / "config.json").is_file():
+def ready(root: Path) -> bool:
+    if not (root / "tokens.txt").is_file():
         return False
-    for pat in ("*.safetensors", "*.bin", "*.pt"):
-        if next(path.rglob(pat), None) is not None:
-            return True
-    return False
+    if not (root / "voices.bin").is_file():
+        return False
+    return any(p.suffix == ".onnx" and p.stat().st_size > 1024 * 1024 for p in root.glob("*.onnx"))
+
+
+def _download(url: str, dest: Path) -> None:
+    print(f"下载 {url}")
+    urllib.request.urlretrieve(url, dest)
 
 
 def main() -> int:
-    root = Path(__file__).resolve().parent.parent
-    dest = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else root / "data" / "models"
-    os.environ.setdefault("HF_HOME", str(dest / "hf-home"))
-    target = dest / "HiggsAudio-V2"
-    jobs = [
-        (
-            os.environ.get("TTS_MODEL_ID", "bosonai/higgs-audio-v2-generation-3B-base"),
-            target / "generation-3B-base",
-        ),
-        (
-            os.environ.get("TTS_TOKENIZER_ID", "bosonai/higgs-audio-v2-tokenizer"),
-            target / "tokenizer",
-        ),
-        (
-            os.environ.get("TTS_WHISPER_ID", "openai/whisper-large-v3-turbo"),
-            target / "whisper-large-v3-turbo",
-        ),
-    ]
-    if ready(jobs[0][1]) and ready(jobs[1][1]):
-        print(f"模型已存在: {target}")
+    repo = Path(__file__).resolve().parent.parent
+    dest = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else repo / "data" / "models"
+    dest.mkdir(parents=True, exist_ok=True)
+    target = dest / NAME
+    if ready(target):
+        print(f"TTS 模型已存在: {target}")
         return 0
-    for repo, local in jobs:
-        print(f"snapshot {repo} -> {local}")
-        snapshot_download(
-            repo_id=repo,
-            local_dir=str(local),
-            local_dir_use_symlinks=False,
-            resume_download=True,
-        )
-    print("完成")
+    archive = dest / f"{NAME}.tar.bz2"
+    try:
+        _download(DEFAULT_URL, archive)
+    except Exception:
+        _download(FALLBACK_URL, archive)
+    with tarfile.open(archive, "r:bz2") as tf:
+        tf.extractall(dest)
+    if not ready(target):
+        for marker in dest.rglob("voices.bin"):
+            parent = marker.parent
+            if parent != target and "kokoro" in parent.name.lower():
+                parent.rename(target)
+                break
+    archive.unlink(missing_ok=True)
+    if not ready(target):
+        raise SystemExit(f"解压后未找到模型: {target}")
+    print(f"完成: {target}")
     return 0
 
 

@@ -84,6 +84,7 @@ chatRoute.post('/', async (c) => {
         workflow: body.workflow,
         mode: body.mode,
         enableOralReport: body.enableOralReport !== false,
+        briefReply: body.enableOralReport !== false,
         onEvent: send,
       })
     } catch (err) {

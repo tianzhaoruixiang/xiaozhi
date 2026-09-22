@@ -60,7 +60,7 @@ const send = (preset?: string) => {
     <section v-if="latestSuggestion" class="decision-card">
       <div class="decision-alert">
         <span>已识别到 {{ registeredSuggestions.length }} 条会议建议</span>
-        <em>最新 · 待统稿确认</em>
+        <em>最新 · 已登记</em>
       </div>
       <div class="registered-item">
         <img class="speech-avatar" :src="getAvatar(personMap.get(latestSuggestion.speakerId)?.name ?? '')" :alt="personMap.get(latestSuggestion.speakerId)?.name" />
@@ -69,13 +69,13 @@ const send = (preset?: string) => {
           <span>{{ personMap.get(latestSuggestion.speakerId)?.name }} · {{ latestSuggestion.time }} · 拟写入{{ latestSuggestion.chapter }}</span>
         </div>
       </div>
-      <p class="registered-note">建议已写入方案待修改清单（版本同步更新），统稿确认阶段统一审定，无需现场逐条确认。</p>
+      <p class="registered-note">建议已写入当前方案并同步升版，可点击左侧“当前方案版本”查看完整方案、工作组和纪要。</p>
     </section>
 
     <section v-else class="decision-empty">
       <div class="empty-scanner"><i /></div>
       <strong>持续监听会议建议</strong>
-      <span>识别到可执行意见后，将自动登记为统稿事项</span>
+      <span>识别到可执行意见后，将自动登记为方案修订建议</span>
     </section>
 
     <section class="activity-section">

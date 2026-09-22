@@ -4,11 +4,11 @@
       <span class="panel-badge">敏感 {{ sensitiveCount }}</span>
     </template>
 
-    <div class="scroll-list">
-      <div class="scroll-list-inner">
+    <div class="push-list">
+      <TransitionGroup name="push" tag="div" class="push-list-inner">
         <div
-          v-for="item in doubled"
-          :key="item._key"
+          v-for="item in opinions"
+          :key="item.id"
           class="opinion-item"
           :class="{ sensitive: item.sensitive }"
         >
@@ -19,7 +19,7 @@
           </div>
           <p :class="{ sensitive: item.sensitive }">{{ item.content }}</p>
         </div>
-      </div>
+      </TransitionGroup>
     </div>
   </PanelFrame>
 </template>
@@ -32,14 +32,15 @@ import PanelFrame from './PanelFrame.vue'
 const props = defineProps<{ opinions: OpinionItem[] }>()
 
 const sensitiveCount = computed(() => props.opinions.filter((o) => o.sensitive).length)
-
-const doubled = computed(() => [
-  ...props.opinions.map((o, i) => ({ ...o, _key: `a-${o.id}-${i}` })),
-  ...props.opinions.map((o, i) => ({ ...o, _key: `b-${o.id}-${i}` })),
-])
 </script>
 
 <style scoped>
+.push-list {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .opinion-item {
   padding: 8px 6px;
   border-bottom: 1px dashed oklch(0.84 0.145 207 / .14);
@@ -68,5 +69,23 @@ p {
   font-size: 13px;
   line-height: 1.45;
   color: var(--text);
+}
+
+.push-enter-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.push-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.push-leave-active {
+  position: absolute;
+  opacity: 0;
+}
+
+.push-move {
+  transition: transform 0.5s ease;
 }
 </style>

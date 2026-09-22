@@ -2,14 +2,16 @@ import { query } from '@anthropic-ai/claude-agent-sdk'
 import { chatCompletion } from './openaiCompatible.js'
 import { getLlmProvider } from './llmConfig.js'
 import type { PlanItem } from '../agents/prompts.js'
-import { formatPlansContext, XIAOZHI_SYSTEM } from '../agents/prompts.js'
+import { formatPlansContext, XIAOZHI_SYSTEM, CHAIRMAN_LEADER_REPLY } from '../agents/prompts.js'
 import { createSdkEventMapper } from './mapSdkEvents.js'
 import type { SsePayload } from './sse.js'
 import { sleep } from './sse.js'
 import { classifyIntent } from './intentRouter.js'
+import { arabicToSpoken } from './spokenChinese.js'
+import { cleanOralText } from './oralReport.js'
 
 function nowText(): string {
-  return new Date().toLocaleString('zh-CN', {
+  const raw = new Date().toLocaleString('zh-CN', {
     timeZone: 'Asia/Shanghai',
     hour12: false,
     year: 'numeric',
@@ -20,14 +22,19 @@ function nowText(): string {
     minute: '2-digit',
     second: '2-digit',
   })
+  return arabicToSpoken(raw)
 }
 
-function buildDirectSystem(kind: 'direct' | 'schedule_query'): string {
+function buildDirectSystem(
+  kind: 'direct' | 'schedule_query',
+  briefReply?: boolean,
+): string {
+  const brief = briefReply !== false ? `\n\n${CHAIRMAN_LEADER_REPLY}` : ''
   if (kind === 'schedule_query') {
     return `${XIAOZHI_SYSTEM}
 
 当前是「今日安排问询」：根据【今日工作安排】回答领导，口语、可朗读。
-不要预定会议室、不要发通知。不要编造计划外事项。`
+不要预定会议室、不要发通知。不要编造计划外事项。${brief}`
   }
 
   return `${XIAOZHI_SYSTEM}
@@ -38,7 +45,8 @@ function buildDirectSystem(kind: 'direct' | 'schedule_query'): string {
 2. 问别的常识/确认/闲聊 → 直接答该问题
 3. 仅当领导明确问今日安排/重点事项时，才引用【今日工作安排】
 4. 不要调度会议室、通知、日程写入等专项动作
-5. 口吻恭敬、口语、便于朗读；不要 Markdown 标题与代码块`
+5. 口吻恭敬、口语、便于朗读；不要 Markdown 标题与代码块
+6. 若需读出时间，必须用汉字（「凌晨一点五十七分」），禁止阿拉伯数字${brief}`
 }
 
 /**
@@ -49,6 +57,7 @@ export async function runXiaozhiDirect(options: {
   message: string
   plans?: PlanItem[]
   enableOralReport?: boolean
+  briefReply?: boolean
   onEvent: (payload: SsePayload) => void
 }): Promise<string> {
   const intent = classifyIntent(options.message)
@@ -130,15 +139,18 @@ export async function runXiaozhiDirect(options: {
       answer = await runViaClaudeCode({
         contextBlock,
         kind,
+        briefReply: options.briefReply,
         onEvent,
       })
     } else {
       answer = await chatCompletion({
         messages: [
-          { role: 'system', content: buildDirectSystem(kind) },
+          { role: 'system', content: buildDirectSystem(kind, options.briefReply) },
           {
             role: 'user',
-            content: `${contextBlock}\n\n请只回答领导本轮问题，不要跑题。`,
+            content: `${contextBlock}\n\n请只回答领导本轮问题，不要跑题。${
+              options.briefReply !== false ? '一两句说完。' : ''
+            }`,
           },
         ],
         temperature: 0.3,
@@ -171,7 +183,7 @@ export async function runXiaozhiDirect(options: {
       type: 'oral_report',
       agentId: 'xiaozhi',
       agentName: '智枢',
-      text: answer.replace(/\n+/g, ' ').trim(),
+      text: cleanOralText(answer.replace(/\n+/g, ' ').trim()),
       summary: '智枢开始向领导语音答复',
     })
   }
@@ -182,6 +194,7 @@ export async function runXiaozhiDirect(options: {
 async function runViaClaudeCode(options: {
   contextBlock: string
   kind: 'direct' | 'schedule_query'
+  briefReply?: boolean
   onEvent: (payload: SsePayload) => void
 }): Promise<string> {
   const state = { finalText: '' }
@@ -195,12 +208,14 @@ async function runViaClaudeCode(options: {
 请作为智枢直接回答领导问题。
 - 不要调用子专家 Agent
 - 若问当前时间，可用 Bash 执行 date 核对，但以【当前系统时间】为准作出口语答复
-- 不要跑题去汇报无关的今日重点`
+- 不要跑题去汇报无关的今日重点${
+    options.briefReply !== false ? `\n- ${CHAIRMAN_LEADER_REPLY}` : ''
+  }`
 
   for await (const message of query({
     prompt,
     options: {
-      systemPrompt: buildDirectSystem(options.kind),
+      systemPrompt: buildDirectSystem(options.kind, options.briefReply),
       allowedTools: ['Bash'],
       tools: ['Bash'],
       permissionMode: 'bypassPermissions',

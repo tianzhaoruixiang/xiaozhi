@@ -7,31 +7,25 @@ import MeetingLiveStrip from './components/MeetingLiveStrip.vue'
 import MeetingSidebar from './components/MeetingSidebar.vue'
 import TranscriptPanel from './components/TranscriptPanel.vue'
 import AssistantPanel from './components/AssistantPanel.vue'
-import BottomStatusBar from './components/BottomStatusBar.vue'
-import PlanRevisionView from './views/PlanRevisionView.vue'
-import RevisionStatusBar from './components/revision/RevisionStatusBar.vue'
-import PlanSignoffView from './views/PlanSignoffView.vue'
-import SignoffStatusBar from './components/signoff/SignoffStatusBar.vue'
-import TaskDistributionView from './views/TaskDistributionView.vue'
-import DistributionStatusBar from './components/distribution/DistributionStatusBar.vue'
+import MeetingPlanWorkspace from './components/MeetingPlanWorkspace.vue'
 import DistributionCompletionDialog from './components/distribution/DistributionCompletionDialog.vue'
 import { useMeetingSimulation } from './composables/useMeetingSimulation'
-import { revisionSpeech, signoffSpeech } from './mock/meeting'
 import { usePlanRevision } from './composables/usePlanRevision'
-import { usePlanSignoff } from './composables/usePlanSignoff'
+import { useMeetingConfirmation } from './composables/useMeetingConfirmation'
 import { useTaskDistribution } from './composables/useTaskDistribution'
 import { useOperationsContext } from './composables/useOperationsContext'
 import { getMeetingHandoff, updateMeetingHandoff } from './composables/useMeetingHandoff'
 import type { MeetingHandoff } from './types/handoff'
+import type { SignoffClause } from './types/signoff'
 
 const meeting = reactive(useMeetingSimulation())
 const revision = reactive(usePlanRevision())
-const signoff = reactive(usePlanSignoff())
+const confirmation = reactive(useMeetingConfirmation())
 const distribution = reactive(useTaskDistribution())
 const operations = useOperationsContext()
 const route = useRoute()
 const router = useRouter()
-const currentStep = ref(1)
+const centerMode = ref<'transcript' | 'plan'>('transcript')
 const distributionCompleteVisible = ref(false)
 const handoff = ref<MeetingHandoff | null>(null)
 const handoffId = computed(() => typeof route.query.handoffId === 'string' ? route.query.handoffId : 'SEC-20260921-001')
@@ -43,6 +37,15 @@ onMounted(async () => {
 })
 
 const stageMeta = computed(() => {
+  if (confirmation.dispatched) {
+    return {
+      status: '会议已完成 · 任务已下发',
+      clock: '会议总时长',
+      liveStage: '任务已下发',
+      pending: '待确认人员',
+      tone: 'wait' as const,
+    }
+  }
   if (!meeting.isRunning) {
     return {
       status: `等待签到 · ${meeting.signedCount}/${meeting.totalCount}`,
@@ -52,105 +55,75 @@ const stageMeta = computed(() => {
       tone: 'wait' as const,
     }
   }
-  return ({
-    1: { status: '会议进行中 · 意见征集中', clock: '会议时长', liveStage: '意见征集中', pending: '待统稿建议', tone: 'live' as const },
-    2: { status: '会议进行中 · 统稿确认中', clock: '会议时长', liveStage: '统稿确认中', pending: '统稿补充事项', tone: 'revision' as const },
-    3: { status: '会议进行中 · 联合会签中', clock: '会议时长', liveStage: '联合会签中', pending: '待签章单位', tone: 'revision' as const },
-    4: { status: '会议进行中 · 任务部署中', clock: '会议时长', liveStage: '任务部署中', pending: '任务调整事项', tone: 'live' as const },
-  }[currentStep.value] ?? { status: '会议进行中', clock: '会议时长', liveStage: '会议进行中', pending: '待处理事项', tone: 'live' as const })
+  if (centerMode.value === 'plan') {
+    return {
+      status: '会议进行中 · 方案同步审阅',
+      clock: '会议时长',
+      liveStage: '会议讨论',
+      pending: '已登记建议',
+      tone: 'revision' as const,
+    }
+  }
+  return { status: '会议进行中 · 讨论与意见征集中', clock: '会议时长', liveStage: '会议讨论', pending: '已登记建议', tone: 'live' as const }
 })
 
 const lastSpeech = computed(() => {
-  const list = meeting.transcripts.filter((t) => t.speakerId !== 'assistant')
+  const list = meeting.transcripts.filter((transcript) => transcript.speakerId !== 'assistant')
   const last = list.at(-1)
   if (!last) return ''
-  const name = meeting.participants.find((p) => p.id === last.speakerId)?.name ?? ''
+  const name = meeting.participants.find((participant) => participant.id === last.speakerId)?.name ?? ''
   return `${name}：${last.content}`
 })
 
-const enterRevision = () => {
+const buildClauses = (): SignoffClause[] => revision.changes.map((change) => ({
+    id: change.id,
+    section: change.section,
+    title: change.title,
+    finalText: change.status === 'kept' ? change.original : change.revised,
+    owner: change.owner,
+    speaker: change.speaker,
+    department: change.department,
+    decisionTime: change.time,
+    decision: change.status === 'kept' ? 'kept' : 'accepted',
+  }))
+
+const preparePlanWorkspace = () => {
+  if (confirmation.prepared) return
   revision.startConsolidation(meeting.planVersion)
-  currentStep.value = 2
-  meeting.startStageSpeech(revisionSpeech)
-  ElMessage.success(`意见征集已完成，${meeting.registeredSuggestions.length} 条登记建议转入统稿确认`)
+  revision.finalizeAll()
+
+  const confirmationId = `CONF-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-001`
+  const currentVersion = meeting.planVersion.replace('版本', '').trim()
+  distribution.prepare(currentVersion, confirmationId, buildClauses())
+  distribution.confirmAll()
+  confirmation.prepare(currentVersion, meeting.participants, revision.changes.length, distribution.tasks.length)
 }
 
-const backToMeeting = () => {
-  currentStep.value = 1
-  meeting.stopStageSpeech()
-  meeting.isRunning = true
-  ElMessage.info('已返回会议讨论，统稿内容保持保存')
+const openPlanWorkspace = () => {
+  preparePlanWorkspace()
+  centerMode.value = 'plan'
+  ElMessage.success('已在中间工作区打开当前方案、工作组和会议纪要')
 }
 
-const submitRevision = () => {
-  if (!revision.canSubmit) {
-    ElMessage.warning(`仍有 ${revision.pendingCount} 项统稿补充事项待确认`)
+const closePlanWorkspace = () => {
+  if (confirmation.dispatching || confirmation.dispatched) return
+  centerMode.value = 'transcript'
+}
+
+const dispatchTasks = async () => {
+  if (!confirmation.allConfirmed) {
+    ElMessage.warning(`仍有 ${confirmation.pendingCount} 位参会人员待确认`)
     return
   }
-  signoff.prepare(revision.revisionVersion, revision.changes)
-  currentStep.value = 3
-  meeting.startStageSpeech(signoffSpeech)
-  ElMessage.success(`会议定稿 ${revision.revisionVersion} 已生成，正在发起联合会签`)
-}
-
-const backToRevision = () => {
-  currentStep.value = 2
-  meeting.stopStageSpeech()
-  ElMessage.info('已返回统稿确认，会签状态保持保存')
-}
-
-const signCurrentDepartment = (departmentId: string) => {
-  if (signoff.signDepartment(departmentId)) ElMessage.success('电子会签已完成并留痕')
-}
-
-const remindDepartment = (departmentId: string) => {
-  if (signoff.sendReminder(departmentId)) ElMessage.info('会签提醒已发送')
-}
-
-const completeAllSignoff = () => {
-  signoff.completeAll()
-  ElMessage.success('已同步演示单位返回的签章，全部单位确认完成')
-}
-
-const enterDistribution = () => {
-  if (!signoff.canComplete) {
-    ElMessage.warning(`仍有 ${signoff.pendingCount} 个单位待会签`)
-    return
-  }
-  signoff.completeSignoff()
-  distribution.prepare(signoff.version, signoff.recordId, signoff.clauses)
-  currentStep.value = 4
-  meeting.stopStageSpeech()
-  ElMessage.success(`会签记录 ${signoff.recordId} 已生成，会议进入任务部署`)
-}
-
-const backToSignoff = () => {
-  currentStep.value = 3
-  ElMessage.info('已返回联合会签，任务部署状态保持保存')
-}
-
-const confirmDistributionTask = (taskId: string) => {
-  if (distribution.confirmTask(taskId)) ElMessage.success('任务内容已确认')
-}
-
-const confirmDistributionGroup = (groupId: string) => {
-  const count = distribution.confirmGroup(groupId)
-  if (count) ElMessage.success(`当前作战组 ${count} 项任务已确认`)
-}
-
-const confirmAllDistributionTasks = () => {
-  const count = distribution.confirmAll()
-  if (count) ElMessage.success(`已补全并确认剩余 ${count} 项任务`)
-  else ElMessage.info('所有任务均已完成确认')
-}
-
-const finishMeetingAndEnterOperations = async () => {
-  if (!distribution.dispatched && !distribution.canDispatch) {
-    ElMessage.warning(`暂时无法下发：${distribution.pendingCount} 项任务待确认`)
-    return
-  }
-  if (!distribution.dispatched) distribution.dispatchAll()
+  if (!confirmation.startDispatch()) return
+  distribution.prepare(
+    meeting.planVersion.replace('版本', '').trim(),
+    distribution.signoffRecordId,
+    buildClauses(),
+  )
+  distribution.dispatchAll()
   meeting.isRunning = false
+  meeting.stopStageSpeech()
   operations.prepare(distribution.planVersion, distribution.signoffRecordId, distribution.groups, distribution.tasks, distribution.materials)
   await updateMeetingHandoff(handoffId.value, {
     status: 'dispatched',
@@ -160,8 +133,22 @@ const finishMeetingAndEnterOperations = async () => {
     tasks: distribution.tasks,
     materials: distribution.materials,
   })
-  ElMessage.success('任务与材料已下发，安保动员会正式结束')
+  await new Promise((resolve) => window.setTimeout(resolve, 550))
+  confirmation.markDispatched()
+  ElMessage.success('签章确认完成，方案、任务与材料已下发')
   distributionCompleteVisible.value = true
+}
+
+const confirmCurrentParticipant = () => {
+  const participant = meeting.participants.find((item) => item.isMe)
+  if (!participant || !confirmation.confirmParticipant(participant.id)) return
+  ElMessage.success('签章确认完成，回执已留痕')
+}
+
+const confirmParticipant = (participantId: string) => {
+  const participant = meeting.participants.find((item) => item.id === participantId)
+  if (!confirmation.confirmParticipant(participantId)) return
+  ElMessage.success(`${participant?.name ?? '参会人员'}已完成确认`)
 }
 
 const openPostMeetingDestination = async (destination: 'workbench' | 'operations' | 'dashboard') => {
@@ -188,13 +175,12 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
 </script>
 
 <template>
-  <div class="app-shell meeting-shell" :class="{ 'has-live-strip': currentStep > 1 }">
+  <div class="app-shell meeting-shell no-fixed-footer" :class="{ 'has-live-strip': centerMode === 'plan' && meeting.isRunning }">
     <MeetingHeader
-      :elapsed="meeting.isRunning ? meeting.elapsed : '00:00:00'"
-      :current-step="currentStep"
+      :elapsed="meeting.elapsed"
       :status-label="stageMeta.status"
       :clock-label="stageMeta.clock"
-      :status-tone="meeting.isRunning ? 'live' : 'wait'"
+      :status-tone="stageMeta.tone"
       :meeting-title="handoff?.title"
       :meeting-time="handoff?.startTime"
       :location="handoff?.location"
@@ -202,27 +188,31 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
     />
 
     <MeetingLiveStrip
-      v-if="currentStep > 1"
+      v-if="centerMode === 'plan' && meeting.isRunning"
       :speaker="meeting.activeSpeaker"
       :live-draft="meeting.liveDraft"
       :last-speech="lastSpeech"
       :assistant-task="meeting.currentTask.title"
-      :stage-label="stageMeta.liveStage"
-      :pending-label="stageMeta.pending"
+      stage-label="方案同步修订"
+      pending-label="已识别建议"
       :pending-count="meeting.registeredSuggestions.length"
       :is-running="meeting.isRunning"
     />
 
-    <main v-if="currentStep === 1" class="workspace">
+    <main class="workspace">
       <MeetingSidebar
         :participants="meeting.participants"
         :active-speaker-id="meeting.activeSpeaker.id"
         :plan-version="meeting.planVersion"
         :is-running="meeting.isRunning"
         :phase="meeting.phase"
+        :plan-active="centerMode === 'plan'"
+        :meeting-ended="confirmation.dispatched"
+        @open-plan="openPlanWorkspace"
       />
 
       <TranscriptPanel
+        v-if="centerMode === 'transcript'"
         :participants="meeting.participants"
         :transcripts="meeting.transcripts"
         :active-speaker="meeting.activeSpeaker"
@@ -232,6 +222,26 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
         :meeting-done="meeting.meetingDone"
         @toggle-running="meeting.isRunning = !meeting.isRunning"
         @sign-in="meeting.signIn"
+      />
+
+      <MeetingPlanWorkspace
+        v-else
+        :version="meeting.planVersion"
+        :participants="meeting.participants"
+        :confirmations="confirmation.records"
+        :groups="distribution.groups"
+        :tasks="distribution.tasks"
+        :materials="distribution.materials"
+        :changes="revision.changes"
+        :confirmed-count="confirmation.confirmedCount"
+        :pending-count="confirmation.pendingCount"
+        :progress="confirmation.progress"
+        :dispatching="confirmation.dispatching"
+        :dispatched="confirmation.dispatched"
+        @close="closePlanWorkspace"
+        @confirm-current="confirmCurrentParticipant"
+        @confirm-participant="confirmParticipant"
+        @dispatch="dispatchTasks"
       />
 
       <AssistantPanel
@@ -245,109 +255,6 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
       />
     </main>
 
-    <PlanRevisionView
-      v-else-if="currentStep === 2"
-      :chapters="revision.chapters"
-      :all-changes="revision.changes"
-      :changes="revision.visibleChanges"
-      :selected-chapter="revision.selectedChapter"
-      :selected-chapter-id="revision.selectedChapterId"
-      :view-mode="revision.viewMode"
-      :current-task="revision.currentTask"
-      :activities="revision.activities"
-      :sources="revision.sources"
-      :progress="revision.progress"
-      :source-version="revision.sourceVersion"
-      :target-version="revision.revisionVersion"
-      :assistant-reply="revision.assistantReply"
-      @select-chapter="revision.selectedChapterId = $event"
-      @update:view-mode="revision.viewMode = $event"
-      @accept="revision.acceptChange"
-      @keep="revision.keepOriginal"
-      @command="revision.sendCommand"
-    />
-
-    <PlanSignoffView
-      v-else-if="currentStep === 3"
-      :version="signoff.version"
-      :source-change-count="signoff.sourceChangeCount"
-      :clauses="signoff.clauses"
-      :departments="signoff.departments"
-      :selected-department-id="signoff.selectedDepartmentId"
-      :selected-department="signoff.selectedDepartment"
-      :activities="signoff.activities"
-      :current-task="signoff.currentTask"
-      :materials="signoff.materials"
-      :selected-material-id="signoff.selectedMaterialId"
-      :selected-material="signoff.selectedMaterial"
-      :signed-count="signoff.signedCount"
-      :progress="signoff.progress"
-      @select="signoff.selectedDepartmentId = $event"
-      @sign="signCurrentDepartment"
-      @remind="remindDepartment"
-      @select-material="signoff.selectMaterial"
-      @complete-all="completeAllSignoff"
-    />
-
-    <TaskDistributionView
-      v-else
-      :plan-version="distribution.planVersion"
-      :signoff-record-id="distribution.signoffRecordId"
-      :clauses="distribution.sourceClauses"
-      :groups="distribution.groups"
-      :all-tasks="distribution.tasks"
-      :tasks="distribution.visibleTasks"
-      :selected-group-id="distribution.selectedGroupId"
-      :selected-group="distribution.selectedGroup"
-      :current-task="distribution.currentTask"
-      :activities="distribution.activities"
-      :materials="distribution.materials"
-      :pending-count="distribution.pendingCount"
-      :progress="distribution.progress"
-      :dispatched="distribution.dispatched"
-      @select="distribution.selectedGroupId = $event"
-      @confirm="confirmDistributionTask"
-      @confirm-group="confirmDistributionGroup"
-      @confirm-all="confirmAllDistributionTasks"
-    />
-
-    <BottomStatusBar
-      v-if="currentStep === 1"
-      :plan-version="meeting.planVersion"
-      :registered-count="meeting.registeredSuggestions.length"
-      @next="enterRevision"
-    />
-
-    <RevisionStatusBar
-      v-else-if="currentStep === 2"
-      :version="revision.revisionVersion"
-      :accepted-count="revision.acceptedCount"
-      :pending-count="revision.pendingCount"
-      :can-submit="revision.canSubmit"
-      @back="backToMeeting"
-      @next="submitRevision"
-    />
-
-    <SignoffStatusBar
-      v-else-if="currentStep === 3"
-      :signed-count="signoff.signedCount"
-      :pending-count="signoff.pendingCount"
-      :can-complete="signoff.canComplete"
-      @back="backToRevision"
-      @next="enterDistribution"
-    />
-
-    <DistributionStatusBar
-      v-else
-      :confirmed-count="distribution.confirmedCount"
-      :pending-count="distribution.pendingCount"
-      :total-count="distribution.tasks.length"
-      :can-dispatch="distribution.canDispatch"
-      :dispatched="distribution.dispatched"
-      @back="backToSignoff"
-      @finish="finishMeetingAndEnterOperations"
-    />
-
     <DistributionCompletionDialog
       v-model:visible="distributionCompleteVisible"
       :group="recognizedGroup"
@@ -360,3 +267,7 @@ const openPostMeetingDestination = async (destination: 'workbench' | 'operations
     />
   </div>
 </template>
+
+<style scoped>
+.app-shell.no-fixed-footer { padding-bottom: 0; }
+</style>

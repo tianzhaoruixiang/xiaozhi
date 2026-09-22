@@ -101,14 +101,14 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
   min-height: 0;
 }
 
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
@@ -117,8 +117,8 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 4px 8px;
+  gap: 2px;
+  padding: 6px 4px 5px;
   overflow: hidden;
   border: 1px solid transparent;
 }
@@ -157,7 +157,7 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
 
 .stat span {
   position: relative;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   letter-spacing: 0.04em;
 }
@@ -166,7 +166,7 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   position: relative;
   font-style: normal;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.03em;
@@ -180,12 +180,12 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
 .charts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
 .chart-card {
-  padding: 8px 8px 4px;
+  padding: 5px 6px 3px;
   border: 1px solid var(--line);
   background:
     linear-gradient(160deg, oklch(0.34 0.05 228 / .18), oklch(0.18 0.032 249 / .5)),
@@ -220,7 +220,7 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
 
 .chart {
   width: 100%;
-  height: 52px;
+  height: 42px;
   display: block;
 }
 
@@ -265,11 +265,11 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .record-list li {
-  padding: 7px 8px;
+  padding: 5px 6px;
   border: 1px solid var(--line);
   background:
     linear-gradient(135deg, oklch(0.32 0.045 228 / .2), oklch(0.18 0.032 249 / .5)),
@@ -281,18 +281,18 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .row strong {
-  font-size: 13px;
+  font-size: 12px;
   color: #fff;
 }
 
 .badge {
-  padding: 0 5px;
+  padding: 0 4px;
   font-size: 10px;
-  line-height: 16px;
+  line-height: 14px;
   color: #fff;
 }
 
@@ -307,7 +307,7 @@ const szArea = computed(() => buildPath(props.data.trend.map((p) => p.szIn), tru
 
 .meta {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   font-size: 11px;
   color: var(--muted);
 }

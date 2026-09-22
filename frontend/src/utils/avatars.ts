@@ -18,6 +18,9 @@ const a10 = new URL('../assets/avatars/10.png', import.meta.url).href // 女
 const MALE_POOL = [a1, a4, a6, a8]
 /** 女头像池：2,3,5,7,9,10（6 张） */
 const FEMALE_POOL = [a2, a3, a5, a7, a9, a10]
+const NAME_AVATAR_OVERRIDES: Record<string, string> = {
+  高卫明: a4,
+}
 
 /** 名字中带这些字通常是男性 */
 const MALE_CHARS = new Set([
@@ -74,6 +77,7 @@ function hashString(s: string): number {
 
 export function getAvatar(name: string): string {
   if (!name) return MALE_POOL[0]
+  if (NAME_AVATAR_OVERRIDES[name]) return NAME_AVATAR_OVERRIDES[name]
   const gender = detectGender(name)
   const pool = gender === 'female' ? FEMALE_POOL : MALE_POOL
   const idx = hashString(name) % pool.length

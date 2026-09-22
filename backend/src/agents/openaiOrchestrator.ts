@@ -1,4 +1,5 @@
 import {
+  CHAIRMAN_LEADER_REPLY,
   XIAOZHI_BRIEF_PROMPT,
   XIAOZHI_SYSTEM,
   buildClaudeAgentsFromRoster,
@@ -46,6 +47,7 @@ import {
 } from '../data/attendeeStatus.js'
 import { pickPlanSource } from '../config/resolvePlan.js'
 import {
+  cleanOralText,
   resolveOralReport,
   stripOralSection,
 } from '../lib/oralReport.js'
@@ -826,10 +828,12 @@ async function runXiaozhiBrief(options: {
   outputs: Record<string, string>
   userMessage: string
   enableOralReport?: boolean
+  briefReply?: boolean
   onEvent: (payload: SsePayload) => void
 }): Promise<string> {
   const { onEvent } = options
   const enableOral = options.enableOralReport !== false
+  const briefReply = enableOral && options.briefReply !== false
   onEvent({
     type: 'agent_spawn',
     agentId: 'xiaozhi',
@@ -857,14 +861,18 @@ async function runXiaozhiBrief(options: {
 
   const briefUserTail = enableOral
     ? `请输出书面纪要，并务必在文末单独用一行写上标记「【口述汇报】」，紧接可朗读口语正文（不要再用 Markdown）。
-口述内容必须完全依据本轮领导指示与上述专家结论现写，禁止套用固定会议汇报模板，禁止编造未出现的信息。`
+口述内容必须完全依据本轮领导指示与上述专家结论现写，禁止套用固定会议汇报模板，禁止编造未出现的信息。${
+        briefReply ? `\n${CHAIRMAN_LEADER_REPLY}` : ''
+      }`
     : `请输出书面纪要（Markdown）。不要撰写「【口述汇报】」或任何口述/语音稿段落，只给书面结论与建议。`
 
   const brief = await chatCompletion({
     messages: [
       {
         role: 'system',
-        content: `${XIAOZHI_SYSTEM}\n\n${XIAOZHI_BRIEF_PROMPT}
+        content: `${XIAOZHI_SYSTEM}\n\n${XIAOZHI_BRIEF_PROMPT}${
+          briefReply ? `\n\n${CHAIRMAN_LEADER_REPLY}` : ''
+        }
 
 参会状态（仅当本轮涉及参会/通知时按需引用，勿强行插入）：
 ${formatAttendeeStatusHint()}`,
@@ -920,7 +928,10 @@ ${briefUserTail}`,
     oral = brief.replace(/[#*`]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)
   }
 
-  oral = oral.replace(/[#*`]/g, '').replace(/\n+/g, ' ').trim()
+  oral = cleanOralText(oral.replace(/[#*`]/g, '').replace(/\n+/g, ' ').trim())
+  if (briefReply && oral.length > 160 && !oral.startsWith('会议已通知到相关人员')) {
+    oral = oral.slice(0, 120).replace(/[，,。.\s]+$/, '') + '。请您指示。'
+  }
   onEvent({
     type: 'oral_report',
     agentId: 'xiaozhi',
@@ -939,6 +950,7 @@ export async function runOpenAIOrchestrator(options: {
   workflow?: string
   mode?: string
   enableOralReport?: boolean
+  briefReply?: boolean
   onEvent: (payload: SsePayload) => void
 }): Promise<string> {
   const { baseURL, model } = getOpenAIConfig()
@@ -973,6 +985,7 @@ export async function runOpenAIOrchestrator(options: {
         message: options.message,
         plans: options.plans,
         enableOralReport: options.enableOralReport,
+        briefReply: options.briefReply,
         onEvent: options.onEvent,
       })
     }
@@ -1003,6 +1016,7 @@ export async function runOpenAIOrchestrator(options: {
           message: options.message,
           plans: options.plans,
           enableOralReport: options.enableOralReport,
+          briefReply: options.briefReply,
           onEvent: options.onEvent,
         })
       }
@@ -1116,6 +1130,7 @@ export async function runOpenAIOrchestrator(options: {
       outputs,
       userMessage: options.message,
       enableOralReport: options.enableOralReport,
+      briefReply: options.briefReply,
       onEvent: options.onEvent,
     })
   } catch (err) {

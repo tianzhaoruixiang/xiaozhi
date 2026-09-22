@@ -1,5 +1,6 @@
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import {
+  CHAIRMAN_LEADER_REPLY,
   XIAOZHI_SYSTEM,
   buildClaudeAgentsFromRoster,
   formatPlansContext,
@@ -46,6 +47,7 @@ export async function runChairmanOrchestrator(options: {
   workflow?: string
   mode?: string
   enableOralReport?: boolean
+  briefReply?: boolean
   onEvent: (payload: SsePayload) => void
 }): Promise<string> {
   if (getLlmProvider() === 'openai') {
@@ -84,6 +86,7 @@ async function runClaudeOrchestrator(options: {
   workflow?: string
   mode?: string
   enableOralReport?: boolean
+  briefReply?: boolean
   onEvent: (payload: SsePayload) => void
 }): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -119,6 +122,7 @@ async function runClaudeOrchestrator(options: {
       message: options.message,
       plans: options.plans,
       enableOralReport: options.enableOralReport,
+      briefReply: options.briefReply,
       onEvent: options.onEvent,
     })
   }
@@ -148,6 +152,7 @@ async function runClaudeOrchestrator(options: {
         message: options.message,
         plans: options.plans,
         enableOralReport: options.enableOralReport,
+        briefReply: options.briefReply,
         onEvent: options.onEvent,
       })
     }
@@ -163,6 +168,7 @@ async function runClaudeOrchestrator(options: {
     .join('\n')
 
   const enableOral = options.enableOralReport !== false
+  const briefReply = options.briefReply !== false
   const prompt = `${contextBlock}
 
 【智枢本轮调度的专家】
@@ -179,10 +185,11 @@ ${rosterText}
 ${
   enableOral
     ? `- 全部完成后，由你（智枢）输出书面纪要，并包含【口述汇报】段落
-- 【口述汇报】必须依据本轮真实结论现写，禁止套固定「人员调度会时间/地点/参会人」模板，禁止编造未出现的信息`
+- 【口述汇报】办会/通知类只用一句：会议已通知到相关人员，其中由两位外出领导授权数智助手参会。禁止报时间地点材料齐套，禁止「请您指示」`
     : `- 全部完成后，由你（智枢）输出书面纪要（Markdown）
 - 不要撰写「【口述汇报】」或任何口述/语音稿段落`
-}`
+}
+${briefReply ? `\n${CHAIRMAN_LEADER_REPLY}` : ''}`
 
   const knowledgeServer = createKnowledgeMcpServer({
     onEmit: options.onEvent,
@@ -213,7 +220,9 @@ ${
     for await (const message of query({
       prompt,
       options: {
-        systemPrompt: XIAOZHI_SYSTEM,
+        systemPrompt: briefReply
+          ? `${XIAOZHI_SYSTEM}\n\n${CHAIRMAN_LEADER_REPLY}`
+          : XIAOZHI_SYSTEM,
         allowedTools: [
           'Agent',
           'Task',

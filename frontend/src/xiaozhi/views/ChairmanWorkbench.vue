@@ -89,8 +89,8 @@ const orchestration = () => ({
 })
 
 /**
- * 语音链路：待机（说「你好智枢」才醒）→ 播报「我在，请讲」→ 听领导这一整段话
- * → 停嘴自动上报并进入推演 → 播报完成后默认继续聆听下一条。
+ * 语音链路：默认不听指令。点头像后进入唤醒词待机，说「你好智枢」才醒
+ * → 播报「我在」→ 听本轮这一整段 → 办完后休眠，下一轮须重新唤醒。
  */
 const {
   supported: voiceSupported,
@@ -104,11 +104,10 @@ const {
   error: voiceError,
   mode: voiceMode,
   pause: pauseListen,
-  listenForReply,
+  standby: voiceStandby,
   start: startListen,
 } = useVoiceSession({
   onWakeDetected: () => {
-    pauseListen()
     stopReport()
     state.value = 'listening'
   },
@@ -122,15 +121,15 @@ const {
   },
 })
 
-const beginFollowupListen = (timeoutMs?: number) => {
-  state.value = 'listening'
-  listenForReply(timeoutMs)
+const returnToStandby = () => {
+  state.value = 'idle'
+  voiceStandby()
 }
 
 const replayReport = (text: string) => {
   pauseListen()
   stopReport()
-  void speak(text).then(() => beginFollowupListen())
+  void speak(text).then(() => returnToStandby())
 }
 
 const onAvatarToggle = () => {
@@ -152,7 +151,6 @@ const listenBreathStyle = computed(() => {
 const avatarState = computed(() => {
   if (voiceAckPlaying.value || reportSpeaking.value) return 'speaking'
   if (voiceAwake.value) return 'listening'
-  if (pendingConfirm.value?.confirm.status === 'pending') return 'listening'
   if (streaming.value) return state.value === 'speaking' ? 'speaking' : 'thinking'
   return state.value === 'listening' ? 'idle' : state.value
 })
@@ -176,7 +174,7 @@ watch(
     await speak(curr.oral)
     if (lastSpokenId.value === curr.id) {
       if (streaming.value) state.value = 'thinking'
-      else beginFollowupListen()
+      else returnToStandby()
     }
   },
 )
@@ -198,20 +196,19 @@ watch(
     state.value = 'speaking'
     setOpen(true)
     await speak(curr.oral)
-    if (lastSpokenConfirmId.value === curr.id) beginFollowupListen(45000)
+    if (lastSpokenConfirmId.value === curr.id) returnToStandby()
   },
 )
 
 watch(streaming, (isStreaming) => {
   if (pendingConfirm.value?.confirm.status === 'pending') return
   if (isStreaming) pauseListen()
-  else if (!reportSpeaking.value) beginFollowupListen()
+  else if (!reportSpeaking.value) returnToStandby()
 })
 
 watch(reportSpeaking, (speaking) => {
   if (speaking) pauseListen()
-  else if (pendingConfirm.value?.confirm.status === 'pending') beginFollowupListen(45000)
-  else if (!streaming.value) beginFollowupListen()
+  else if (!streaming.value) returnToStandby()
 })
 
 const onSubmit = (text: string) => {
@@ -313,7 +310,6 @@ const onModeChange = (mode: string) => {
       <span class="pulse" aria-hidden="true" />
       <template v-if="voiceAckPlaying">
         <strong>我在</strong>
-        <span>请讲，说完停一下我就开始办</span>
       </template>
       <template v-else>
         <strong>{{ voiceCapturing ? '正在聆听…' : '智枢已唤醒' }}</strong>

@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import {
   DEFAULT_WAKE_WORDS,
   matchWakePhrase,
@@ -31,13 +31,15 @@ type SpeechRecognitionEventLike = {
 }
 
 /** 上报的一段话最短时长（防止噪声触发 ASR） */
-const MIN_UTTERANCE_SEC = 0.22
+const MIN_UTTERANCE_SEC = 0.18
 /** 松匹配命中后，极短时间内的碎片不再当指令（ASR 把唤醒词拆成多句时兜底） */
 const FRAGMENT_GUARD_MS = 1400
 /** 唤醒后无人说话，回到待机 */
-const AWAKE_TIMEOUT_MS = 12000
+const AWAKE_TIMEOUT_MS = 30000
 /** 最短指令长度（「开」「好」这类噪声直接丢弃） */
 const MIN_COMMAND_LEN = 2
+/** 已唤醒时，相邻几段识别先拼再发，避免停顿被当成说完 */
+const COMMAND_COMMIT_MS = 1600
 
 function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
   const w = window as Window & {
@@ -111,8 +113,8 @@ function rms(frame: Float32Array): number {
  * 平时待机：持续做本地 VAD，只有识别文本以「你好智枢」开头才算唤醒，
  * 其它声音（聊天、噪声、电视）一律丢弃，不会进入识别/发送流程。
  *
- * 唤醒后：进入「等着听指令」状态，领导一停嘴（约 0.4s 静音）
- * 就自动把这一整段送 ASR 并回调 onTranscript，不再需要点按发送。
+ * 唤醒后：进入「等着听指令」状态，停顿约 1.2s 才切段；
+ * 同一轮里多段识别先拼再发，避免讲到一半被当成说完。
  *
  * 一句话同时说「你好智枢 + 指令」时直接给指令，不播「我在」。
  */
@@ -136,6 +138,8 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
 
   let shouldRun = false
   let armedTimer: number | null = null
+  let commandBuf = ''
+  let commandTimer: number | null = null
   let levelSmooth = 0
   let levelDecayTimer: number | null = null
   /** 松匹配命中时间戳，用于抑制 ASR 拆句造成的碎片误发 */
@@ -166,8 +170,50 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     }
   }
 
+  const clearCommandTimer = () => {
+    if (commandTimer != null) {
+      window.clearTimeout(commandTimer)
+      commandTimer = null
+    }
+  }
+
+  const resetCommandBuf = () => {
+    clearCommandTimer()
+    commandBuf = ''
+  }
+
+  const bumpArmedTimer = () => {
+    if (!awaitingCommand.value) return
+    clearArmedTimer()
+    armedTimer = window.setTimeout(() => {
+      awaitingCommand.value = false
+      resetCommandBuf()
+    }, AWAKE_TIMEOUT_MS)
+  }
+
+  const commitArmedCommand = () => {
+    commandTimer = null
+    if (capturing.value || recognizeBusy) {
+      commandTimer = window.setTimeout(commitArmedCommand, 400)
+      return
+    }
+    const command = commandBuf.trim()
+    commandBuf = ''
+    if (command.length < MIN_COMMAND_LEN) return
+    disarm()
+    callbacks.onTranscript?.(command)
+  }
+
+  const queueArmedCommand = (text: string) => {
+    commandBuf = commandBuf ? `${commandBuf}${text}` : text
+    bumpArmedTimer()
+    clearCommandTimer()
+    commandTimer = window.setTimeout(commitArmedCommand, COMMAND_COMMIT_MS)
+  }
+
   const disarm = () => {
     clearArmedTimer()
+    resetCommandBuf()
     pendingWakeAt = 0
     awaitingCommand.value = false
   }
@@ -182,13 +228,19 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     callbacks.onWake({ hasFollowUp })
   }
 
-  /** 不经过唤醒词，直接听下一句（用于确认发出） */
+  /** 不经过唤醒词，直接听下一句（厅长工作台默认不用：每轮须重新唤醒） */
   const listenForReply = (timeoutMs = 45000) => {
     awaitingCommand.value = true
     clearArmedTimer()
     armedTimer = window.setTimeout(() => {
       awaitingCommand.value = false
     }, timeoutMs)
+  }
+
+  /** 回到仅检测唤醒词的待机，不再收指令 */
+  const standby = () => {
+    disarm()
+    capturing.value = false
   }
 
   const handleRecognizedText = (raw: string) => {
@@ -207,8 +259,7 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
       }
       const command = (matched.hit ? matched.command : text).trim()
       if (command.length < MIN_COMMAND_LEN) return
-      disarm()
-      callbacks.onTranscript?.(command)
+      queueArmedCommand(command)
       return
     }
 
@@ -266,7 +317,7 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
       const res = await fetch('/api/tts/asr/health')
       if (!res.ok) return false
       const data = (await res.json()) as { ok?: boolean; ready?: boolean }
-      return Boolean(data.ok && data.ready)
+      return Boolean(data.ready ?? data.ok)
     } catch {
       return false
     }
@@ -352,12 +403,16 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
       muteGain = audioCtx.createGain()
       muteGain.gain.value = 0
 
-      // 约 85ms/帧 @48k。待命稍长以免误切；已唤醒后加快收尾。
-      const silenceNeedIdle = Math.max(5, Math.round((0.55 * inputRate) / 4096))
-      const silenceNeedArmed = Math.max(4, Math.round((0.4 * inputRate) / 4096))
-      const speechNeed = Math.max(2, Math.round((0.22 * inputRate) / 4096))
-      const maxSpeechSec = 12
-      let noiseFloor = 0.006
+      // 约 85ms/帧 @48k。切段要等到真正停顿，避免句中换气被当成说完。
+      const silenceNeedIdle = Math.max(6, Math.round((0.55 * inputRate) / 4096))
+      const silenceNeedArmed = Math.max(12, Math.round((1.25 * inputRate) / 4096))
+      const speechNeed = Math.max(1, Math.round((0.1 * inputRate) / 4096))
+      const startHold = Math.max(2, Math.round((0.16 * inputRate) / 4096))
+      const preRollNeed = Math.max(3, Math.round((0.28 * inputRate) / 4096))
+      const maxSpeechSec = 28
+      let noiseFloor = 0.004
+      const preRoll: Float32Array[] = []
+      let quietStartFrames = 0
 
       const flushUtterance = (chunks: Float32Array[]) => {
         const total = chunks.reduce((n, c) => n + c.length, 0)
@@ -377,35 +432,50 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
           return
         }
         const input = ev.inputBuffer.getChannelData(0)
-        if (recognizeBusy) {
-          // 识别中继续攒帧 + 更新声强，避免领导接着说的前半句被丢掉
-          updateSoundLevel(rms(input))
-          if (speechChunks.length < 400) speechChunks.push(new Float32Array(input))
-          return
-        }
         const level = rms(input)
         updateSoundLevel(level)
+        const energyOn = Math.max(0.006, noiseFloor * 2.2)
+
+        if (recognizeBusy) {
+          // 识别期间只保留像说话的帧，避免把一段静音送去二次识别把麦克风占死
+          if (level >= energyOn && speechChunks.length < 400) {
+            speechChunks.push(new Float32Array(input))
+          }
+          return
+        }
+        // 识别期间攒下的语音不要丢掉，接着当一段话收完
+        if (!inSpeech && speechChunks.length >= speechNeed) {
+          inSpeech = true
+          capturing.value = true
+          silenceFrames = 0
+        }
 
         if (!inSpeech) {
-          noiseFloor = noiseFloor * 0.97 + level * 0.03
-          const energyOn = Math.max(0.01, noiseFloor * 3.4)
+          noiseFloor = noiseFloor * 0.985 + level * 0.015
+          preRoll.push(new Float32Array(input))
+          if (preRoll.length > preRollNeed) preRoll.shift()
           if (level >= energyOn) {
             speechFrames += 1
-            speechChunks.push(new Float32Array(input))
+            quietStartFrames = 0
             if (speechFrames >= speechNeed) {
               inSpeech = true
               capturing.value = true
               silenceFrames = 0
+              speechChunks = preRoll.map((c) => new Float32Array(c))
+              preRoll.length = 0
             }
-          } else {
-            speechFrames = 0
-            speechChunks = []
+          } else if (speechFrames > 0) {
+            quietStartFrames += 1
+            if (quietStartFrames >= startHold) {
+              speechFrames = 0
+              quietStartFrames = 0
+            }
           }
           return
         }
 
         speechChunks.push(new Float32Array(input))
-        const energyOff = Math.max(0.007, noiseFloor * 1.9)
+        const energyOff = Math.max(0.0045, noiseFloor * 1.2)
         if (level < energyOff) silenceFrames += 1
         else silenceFrames = 0
 
@@ -419,6 +489,8 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
           capturing.value = false
           silenceFrames = 0
           speechFrames = 0
+          quietStartFrames = 0
+          preRoll.length = 0
           flushUtterance(chunks)
         }
       }
@@ -529,6 +601,7 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
   const stop = () => {
     shouldRun = false
     pausedForTts = false
+    resetCommandBuf()
     disarm()
     clearRestart()
     stopBrowser()
@@ -567,10 +640,6 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     void start()
   }
 
-  onMounted(() => {
-    void start()
-  })
-
   onUnmounted(() => stop())
 
   return {
@@ -588,6 +657,7 @@ export function useVoiceWake(callbacks: WakeCallbacks) {
     pause,
     resume,
     listenForReply,
+    standby,
     isSecureContext: isSecureContextNow,
   }
 }

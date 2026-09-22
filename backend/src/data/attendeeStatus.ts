@@ -54,6 +54,14 @@ export const ATTENDEE_STATUS: AttendeeStatus[] = [
     proxyAssistant: '张可信的数智助手',
   },
   {
+    name: '刘副厅长',
+    role: '副厅长',
+    dept: '厅领导',
+    mode: 'travel_proxy',
+    note: '赴外地调研，授权数智助手代参会',
+    proxyAssistant: '刘副厅长的数智助手',
+  },
+  {
     name: '孙处长',
     role: '住建局处长',
     dept: '住房和城乡建设局',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import {
   STATUS_META,
   countDoneTasks,
@@ -7,138 +8,117 @@ import {
   groupStatus,
   type TaskGroup,
 } from '../data/groupTasks'
+import { formatClock, useReviews } from '../data/reviews'
 import TaskProgressBar from './TaskProgressBar.vue'
 
 const props = defineProps<{
   groups: TaskGroup[]
 }>()
 
-/** 组默认收起；展开后组内任务直接带出成员进度 */
-const openedGroups = ref<Record<string, boolean>>({})
-/** 任务默认展开，可单独收起 */
-const closedTasks = ref<Record<string, boolean>>({})
+const { approved } = useReviews()
 
-const isGroupOpen = (id: string) => openedGroups.value[id] === true
-const toggleGroup = (id: string) => {
-  openedGroups.value = { ...openedGroups.value, [id]: !isGroupOpen(id) }
-}
+/** 该组已完成为成果的任务标题 */
+const doneTitlesOf = (group: TaskGroup) =>
+  group.tasks.filter((task) => task.status === 'done').map((task) => task.title)
 
-const isTaskOpen = (id: string) => closedTasks.value[id] !== true
-const toggleTask = (id: string) => {
-  closedTasks.value = { ...closedTasks.value, [id]: isTaskOpen(id) }
-}
+/** 该组已交高总的成果（优先按 groupId 归属，兼容旧数据按任务名匹配） */
+const handedOverOf = (group: TaskGroup) =>
+  approved.value.filter((item) =>
+    item.groupId
+      ? item.groupId === group.id
+      : group.tasks.some((task) => task.title === item.taskTitle),
+  )
 
-const allTasks = computed(() => props.groups.flatMap((group) => group.tasks))
+const riskCountOf = (group: TaskGroup) =>
+  group.tasks.filter((task) => task.status === 'risk').length
 
-const stats = computed(() => {
-  const tasks = allTasks.value
-  return {
-    group: props.groups.length,
-    task: tasks.length,
-    member: tasks.reduce((sum, task) => sum + task.members.length, 0),
-    done: tasks.filter((task) => task.status === 'done').length,
-    risk: tasks.filter((task) => task.status === 'risk').length,
-    progress: tasks.length
-      ? Math.round(tasks.reduce((sum, task) => sum + task.progress, 0) / tasks.length)
-      : 0,
-  }
-})
+const totalMembers = computed(() =>
+  props.groups.reduce((sum, group) => sum + group.roster.length, 0),
+)
 </script>
 
 <template>
-  <section class="board" aria-label="专项任务 · 各工作组任务与成员进展">
+  <section class="board" aria-label="专项任务 · 各组任务与工作组进度成果">
     <header class="board-head">
       <div class="board-title">
         <h2>专项任务</h2>
-        <p>各工作组任务与成员进展</p>
+        <p>左侧为各组任务与成员进展，右侧为各工作组进度与成果</p>
       </div>
-      <RouterLink class="summary-btn" to="/command/task">
-        任务总结
-        <b aria-hidden="true">→</b>
-      </RouterLink>
-      <dl class="stats">
-        <div><dt>组</dt><dd>{{ stats.group }}</dd></div>
-        <div><dt>任务</dt><dd>{{ stats.task }}</dd></div>
-        <div><dt>成员</dt><dd>{{ stats.member }}</dd></div>
-        <div><dt>完成</dt><dd>{{ stats.done }}</dd></div>
-        <div :data-warn="stats.risk > 0"><dt>受阻</dt><dd>{{ stats.risk }}</dd></div>
-        <div><dt>总进度</dt><dd>{{ stats.progress }}%</dd></div>
-      </dl>
+      <div class="head-right">
+        <RouterLink class="summary-btn" to="/command/task">
+          任务总结
+          <b aria-hidden="true">→</b>
+        </RouterLink>
+        <span class="head-meta">
+          {{ groups.length }} 个工作组 · {{ totalMembers }} 名成员
+        </span>
+      </div>
     </header>
 
-    <ol class="groups">
-      <li
-        v-for="(group, index) in groups"
-        :key="group.id"
-        class="group"
-        :data-status="groupStatus(group)"
-        :data-open="isGroupOpen(group.id) ? '1' : '0'"
-      >
-        <button
-          type="button"
-          class="group-top"
-          :aria-expanded="isGroupOpen(group.id)"
-          @click="toggleGroup(group.id)"
+    <div class="board-body">
+      <!-- 左：所有工作组的任务 -->
+      <div class="tasks-col">
+        <article
+          v-for="(group, index) in groups"
+          :key="group.id"
+          class="group-block"
+          :data-status="groupStatus(group)"
         >
-          <span class="g-index">{{ String(index + 1).padStart(2, '0') }}</span>
-          <span class="g-name">
-            <strong>
-              {{ group.name }}
-              <span v-if="group.current" class="current-tag">当前组</span>
-            </strong>
-            <em>组长 {{ group.lead }} · {{ group.scope }}</em>
-          </span>
-          <span class="g-meta">
-            <span class="chip" :data-status="groupStatus(group)">
-              {{ STATUS_META[groupStatus(group)].label }}
+          <header class="group-block-head">
+            <span class="g-index">{{ String(index + 1).padStart(2, '0') }}</span>
+            <span class="g-name">
+              <strong>
+                {{ group.name }}
+                <span v-if="group.current" class="current-tag">当前组</span>
+              </strong>
+              <em>组长 {{ group.lead }} · {{ group.scope }}</em>
             </span>
-            <span class="g-count">{{ countDoneTasks(group) }}/{{ group.tasks.length }}</span>
-            <span class="chev">{{ isGroupOpen(group.id) ? '收起' : '展开' }}</span>
-          </span>
-        </button>
-
-        <div class="g-progress">
-          <TaskProgressBar :progress="groupProgress(group)" :status="groupStatus(group)" />
-        </div>
-
-        <ol v-show="isGroupOpen(group.id)" class="tasks">
-          <li
-            v-for="task in group.tasks"
-            :key="task.id"
-            class="task"
-            :data-status="task.status"
-            :data-open="isTaskOpen(task.id) ? '1' : '0'"
-          >
-            <button
-              type="button"
-              class="task-top"
-              :aria-expanded="isTaskOpen(task.id)"
-              @click="toggleTask(task.id)"
-            >
-              <span class="t-title">
-                <strong>{{ task.title }}</strong>
-                <em>{{ task.detail }}</em>
+            <span class="g-meta">
+              <span class="chip" :data-status="groupStatus(group)">
+                {{ STATUS_META[groupStatus(group)].label }}
               </span>
-              <span class="t-side">
+              <span class="g-count">
+                {{ countDoneTasks(group) }}/{{ group.tasks.length }}
+              </span>
+            </span>
+          </header>
+
+          <div class="g-progress">
+            <TaskProgressBar :progress="groupProgress(group)" :status="groupStatus(group)" />
+          </div>
+
+          <ol class="tasks">
+            <li
+              v-for="task in group.tasks"
+              :key="task.id"
+              class="task"
+              :data-status="task.status"
+            >
+              <div class="t-head">
+                <span class="t-title">
+                  <strong>{{ task.title }}</strong>
+                  <em>{{ task.detail }}</em>
+                </span>
                 <span class="chip" :data-status="task.status">
                   {{ STATUS_META[task.status].label }}
                 </span>
-                <span class="pct">{{ task.progress }}%</span>
-                <span class="chev">{{ isTaskOpen(task.id) ? '收起' : '展开' }}</span>
-              </span>
-            </button>
-
-            <div class="task-bar">
-              <TaskProgressBar :progress="task.progress" :status="task.status" />
-            </div>
-
-            <div v-show="isTaskOpen(task.id)" class="members">
-              <div class="members-head">
-                <span class="mh-label">成员进度</span>
-                <span class="mh-meta">负责人 {{ task.owner }} · 截止 {{ task.due }}</span>
               </div>
 
-              <ul class="member-list">
+              <div class="t-bar">
+                <TaskProgressBar :progress="task.progress" :status="task.status" />
+              </div>
+
+              <div class="t-foot">
+                <span>负责人 {{ task.owner || '待分配' }}</span>
+                <span>截止 {{ task.due || '—' }}</span>
+              </div>
+
+              <div class="members-head">
+                <span class="mh-label">成员进度</span>
+                <span class="mh-meta">{{ task.members.length }} 人</span>
+              </div>
+
+              <ul v-if="task.members.length" class="member-list">
                 <li
                   v-for="member in task.members"
                   :key="member.id"
@@ -154,11 +134,71 @@ const stats = computed(() => {
                   <span class="m-note">{{ member.note }}</span>
                 </li>
               </ul>
+              <p v-else class="no-member">待分配，暂无成员</p>
+            </li>
+          </ol>
+        </article>
+      </div>
+
+      <!-- 右：各组进度与成果 -->
+      <aside class="summary-col">
+        <h3 class="col-title">
+          工作组进度与成果
+          <span class="col-count">{{ groups.length }}</span>
+        </h3>
+
+        <ul class="summary-list">
+          <li
+            v-for="group in groups"
+            :key="group.id"
+            class="summary-card"
+            :data-status="groupStatus(group)"
+          >
+            <header class="s-head">
+              <strong>{{ group.name }}</strong>
+              <em>组长 {{ group.lead }}</em>
+            </header>
+
+            <div class="s-progress">
+              <TaskProgressBar :progress="groupProgress(group)" :status="groupStatus(group)" />
+            </div>
+
+            <div class="s-meta">
+              <span>任务 {{ group.tasks.length }}</span>
+              <span>完成 {{ countDoneTasks(group) }}</span>
+              <span v-if="riskCountOf(group) > 0" class="warn">
+                受阻 {{ riskCountOf(group) }}
+              </span>
+              <span>成员 {{ group.roster.length }}</span>
+            </div>
+
+            <div class="s-results">
+              <p class="s-label">成果情况</p>
+              <ul>
+                <li v-for="title in doneTitlesOf(group)" :key="`done-${title}`">
+                  <span class="tag" data-kind="done">已完成</span>{{ title }}
+                </li>
+                <li
+                  v-for="item in handedOverOf(group)"
+                  :key="`handed-${item.id}`"
+                  class="handed"
+                >
+                  <span class="tag" data-kind="handed">已交高总</span>
+                  {{ item.taskTitle }}
+                  <em>{{ formatClock(item.forwardedAt || item.reviewedAt || '') }}</em>
+                </li>
+                <li
+                  v-if="!doneTitlesOf(group).length && !handedOverOf(group).length"
+                  class="none"
+                >
+                  暂无成果
+                </li>
+              </ul>
             </div>
           </li>
-        </ol>
-      </li>
-    </ol>
+        </ul>
+      </aside>
+    </div>
   </section>
 </template>
 
@@ -169,11 +209,11 @@ const stats = computed(() => {
   flex-direction: column;
   padding: 20px 20px 18px;
   border-radius: calc(var(--radius-lg) + 2px);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(240, 248, 252, 0.52)),
     rgba(255, 255, 255, 0.34);
   backdrop-filter: blur(18px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow:
     var(--shadow-soft),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
@@ -199,7 +239,7 @@ const stats = computed(() => {
   justify-content: space-between;
   gap: 12px 20px;
   padding-bottom: 14px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   border-bottom: 1px solid rgba(20, 40, 58, 0.08);
 }
 
@@ -246,74 +286,70 @@ const stats = computed(() => {
   line-height: 1;
 }
 
-.stats {
+/* 头部右侧：任务总结入口 + 组数/人数 */
+.head-right {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
+  align-items: center;
+  gap: 10px 14px;
 }
 
-.stats div {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid rgba(20, 40, 58, 0.1);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.stats dt {
-  font-size: 0.7rem;
+.head-meta {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
   color: var(--color-ink-muted);
 }
 
-.stats dd {
-  margin: 0;
+/* 左任务 / 右进度成果 */
+.board-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.col-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
   font-family: var(--font-mono);
-  font-size: 0.92rem;
-  font-weight: 700;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   color: var(--color-accent);
 }
 
-.stats div[data-warn='true'] {
-  border-color: rgba(168, 72, 72, 0.28);
-  background: rgba(168, 72, 72, 0.06);
+.col-count {
+  padding: 1px 7px;
+  border: 1px solid rgba(26, 122, 146, 0.24);
+  border-radius: 999px;
+  background: rgba(26, 122, 146, 0.07);
+  font-size: 0.66rem;
 }
 
-.stats div[data-warn='true'] dd { color: var(--color-danger); }
-
-.groups {
-  list-style: none;
+.tasks-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
+  gap: 14px;
+  min-width: 0;
 }
 
-.group {
+.group-block {
   padding: 14px;
   border: 1px solid rgba(20, 40, 58, 0.08);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.66);
 }
 
-.group[data-status='risk'] { border-color: rgba(168, 72, 72, 0.32); }
-.group[data-status='done'] { border-color: rgba(47, 125, 90, 0.28); }
+.group-block[data-status='risk'] { border-color: rgba(168, 72, 72, 0.32); }
+.group-block[data-status='done'] { border-color: rgba(47, 125, 90, 0.28); }
 
-.group-top {
-  width: 100%;
+.group-block-head {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 10px 12px;
   align-items: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
 }
 
 .g-index {
@@ -353,7 +389,6 @@ const stats = computed(() => {
   color: var(--color-accent);
   font-size: 0.64rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
 }
 
 .g-name em {
@@ -374,11 +409,8 @@ const stats = computed(() => {
   color: var(--color-ink-muted);
 }
 
-.chev {
-  min-width: 2.2rem;
-  text-align: right;
-  font-size: 0.74rem;
-  color: var(--color-accent);
+.g-progress {
+  margin-top: 10px;
 }
 
 .chip {
@@ -423,10 +455,6 @@ const stats = computed(() => {
   background: rgba(107, 124, 140, 0.08);
 }
 
-.g-progress {
-  margin-top: 10px;
-}
-
 .tasks {
   list-style: none;
   display: flex;
@@ -438,7 +466,7 @@ const stats = computed(() => {
 }
 
 .task {
-  padding: 13px 14px;
+  padding: 12px 13px;
   border: 1px solid rgba(20, 40, 58, 0.08);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.78);
@@ -446,19 +474,17 @@ const stats = computed(() => {
 
 .task[data-status='risk'] { border-color: rgba(168, 72, 72, 0.28); }
 .task[data-status='done'] { border-color: rgba(47, 125, 90, 0.24); }
+.task[data-status='unassigned'] {
+  border-style: dashed;
+  border-color: rgba(107, 124, 140, 0.42);
+  background: rgba(255, 255, 255, 0.5);
+}
 
-.task-top {
-  width: 100%;
+.t-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
+  gap: 10px;
 }
 
 .t-title {
@@ -469,7 +495,7 @@ const stats = computed(() => {
 }
 
 .t-title strong {
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   color: #14304a;
 }
 
@@ -480,48 +506,38 @@ const stats = computed(() => {
   color: var(--color-ink-muted);
 }
 
-.t-side {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+.t-bar {
+  margin-top: 10px;
 }
 
-.pct {
-  font-family: var(--font-mono);
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: var(--color-accent);
-}
-
-.task-bar {
-  margin-top: 11px;
-}
-
-.members {
-  margin-top: 13px;
-  padding-top: 13px;
-  border-top: 1px dashed rgba(20, 40, 58, 0.1);
+.t-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 9px;
+  font-size: 0.73rem;
+  color: var(--color-ink-muted);
 }
 
 .members-head {
   display: flex;
-  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 6px 12px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin: 11px 0 8px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(20, 40, 58, 0.1);
 }
 
 .mh-label {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.06em;
   color: var(--color-accent);
 }
 
 .mh-meta {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--color-ink-muted);
 }
 
@@ -536,10 +552,10 @@ const stats = computed(() => {
 
 .member {
   display: grid;
-  grid-template-columns: auto minmax(120px, 168px) minmax(120px, 1fr) minmax(0, 1.6fr);
+  grid-template-columns: auto minmax(110px, 150px) minmax(110px, 1fr) minmax(0, 1.4fr);
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 11px;
   border: 1px solid rgba(20, 40, 58, 0.08);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.82);
@@ -550,13 +566,13 @@ const stats = computed(() => {
 .avatar {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border: 1px solid rgba(46, 196, 214, 0.32);
   border-radius: 50%;
   background: rgba(46, 196, 214, 0.12);
   color: var(--color-accent);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
@@ -568,13 +584,13 @@ const stats = computed(() => {
 }
 
 .m-who strong {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   color: var(--color-ink);
 }
 
 .m-who em {
   font-style: normal;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--color-ink-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -582,14 +598,135 @@ const stats = computed(() => {
 }
 
 .m-note {
-  font-size: 0.76rem;
-  line-height: 1.5;
+  font-size: 0.74rem;
+  line-height: 1.45;
   color: var(--color-ink-muted);
+}
+
+.no-member {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--color-ink-muted);
+}
+
+/* 右侧：各组进度与成果 */
+.summary-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.summary-card {
+  padding: 13px;
+  border: 1px solid rgba(20, 40, 58, 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.summary-card[data-status='risk'] { border-color: rgba(168, 72, 72, 0.3); }
+.summary-card[data-status='done'] { border-color: rgba(47, 125, 90, 0.28); }
+
+.s-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 9px;
+}
+
+.s-head strong {
+  font-size: 0.9rem;
+  color: var(--color-ink);
+}
+
+.s-head em {
+  font-style: normal;
+  font-size: 0.74rem;
+  color: var(--color-ink-muted);
+}
+
+.s-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 9px;
+  font-size: 0.73rem;
+  color: var(--color-ink-muted);
+}
+
+.s-meta .warn { color: var(--color-danger); }
+
+.s-results {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(20, 40, 58, 0.1);
+}
+
+.s-label {
+  margin: 0 0 7px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
+}
+
+.s-results ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.s-results li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  color: var(--color-ink);
+}
+
+.s-results li em {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--color-ink-muted);
+}
+
+.s-results li.none {
+  font-size: 0.76rem;
+  color: var(--color-ink-muted);
+}
+
+.tag {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border: 1px solid rgba(47, 125, 90, 0.28);
+  border-radius: 999px;
+  background: rgba(47, 125, 90, 0.1);
+  color: var(--color-success);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+.tag[data-kind='handed'] {
+  border-color: rgba(26, 122, 146, 0.3);
+  background: rgba(26, 122, 146, 0.1);
+  color: var(--color-accent);
+}
+
+@media (max-width: 1000px) {
+  .board-body {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 860px) {
   .board { padding: 16px; }
-  .group-top { grid-template-columns: auto 1fr; }
+  .group-block-head { grid-template-columns: auto 1fr; }
   .g-meta { grid-column: 1 / -1; justify-content: space-between; }
   .member {
     grid-template-columns: auto 1fr;

@@ -5,6 +5,7 @@ import type { PlanItem } from '../data/mockPlans'
 import { useAssistantChat } from '../composables/useAssistantChat'
 import { useAgentCatalog } from '../composables/useAgentCatalog'
 import { useReviews } from '../data/reviews'
+import { useGroupTasks } from '../data/groupTasks'
 import MarkdownView from '../components/MarkdownView.vue'
 import PersonalCollabProcess from '../components/PersonalCollabProcess.vue'
 import SourcingShortlistCard from '../components/SourcingShortlistCard.vue'
@@ -86,6 +87,7 @@ const { catalog, selectedTeam, selectedWorkflow, selectedMode, onTeamChange } =
   useAgentCatalog()
 
 const { submitForReview } = useReviews()
+const { currentGroup } = useGroupTasks()
 
 const isLiveMessage = (msgId: string) => {
   if (!streaming.value) return false
@@ -112,6 +114,7 @@ const onHrbpReported = (payload: {
   submitForReview({
     taskId,
     taskTitle,
+    groupId: currentGroup.value?.id,
     kind: payload.kind,
     fileName: payload.fileName,
     markdown: payload.markdown,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { ArrowRight, Check, CircleCloseFilled, Clock, DocumentChecked, UserFilled } from '@element-plus/icons-vue'
-import { agendaPhases, planDocument } from '../mock/meeting'
+import { agendaPhases } from '../mock/meeting'
 import type { Participant } from '../types/meeting'
 import { getAvatar } from '../utils/avatars'
 
@@ -11,13 +11,20 @@ const props = defineProps<{
   planVersion: string
   isRunning: boolean
   phase: number
+  planActive?: boolean
+  meetingEnded?: boolean
 }>()
 
-const planVisible = ref(false)
-const planTab = ref('security')
+const emit = defineEmits<{ openPlan: [] }>()
 const participantList = ref<HTMLElement | null>(null)
 const signedCount = computed(() => props.participants.filter((p) => p.signedIn).length)
 const totalCount = computed(() => props.participants.length)
+const canOpenPlan = computed(() => props.isRunning || props.meetingEnded)
+
+const openPlan = () => {
+  if (!canOpenPlan.value) return
+  emit('openPlan')
+}
 
 const keepActiveSpeakerInView = async (speakerId: string) => {
   await nextTick()
@@ -58,6 +65,9 @@ const agendaTitles = [
 ]
 
 const agenda = computed(() => {
+  if (props.meetingEnded) {
+    return agendaTitles.map((item) => ({ ...item, done: true, active: false }))
+  }
   if (!props.isRunning) {
     return agendaTitles.map((item, index) => ({
       ...item,
@@ -102,7 +112,7 @@ const agenda = computed(() => {
     <section class="sidebar-section participant-section">
       <div class="section-heading">
         <span><el-icon><UserFilled /></el-icon>参会人员</span>
-        <small>{{ isRunning ? `${participants.length} 人在线` : `${signedCount}/${totalCount} 已签到` }}</small>
+        <small>{{ meetingEnded ? `${participants.length} 人已确认` : isRunning ? `${participants.length} 人在线` : `${signedCount}/${totalCount} 已签到` }}</small>
       </div>
       <div ref="participantList" class="participant-list">
         <div v-for="person in participants" :key="person.id" class="participant-item" :data-participant-id="person.id" :class="{ speaking: person.id === activeSpeakerId, 'is-me': person.isMe, unsigned: !person.signedIn }">
@@ -148,104 +158,29 @@ const agenda = computed(() => {
 
     <section
       class="plan-card"
+      :class="{ active: planActive, disabled: !canOpenPlan }"
       role="button"
-      tabindex="0"
+      :tabindex="canOpenPlan ? 0 : -1"
       aria-label="查看当前版本方案与会议纪要"
-      @click="planVisible = true"
-      @keydown.enter.prevent="planVisible = true"
-      @keydown.space.prevent="planVisible = true"
-      :aria-disabled="!isRunning"
+      @click="openPlan"
+      @keydown.enter.prevent="openPlan"
+      @keydown.space.prevent="openPlan"
+      :aria-disabled="!canOpenPlan"
     >
       <div class="plan-head">
         <span class="plan-label">当前方案版本</span>
         <span class="plan-hint">方案与纪要<el-icon><ArrowRight /></el-icon></span>
       </div>
       <div class="plan-version">{{ planVersion }}</div>
-      <div class="plan-meta"><span>自动保存</span><span>{{ isRunning ? '刚刚更新' : '等待会议开始' }}</span></div>
-      <div class="plan-progress"><i :style="{ width: isRunning ? '30%' : '0%' }" /></div>
+      <div class="plan-meta"><span>自动保存</span><span>{{ planActive ? '正在查看' : canOpenPlan ? '点击查看完整内容' : '等待会议开始' }}</span></div>
     </section>
-
-    <el-dialog v-model="planVisible" :title="`${planVersion} · 会议方案与纪要`" width="42.5rem" class="security-dialog plan-dialog">
-      <div class="plan-summary">
-        <span>拟稿单位：{{ planDocument.draftUnit }}</span>
-        <span>更新时间：{{ planDocument.updatedAt }}</span>
-        <span>状态：{{ isRunning ? '会议修订中' : '会议未开始' }}</span>
-      </div>
-
-      <el-tabs v-model="planTab" class="plan-tabs">
-        <el-tab-pane :label="`安保方案（${planDocument.chapters.length} 章）`" name="security">
-          <section class="plan-changes">
-            <h4>本版主要变更</h4>
-            <ul>
-              <li v-for="item in planDocument.changes" :key="item">{{ item }}</li>
-            </ul>
-          </section>
-
-          <section class="plan-chapters">
-            <article v-for="chapter in planDocument.chapters" :key="chapter.id" class="plan-chapter">
-              <h5><span>{{ chapter.no }}</span>{{ chapter.title }}</h5>
-              <ul>
-                <li v-for="item in chapter.items" :key="item">{{ item }}</li>
-              </ul>
-            </article>
-          </section>
-        </el-tab-pane>
-
-        <el-tab-pane :label="`工作组安排（${planDocument.groups.length} 组）`" name="groups">
-          <section class="work-groups">
-            <article v-for="group in planDocument.groups" :key="group.id" class="work-group">
-              <header class="work-group-head">
-                <h5>{{ group.name }}</h5>
-                <span>{{ group.size }} 人</span>
-              </header>
-              <p class="work-group-lead">组长 {{ group.lead }} · {{ group.department }}</p>
-              <ul>
-                <li v-for="task in group.tasks" :key="task">{{ task }}</li>
-              </ul>
-            </article>
-          </section>
-        </el-tab-pane>
-
-        <el-tab-pane label="会议纪要" name="minutes">
-          <section class="meeting-minutes">
-            <header class="minutes-head">
-              <div>
-                <small>会议纪要</small>
-                <h4>{{ planDocument.minutes.title }}</h4>
-              </div>
-              <span>{{ planDocument.minutes.status }}</span>
-            </header>
-
-            <div class="minutes-meta">
-              <span>记录：{{ planDocument.minutes.recorder }}</span>
-              <span>更新时间：{{ planDocument.updatedAt }}</span>
-            </div>
-
-            <section class="minutes-section">
-              <h4>会议概述</h4>
-              <p>{{ planDocument.minutes.summary }}</p>
-            </section>
-
-            <section class="minutes-section">
-              <h4>议定事项</h4>
-              <ol class="minutes-decisions">
-                <li v-for="item in planDocument.minutes.decisions" :key="item">{{ item }}</li>
-              </ol>
-            </section>
-
-            <section class="minutes-section">
-              <h4>后续任务</h4>
-              <div class="minutes-actions">
-                <article v-for="item in planDocument.minutes.actions" :key="item.id">
-                  <strong>{{ item.content }}</strong>
-                  <span>{{ item.owner }}</span>
-                  <time>{{ item.deadline }}</time>
-                </article>
-              </div>
-            </section>
-          </section>
-        </el-tab-pane>
-      </el-tabs>
-    </el-dialog>
   </aside>
 </template>
+
+<style scoped>
+.plan-card { transition: border-color .18s ease, background-color .18s ease, transform .18s ease; }
+.plan-card:not(.disabled):hover { transform: translateY(-1px); border-color: var(--line-strong); }
+.plan-card.active { border-color: var(--cyan); background: linear-gradient(110deg, rgba(21,139,161,.12), rgba(255,255,255,.92)); box-shadow: inset .18rem 0 0 var(--cyan); }
+.plan-card.disabled { opacity: .65; cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) { .plan-card { transition: none; } }
+</style>

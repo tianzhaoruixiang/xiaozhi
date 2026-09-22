@@ -19,3 +19,5 @@ data/hrbp-reports/**
 !data/hrbp-reports/.gitignore
 data/runtime/**
 !data/runtime/.gitignore
+data/docker-images/**
+!data/docker-images/.gitignore

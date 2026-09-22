@@ -92,7 +92,7 @@ watch(toast, (val) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   position: relative;
   min-height: 0;
 }
@@ -100,7 +100,7 @@ watch(toast, (val) => {
 .video-frame {
   position: relative;
   flex: 1;
-  min-height: 130px;
+  min-height: 70px;
   background:
     radial-gradient(circle at 50% 38%, oklch(0.62 0.15 225 / .2), transparent 58%),
     linear-gradient(180deg, oklch(0.22 0.075 246 / .72), oklch(0.13 0.05 252 / .92));
@@ -128,7 +128,7 @@ watch(toast, (val) => {
   right: 10px;
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--cyan);
   z-index: 1;
 }
@@ -184,7 +184,7 @@ watch(toast, (val) => {
 .report-label {
   flex-shrink: 0;
   padding: 1px 6px;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--cyan);
   border: 1px solid oklch(0.84 0.145 207 / .36);
@@ -193,7 +193,7 @@ watch(toast, (val) => {
 .report {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text);
   line-height: 1.35;
   white-space: nowrap;
@@ -205,7 +205,7 @@ watch(toast, (val) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
   font-size: 12px;
   color: var(--muted);
@@ -232,9 +232,11 @@ watch(toast, (val) => {
 
 .channel-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
   flex-shrink: 0;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 .channel {
@@ -242,7 +244,7 @@ watch(toast, (val) => {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 4px;
-  height: 32px;
+  height: 28px;
   padding: 0 6px;
   border: 1px solid var(--line);
   background: oklch(0.22 0.075 246 / .36);
@@ -273,7 +275,7 @@ watch(toast, (val) => {
 }
 
 .channel strong {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
   text-align: left;
@@ -292,16 +294,16 @@ watch(toast, (val) => {
 .tools {
   display: grid;
   grid-template-columns: 1fr 1fr 1.12fr;
-  gap: 5px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .tool {
-  height: 30px;
+  height: 28px;
   border: 1px solid var(--line);
   background: oklch(0.24 0.08 242 / .48);
   letter-spacing: 0.05em;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .tool:hover {

@@ -119,13 +119,32 @@ export function useMeetingSimulation() {
       content: `${self.name}已完成签到，全体参会人员签到完毕。`,
     })
     assistantReply.value = '签到完成。会议正式开始，我将全程记录发言、实时提炼要点。'
-    // 1.2s 后启动会议计时，由会议助手宣布开始并进入通报筹备议程
+    // 短暂反馈后立即启动会议，让演示节奏更紧凑
     window.setTimeout(() => {
       isRunning.value = true
       addActivity('会议开始', '全体参会人员签到完毕，开始通报前期筹备情况', 'success')
       assistantReply.value = '会议助手已就位，将全程记录发言、实时提炼要点并形成统稿建议。'
       enterPhase(0)
-    }, 1200)
+    }, 650)
+  }
+
+  /** 发言进行到一半时即识别并登记建议，不等待整段转写结束。 */
+  const registerSuggestion = (line: ScriptLine, time = clock()) => {
+    if (!line.suggestion) return false
+    const key = `${line.speakerId}:${line.suggestion.chapter}`
+    const already = registeredSuggestions.value.some((suggestion) => `${suggestion.speakerId}:${suggestion.chapter}` === key)
+    if (already) return false
+
+    registeredSuggestions.value.push({
+      ...line.suggestion,
+      id: nextEntryId(),
+      speakerId: line.speakerId,
+      time,
+    })
+    planMinor.value += 1
+    addActivity('快速识别建议并同步方案', `方案版本更新为 ${planVersion.value}，正在修订${line.suggestion.chapter}`, 'info')
+    assistantReply.value = `已在发言过程中识别“${line.suggestion.title}”，并同步标记到${line.suggestion.chapter}。`
+    return true
   }
 
   /** 一条发言转写完成：登记建议并决定下一位发言人或推进议程 */
@@ -144,22 +163,8 @@ export function useMeetingSimulation() {
     if (transcripts.value.length > 40) transcripts.value.splice(0, transcripts.value.length - 40)
     addActivity(`提取${activeSpeaker.value.name}发言要点`, '已识别责任单位和执行要求')
 
-    if (line.suggestion) {
-      // 去重：同一发言人同一章节已登记过就跳过（循环播放时避免重复登记）
-      const key = `${line.speakerId}:${line.suggestion.chapter}`
-      const already = registeredSuggestions.value.some((s) => `${s.speakerId}:${s.chapter}` === key)
-      if (!already) {
-        registeredSuggestions.value.push({
-          ...line.suggestion,
-          id: nextEntryId(),
-          speakerId: line.speakerId,
-          time,
-        })
-        // 建议直接写入方案待修改清单，版本号同步升版
-        planMinor.value += 1
-        addActivity('建议已写入方案待修改清单', `方案版本更新为 ${planVersion.value}，拟写入${line.suggestion.chapter}，统稿确认阶段统一审定`, 'info')
-      }
-    }
+    // 极短发言或恢复播放时兜底登记；已提前识别的建议会自动去重。
+    registerSuggestion(line, time)
 
     // 统稿/会签表态队列：推进下一条或结束
     if (stageSpeechQueue.value.length) {
@@ -197,8 +202,8 @@ export function useMeetingSimulation() {
       liveDraft.value = ''
       charIndex.value = 0
       waitTicks.value = 0
-      pushAssistant(`全部议程已完成。会议期间共登记 ${registeredSuggestions.value.length} 条建议，请领导确认后进入统稿确认环节。`)
-      assistantReply.value = '议程全部完成，等待领导确认进入统稿确认环节。'
+      pushAssistant(`全部议程已完成。会议期间共登记 ${registeredSuggestions.value.length} 条建议，请打开当前方案完成审阅和签章确认。`)
+      assistantReply.value = '议程全部完成，请打开当前方案审阅方案、工作组和纪要，完成签章后可下发任务。'
       addActivity('全部议程完成', `已登记 ${registeredSuggestions.value.length} 条统稿建议`, 'success')
       return
     }
@@ -211,9 +216,9 @@ export function useMeetingSimulation() {
     const text = command.trim()
     if (!text) return
     assistantReply.value = text.includes('汇总')
-      ? `目前已记录 ${transcripts.value.length} 条发言，登记 ${registeredSuggestions.value.length} 条统稿建议，重点集中在人员审核、现场安保部署和场馆应急。`
+        ? `目前已记录 ${transcripts.value.length} 条发言，登记 ${registeredSuggestions.value.length} 条方案建议，重点集中在人员审核、现场安保部署和场馆应急。`
       : text.includes('变化')
-        ? `当前方案为 ${planVersion.value}，会议期间已随建议登记同步更新 ${planMinor.value} 次，统稿确认后统一定稿。`
+        ? `当前方案为 ${planVersion.value}，会议期间已随建议登记同步更新 ${planMinor.value} 次，签章确认后可下发。`
         : '指令已收到，会议助手正在结合当前发言和方案内容进行处理。'
     addActivity('收到领导指令', text, 'running')
     taskIndex.value = (taskIndex.value + 1) % assistantTasks.length
@@ -244,7 +249,7 @@ export function useMeetingSimulation() {
       if (!isRunning.value) return
       meetingSeconds.value += 1
     }, 1000))
-    // 发言逐字转写：按议程阶段推进（降速演示，每字约 85ms）
+    // 发言逐字转写：加快到每字约 42ms，并在发言中段提前识别建议。
     timers.push(window.setInterval(() => {
       if (!isRunning.value) return
       const line = currentLine.value
@@ -253,12 +258,14 @@ export function useMeetingSimulation() {
       if (charIndex.value < text.length) {
         charIndex.value += 1
         liveDraft.value = text.slice(0, Math.min(charIndex.value, text.length))
-      } else if (waitTicks.value < 24) {
+        const recognitionPoint = Math.max(12, Math.ceil(text.length * 0.48))
+        if (charIndex.value === recognitionPoint) registerSuggestion(line)
+      } else if (waitTicks.value < 9) {
         waitTicks.value += 1
       } else {
         finalizeLine()
       }
-    }, 85))
+    }, 42))
     // 助手负载曲线
     timers.push(window.setInterval(() => {
       if (!isRunning.value) return

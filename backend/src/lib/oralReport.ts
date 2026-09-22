@@ -1,5 +1,6 @@
-import { formatAttendeeStatusHint } from '../data/attendeeStatus.js'
+import { formatAttendeeStatusHint, listProxyAttendees } from '../data/attendeeStatus.js'
 import { chatCompletion } from './openaiCompatible.js'
+import { arabicToSpoken, toChineseInteger } from './spokenChinese.js'
 
 export interface OralReportContext {
   userMessage: string
@@ -24,14 +25,15 @@ export function oralReportSystemPrompt(userMessage?: string): string {
 
 只输出可直接朗读的纯中文，不要 Markdown、不要标题符号、不要代码块、不要英文缩写堆砌。
 
-口吻：恭敬、口语、短句；可用「首先 / 其次 / 另外」；时间读成「十四点」这类说法。
+口吻：恭敬、口语、短句。厅长工作台口述最多 1 到 2 句，只说结果。
 
 硬性要求：
 1. 必须根据「本轮领导指示」和「专家实际结论」来写，结论从材料中提炼，禁止编造未出现的会议时间、会议室、参会人、通知结果。
-2. 禁止套用固定模板（例如不管问什么都汇报「人员调度会时间地点参会人」）。
+2. 禁止套用固定模板（例如不管问什么都汇报「人员调度会时间地点参会人」、材料齐套、请盯办）。
 3. 领导若只是问今日安排/重点事项：口述今日要点即可，不要谈预定会议室或发通知。
-4. 领导若交代办会/通知/预定：才汇报本轮实际办成的时间、地点、通知、外出代参会等；材料没有的就说「尚未明确」或略过，不要用默认假数据填空。
-5. 结尾一句请领导指示。
+4. 领导若交代办会/通知/预定：口述只要一句结果，口径为「会议已通知到相关人员，其中由×位外出领导授权数智助手参会。」不要再报时间、地点、议程、资料齐套。人数按参会状态里外出代参会人数如实说（两位说「两」）。
+5. 时间必须用中文读法，严禁出现 14:00、9:30 这类阿拉伯数字冒号时间（语音会读错）。只说「十四点整」「九点三十分」「九月二十二日」。数量、房号同样改成汉字。
+6. 办会通知类口述不要加「请您指示」。不要「首先其次另外」铺陈。
 
 本轮领导指示参考：${userMessage?.trim() || '（见用户消息）'}
 
@@ -46,16 +48,18 @@ export function briefWithOralPrompt(): string {
 先给出简要书面纪要（Markdown），再给出【口述汇报】纯文本（供语音朗读）。
 
 ## 书面纪要
-- 紧扣本轮领导指示与专家真实结论
+- 紧扣本轮领导指示与专家真实结论；最多 5 条，每条一行
 - 结论与关键动作；风险提醒（如有）
 - 未发生的事项不要写
 
 ## 口述汇报
 （可直接朗读的口语，不要用 Markdown）
-- 根据本轮实际结果现写，结构随任务变化
+- 办会/通知类只要一句：会议已通知到相关人员，其中由×位外出领导授权数智助手参会
+- 不要报会议室、时间、议程、材料齐套、盯办事项，不要「请您指示」
+- 其他任务最多 2 句；根据本轮实际结果现写
+- 时间、日期、数量一律用汉字读法；严禁 14:00 / 9:30 这种写法
 - 禁止套固定「人员调度会三板斧」空话
-- 材料里没有的时间/地点/名单不要编
-- 结尾请领导指示`
+- 材料里没有的时间/地点/名单不要编`
 }
 
 /**
@@ -104,13 +108,15 @@ export function extractOralSection(text: string): string {
 }
 
 export function cleanOralText(text: string): string {
-  return text
-    .replace(/^【口述汇报】\s*/m, '')
-    .replace(/^#+\s*口述汇报\s*/im, '')
-    .replace(/[#*`>_]/g, '')
-    .replace(/\n+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
+  return arabicToSpoken(
+    text
+      .replace(/^【口述汇报】\s*/m, '')
+      .replace(/^#+\s*口述汇报\s*/im, '')
+      .replace(/[#*`>_]/g, '')
+      .replace(/\n+/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim(),
+  )
 }
 
 /**
@@ -146,10 +152,31 @@ export function buildOralReportFallback(options: {
     source.length > 220 ? `${source.slice(0, 220)}……` : source
 
   if (clipped) {
-    return `领导，您好。本轮协同已完成，要点如下：${clipped} 请您指示。`
+    return arabicToSpoken(
+      `领导，您好。本轮协同已完成，要点如下：${clipped} 请您指示。`,
+    )
   }
 
-  return `领导，您好。关于「${options.userMessage || '您的指示'}」，本轮已处理完毕，详细结论请见书面纪要。请您指示。`
+  return arabicToSpoken(
+    `领导，您好。关于「${options.userMessage || '您的指示'}」，本轮已处理完毕，详细结论请见书面纪要。请您指示。`,
+  )
+}
+
+/**
+ * 办会/发通知完成后的口述口径：只报通知到位与外出授权代参会。
+ */
+export function buildDispatchNoticeOral(): string {
+  const n = listProxyAttendees().length
+  if (n <= 0) return '会议已通知到相关人员。'
+  const countWord = n === 2 ? '两' : toChineseInteger(n)
+  return `会议已通知到相关人员，其中由${countWord}位外出领导授权数智助手参会。`
+}
+
+function isDispatchNoticeRound(ctx: OralReportContext): boolean {
+  const asked = /准备.{0,8}会|组织.{0,8}会|调度会|发(送)?通知|汇讯|参会通知|预定.{0,6}会议|预订.{0,6}会议/.test(
+    ctx.userMessage.replace(/\s+/g, ''),
+  )
+  return asked
 }
 
 /**
@@ -159,6 +186,10 @@ export function buildOralReportFallback(options: {
 export async function resolveOralReport(
   ctx: OralReportContext,
 ): Promise<{ oral: string; source: 'section' | 'llm' | 'fallback' }> {
+  if (isDispatchNoticeRound(ctx)) {
+    return { oral: buildDispatchNoticeOral(), source: 'section' }
+  }
+
   const fromSection = extractOralSection(ctx.briefText || '')
   if (fromSection && fromSection.length >= 8) {
     return { oral: fromSection, source: 'section' }

@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import {
   SATURATION_MAX,
   STATUS_META,
-  countDoneTasks,
   groupProgress,
   groupStatus,
   type TaskGroup,
@@ -22,13 +21,6 @@ const emit = defineEmits<{
 
 const status = computed(() => groupStatus(props.group))
 const progress = computed(() => groupProgress(props.group))
-const doneTasks = computed(() => countDoneTasks(props.group))
-const riskTasks = computed(
-  () => props.group.tasks.filter((task) => task.status === 'risk').length,
-)
-const unassignedTasks = computed(
-  () => props.group.tasks.filter((task) => task.status === 'unassigned').length,
-)
 
 /** 饱和度分级：≥4 高、=3 偏高、其余正常 */
 const saturationLevel = (value: number) => {
@@ -51,20 +43,11 @@ const saturationPercent = (value: number) =>
         </div>
         <p>本组各项任务进展与成员饱和度</p>
       </div>
-      <!-- 右侧：待审核入口（在统计行左侧） + 统计 -->
+      <!-- 右侧：待审核入口等 -->
       <div class="head-right">
         <div class="head-action">
           <slot name="head-action" />
         </div>
-
-        <dl class="stats">
-          <div><dt>任务</dt><dd>{{ group.tasks.length }}</dd></div>
-          <div><dt>完成</dt><dd>{{ doneTasks }}</dd></div>
-          <div :data-warn="unassignedTasks > 0"><dt>待分配</dt><dd>{{ unassignedTasks }}</dd></div>
-          <div :data-warn="riskTasks > 0"><dt>受阻</dt><dd>{{ riskTasks }}</dd></div>
-          <div><dt>成员</dt><dd>{{ group.roster.length }}</dd></div>
-          <div><dt>组进度</dt><dd>{{ progress }}%</dd></div>
-        </dl>
       </div>
     </header>
 
@@ -108,7 +91,6 @@ const saturationPercent = (value: number) =>
                   <span class="chip" :data-status="task.status">
                     {{ STATUS_META[task.status].label }}
                   </span>
-                  <span class="pct">{{ task.progress }}%</span>
                 </span>
               </span>
 
@@ -231,44 +213,7 @@ const saturationPercent = (value: number) =>
   color: var(--color-ink-muted);
 }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-}
-
-.stats div {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid rgba(20, 40, 58, 0.1);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.stats dt {
-  font-size: 0.7rem;
-  color: var(--color-ink-muted);
-}
-
-.stats dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--color-accent);
-}
-
-.stats div[data-warn='true'] {
-  border-color: rgba(184, 122, 53, 0.3);
-  background: rgba(184, 122, 53, 0.08);
-}
-
-.stats div[data-warn='true'] dd { color: var(--color-warn); }
-
-/* 头部右侧：待审核入口 + 统计，整体靠右 */
+/* 头部右侧：待审核入口，整体靠右 */
 .head-right {
   display: flex;
   flex-wrap: wrap;
@@ -496,15 +441,6 @@ const saturationPercent = (value: number) =>
   align-items: center;
   gap: 10px;
 }
-
-.pct {
-  font-family: var(--font-mono);
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: var(--color-accent);
-}
-
-.task[data-status='unassigned'] .pct { color: #6b7c8c; }
 
 .t-bar {
   margin-top: 11px;

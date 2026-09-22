@@ -20,6 +20,7 @@ export function formatPlansContext(plans: PlanItem[] = []): string {
 export {
   CAPABILITY_HINT,
   ORCHESTRATOR_SYSTEM,
+  CHAIRMAN_LEADER_REPLY,
   XIAOZHI_BRIEF_PROMPT,
   XIAOZHI_SYSTEM,
   buildClaudeAgentsFromRoster,

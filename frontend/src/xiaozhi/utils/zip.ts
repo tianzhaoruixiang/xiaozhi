@@ -119,5 +119,6 @@ export function createZipBlob(
   entries: ZipEntry[],
   type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ): Blob {
-  return new Blob([createZip(entries)], { type })
+  const zip = createZip(entries)
+  return new Blob([new Uint8Array(zip) as unknown as BlobPart], { type })
 }
