@@ -17,6 +17,15 @@ const props = defineProps<{
 
 const { approved } = useReviews()
 
+/** 所有工作组的任务拉平成一个列表，只保留任务自身的进展信息与所属组名 */
+const allTasks = computed(() =>
+  props.groups.flatMap((group) =>
+    group.tasks.map((task) => ({ ...task, uid: `${group.id}-${task.id}`, groupName: group.name })),
+  ),
+)
+
+const totalTasks = computed(() => allTasks.value.length)
+
 /** 该组已完成为成果的任务标题 */
 const doneTitlesOf = (group: TaskGroup) =>
   group.tasks.filter((task) => task.status === 'done').map((task) => task.title)
@@ -31,113 +40,61 @@ const handedOverOf = (group: TaskGroup) =>
 
 const riskCountOf = (group: TaskGroup) =>
   group.tasks.filter((task) => task.status === 'risk').length
-
-const totalMembers = computed(() =>
-  props.groups.reduce((sum, group) => sum + group.roster.length, 0),
-)
 </script>
 
 <template>
-  <section class="board" aria-label="专项任务 · 各组任务与工作组进度成果">
+  <section class="board" aria-label="专项任务 · 各组任务进展与工作组进度成果">
     <header class="board-head">
       <div class="board-title">
         <h2>专项任务</h2>
-        <p>左侧为各组任务与成员进展，右侧为各工作组进度与成果</p>
+        <p>左侧为各组任务进展，右侧为各工作组进度与成果</p>
       </div>
       <div class="head-right">
         <RouterLink class="summary-btn" to="/command/task">
           任务总结
           <b aria-hidden="true">→</b>
         </RouterLink>
-        <span class="head-meta">
-          {{ groups.length }} 个工作组 · {{ totalMembers }} 名成员
-        </span>
+        <span class="head-meta">共 {{ totalTasks }} 项任务</span>
       </div>
     </header>
 
     <div class="board-body">
-      <!-- 左：所有工作组的任务 -->
+      <!-- 左：所有组的任务进展（不含工作组与成员信息） -->
       <div class="tasks-col">
-        <article
-          v-for="(group, index) in groups"
-          :key="group.id"
-          class="group-block"
-          :data-status="groupStatus(group)"
-        >
-          <header class="group-block-head">
-            <span class="g-index">{{ String(index + 1).padStart(2, '0') }}</span>
-            <span class="g-name">
-              <strong>
-                {{ group.name }}
-                <span v-if="group.current" class="current-tag">当前组</span>
-              </strong>
-              <em>组长 {{ group.lead }} · {{ group.scope }}</em>
-            </span>
-            <span class="g-meta">
-              <span class="chip" :data-status="groupStatus(group)">
-                {{ STATUS_META[groupStatus(group)].label }}
+        <h3 class="col-title">
+          各组任务进展
+          <span class="col-count">{{ totalTasks }}</span>
+        </h3>
+
+        <ol class="tasks">
+          <li
+            v-for="(task, index) in allTasks"
+            :key="task.uid"
+            class="task"
+            :data-status="task.status"
+          >
+            <div class="t-head">
+              <span class="t-title">
+                <strong>
+                  <span class="t-index">{{ String(index + 1).padStart(2, '0') }}</span>
+                  {{ task.title }}
+                </strong>
+                <em>{{ task.detail }}</em>
               </span>
-              <span class="g-count">
-                {{ countDoneTasks(group) }}/{{ group.tasks.length }}
+              <span class="chip" :data-status="task.status">
+                {{ STATUS_META[task.status].label }}
               </span>
-            </span>
-          </header>
+            </div>
 
-          <div class="g-progress">
-            <TaskProgressBar :progress="groupProgress(group)" :status="groupStatus(group)" />
-          </div>
+            <div class="t-bar">
+              <TaskProgressBar :progress="task.progress" :status="task.status" />
+            </div>
 
-          <ol class="tasks">
-            <li
-              v-for="task in group.tasks"
-              :key="task.id"
-              class="task"
-              :data-status="task.status"
-            >
-              <div class="t-head">
-                <span class="t-title">
-                  <strong>{{ task.title }}</strong>
-                  <em>{{ task.detail }}</em>
-                </span>
-                <span class="chip" :data-status="task.status">
-                  {{ STATUS_META[task.status].label }}
-                </span>
-              </div>
-
-              <div class="t-bar">
-                <TaskProgressBar :progress="task.progress" :status="task.status" />
-              </div>
-
-              <div class="t-foot">
-                <span>负责人 {{ task.owner || '待分配' }}</span>
-                <span>截止 {{ task.due || '—' }}</span>
-              </div>
-
-              <div class="members-head">
-                <span class="mh-label">成员进度</span>
-                <span class="mh-meta">{{ task.members.length }} 人</span>
-              </div>
-
-              <ul v-if="task.members.length" class="member-list">
-                <li
-                  v-for="member in task.members"
-                  :key="member.id"
-                  class="member"
-                  :data-status="member.status"
-                >
-                  <span class="avatar" aria-hidden="true">{{ member.name.charAt(0) }}</span>
-                  <span class="m-who">
-                    <strong>{{ member.name }}</strong>
-                    <em>{{ member.role }}</em>
-                  </span>
-                  <TaskProgressBar compact :progress="member.progress" :status="member.status" />
-                  <span class="m-note">{{ member.note }}</span>
-                </li>
-              </ul>
-              <p v-else class="no-member">待分配，暂无成员</p>
-            </li>
-          </ol>
-        </article>
+            <div class="t-foot">
+              <span class="t-group">{{ task.groupName }}</span>
+            </div>
+          </li>
+        </ol>
       </div>
 
       <!-- 右：各组进度与成果 -->
@@ -206,7 +163,9 @@ const totalMembers = computed(() =>
 .board {
   position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
   padding: 20px 20px 18px;
   border-radius: calc(var(--radius-lg) + 2px);
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -238,6 +197,7 @@ const totalMembers = computed(() =>
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px 20px;
+  flex-shrink: 0;
   padding-bottom: 14px;
   margin-bottom: 16px;
   border-bottom: 1px solid rgba(20, 40, 58, 0.08);
@@ -286,7 +246,7 @@ const totalMembers = computed(() =>
   line-height: 1;
 }
 
-/* 头部右侧：任务总结入口 + 组数/人数 */
+/* 头部右侧：任务总结入口 + 任务总数 */
 .head-right {
   display: flex;
   flex-wrap: wrap;
@@ -300,18 +260,21 @@ const totalMembers = computed(() =>
   color: var(--color-ink-muted);
 }
 
-/* 左任务 / 右进度成果 */
+/* 左任务 / 右进度成果：两栏各自在卡片内部滚动，页面本身不滚动 */
 .board-body {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .col-title {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
   margin: 0 0 10px;
   font-family: var(--font-mono);
   font-size: 0.74rem;
@@ -331,86 +294,107 @@ const totalMembers = computed(() =>
 .tasks-col {
   display: flex;
   flex-direction: column;
-  gap: 14px;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.group-block {
-  padding: 14px;
-  border: 1px solid rgba(20, 40, 58, 0.08);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.66);
-}
-
-.group-block[data-status='risk'] { border-color: rgba(168, 72, 72, 0.32); }
-.group-block[data-status='done'] { border-color: rgba(47, 125, 90, 0.28); }
-
-.group-block-head {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px 12px;
-  align-items: center;
-}
-
-.g-index {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid rgba(46, 196, 214, 0.32);
-  border-radius: 9px;
-  background: rgba(46, 196, 214, 0.1);
-  color: var(--color-accent);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.g-name {
-  min-width: 0;
+/* 所有组的任务平铺：只呈现任务自身的进展 */
+.tasks {
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0 4px 2px 0;
 }
 
-.g-name strong {
+.task {
+  padding: 12px 13px;
+  border: 1px solid rgba(20, 40, 58, 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.task[data-status='risk'] { border-color: rgba(168, 72, 72, 0.28); }
+.task[data-status='done'] { border-color: rgba(47, 125, 90, 0.24); }
+.task[data-status='unassigned'] {
+  border-style: dashed;
+  border-color: rgba(107, 124, 140, 0.42);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.t-head {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.96rem;
-  color: var(--color-ink);
-}
-
-.current-tag {
-  padding: 1px 7px;
-  border: 1px solid rgba(26, 122, 146, 0.3);
-  border-radius: 999px;
-  background: rgba(26, 122, 146, 0.08);
-  color: var(--color-accent);
-  font-size: 0.64rem;
-  font-weight: 600;
-}
-
-.g-name em {
-  font-style: normal;
-  font-size: 0.76rem;
-  color: var(--color-ink-muted);
-}
-
-.g-meta {
-  display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
 }
 
-.g-count {
+.t-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.t-title strong {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: #14304a;
+}
+
+.t-index {
+  flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.t-title em {
+  font-style: normal;
+  font-size: 0.76rem;
+  line-height: 1.5;
   color: var(--color-ink-muted);
 }
 
-.g-progress {
+.t-bar {
   margin-top: 10px;
+}
+
+.t-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 9px;
+  font-size: 0.73rem;
+  color: var(--color-ink-muted);
+}
+
+/* 该任务所属工作组 */
+.t-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-accent);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.t-group::before {
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+  background: currentColor;
+  content: '';
+  opacity: 0.7;
 }
 
 .chip {
@@ -455,168 +439,53 @@ const totalMembers = computed(() =>
   background: rgba(107, 124, 140, 0.08);
 }
 
-.tasks {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 12px 0 0;
-  padding: 12px 0 0;
-  border-top: 1px dashed rgba(20, 40, 58, 0.1);
-}
-
-.task {
-  padding: 12px 13px;
-  border: 1px solid rgba(20, 40, 58, 0.08);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.task[data-status='risk'] { border-color: rgba(168, 72, 72, 0.28); }
-.task[data-status='done'] { border-color: rgba(47, 125, 90, 0.24); }
-.task[data-status='unassigned'] {
-  border-style: dashed;
-  border-color: rgba(107, 124, 140, 0.42);
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.t-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.t-title {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.t-title strong {
-  font-size: 0.92rem;
-  color: #14304a;
-}
-
-.t-title em {
-  font-style: normal;
-  font-size: 0.76rem;
-  line-height: 1.5;
-  color: var(--color-ink-muted);
-}
-
-.t-bar {
-  margin-top: 10px;
-}
-
-.t-foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-top: 9px;
-  font-size: 0.73rem;
-  color: var(--color-ink-muted);
-}
-
-.members-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 11px 0 8px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(20, 40, 58, 0.1);
-}
-
-.mh-label {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  color: var(--color-accent);
-}
-
-.mh-meta {
-  font-size: 0.72rem;
-  color: var(--color-ink-muted);
-}
-
-.member-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-}
-
-.member {
-  display: grid;
-  grid-template-columns: auto minmax(110px, 150px) minmax(110px, 1fr) minmax(0, 1.4fr);
-  align-items: center;
-  gap: 10px;
-  padding: 9px 11px;
-  border: 1px solid rgba(20, 40, 58, 0.08);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.82);
-}
-
-.member[data-status='risk'] { border-color: rgba(168, 72, 72, 0.28); }
-
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid rgba(46, 196, 214, 0.32);
-  border-radius: 50%;
-  background: rgba(46, 196, 214, 0.12);
-  color: var(--color-accent);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.m-who {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.m-who strong {
-  font-size: 0.86rem;
-  color: var(--color-ink);
-}
-
-.m-who em {
-  font-style: normal;
-  font-size: 0.7rem;
-  color: var(--color-ink-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.m-note {
-  font-size: 0.74rem;
-  line-height: 1.45;
-  color: var(--color-ink-muted);
-}
-
-.no-member {
-  margin: 0;
-  font-size: 0.76rem;
-  color: var(--color-ink-muted);
-}
-
 /* 右侧：各组进度与成果 */
+.summary-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .summary-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   margin: 0;
-  padding: 0;
+  padding: 0 4px 2px 0;
+}
+
+/* 卡片内部滚动条：细窄、低对比，不抢内容 */
+.tasks,
+.summary-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 122, 146, 0.28) transparent;
+}
+
+.tasks::-webkit-scrollbar,
+.summary-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tasks::-webkit-scrollbar-track,
+.summary-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tasks::-webkit-scrollbar-thumb,
+.summary-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(26, 122, 146, 0.26);
+}
+
+.tasks::-webkit-scrollbar-thumb:hover,
+.summary-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 122, 146, 0.42);
 }
 
 .summary-card {
@@ -719,19 +588,24 @@ const totalMembers = computed(() =>
 }
 
 @media (max-width: 1000px) {
+  /* 窄屏改为单栏堆叠：滚动统一交给卡片主体 */
   .board-body {
     grid-template-columns: 1fr;
+    align-items: start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .tasks-col,
+  .summary-col,
+  .tasks,
+  .summary-list {
+    overflow: visible;
+    min-height: auto;
   }
 }
 
 @media (max-width: 860px) {
   .board { padding: 16px; }
-  .group-block-head { grid-template-columns: auto 1fr; }
-  .g-meta { grid-column: 1 / -1; justify-content: space-between; }
-  .member {
-    grid-template-columns: auto 1fr;
-    row-gap: 8px;
-  }
-  .m-note { grid-column: 1 / -1; }
 }
 </style>

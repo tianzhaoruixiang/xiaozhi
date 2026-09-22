@@ -301,6 +301,15 @@ export function countDoneTasks(group: TaskGroup): number {
   return group.tasks.filter((t) => t.status === 'done').length
 }
 
+/**
+ * 分配任务时若还没有截止时间，给一个默认截止：
+ * 周一~周四分配 → 本周五；周五~周日分配 → 下周三。
+ */
+export function defaultDueLabel(now: Date = new Date()): string {
+  const day = now.getDay()
+  return day >= 1 && day <= 4 ? '本周五' : '下周三'
+}
+
 function cloneGroups(source: TaskGroup[]): TaskGroup[] {
   return source.map((group) => ({
     ...group,
@@ -353,7 +362,9 @@ export function useGroupTasks() {
 
     const alreadyOwned = task.owner === memberName
     task.owner = memberName
+    // 截止时间：优先用调用方给的，其次保留已有；分配后仍为空则补默认截止
     if (options?.due) task.due = options.due
+    else if (!task.due) task.due = defaultDueLabel()
     // 分配即开工：待分配 → 进行中
     if (task.status === 'unassigned') task.status = 'doing'
 

@@ -5,6 +5,7 @@ import { useAssistantChat } from '../composables/useAssistantChat'
 import { SATURATION_MAX, useGroupTasks } from '../data/groupTasks'
 import MarkdownView from '../components/MarkdownView.vue'
 import PersonalCollabProcess from '../components/PersonalCollabProcess.vue'
+import XiaozhiWorkingHint from '../components/XiaozhiWorkingHint.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +62,13 @@ const lastAssistant = computed(() =>
   [...messages.value].reverse().find((m) => m.role === 'assistant'),
 )
 
+/** 正在流式输出中的那条助手消息（与 /personal/task 判定一致） */
+const isLiveMessage = (msgId: string) => {
+  if (!streaming.value) return false
+  const last = [...messages.value].reverse().find((m) => m.role === 'assistant')
+  return last?.id === msgId
+}
+
 /** 专家全部跑完即视为分解完成 */
 const finished = computed(() => {
   const msg = lastAssistant.value
@@ -99,6 +107,15 @@ const backToTeam = () => {
   // 兜底：分解场景下即使完成判定还没到，点击返回也应用分配结果
   if (isDecompose.value) applyDecomposition()
   void router.push(TEAM_PATH)
+}
+
+/** 底部输入框：就当前任务继续追问智枢（与 /personal/task 的输入框一致） */
+const draft = ref('')
+const askFollowUp = () => {
+  const text = draft.value.trim()
+  if (!text || streaming.value) return
+  draft.value = ''
+  void send(text, [], { mode: 'hybrid' }, { enableOralReport: false })
 }
 </script>
 
@@ -162,7 +179,7 @@ const backToTeam = () => {
             <PersonalCollabProcess
               v-if="msg.role === 'assistant'"
               :message="msg"
-              :live="streaming && lastAssistant?.id === msg.id"
+              :live="isLiveMessage(msg.id)"
             />
 
             <MarkdownView
@@ -171,8 +188,19 @@ const backToTeam = () => {
               :source="msg.content"
             />
             <p v-else-if="msg.content" class="plain">{{ msg.content }}</p>
+            <!-- 执行过程中的「正在工作」，与 /personal/task 保持一致 -->
+            <XiaozhiWorkingHint
+              v-else-if="
+                msg.role === 'assistant' &&
+                isLiveMessage(msg.id) &&
+                msg.taskPlan?.phase === 'executing'
+              "
+              tone="light"
+              :steps="msg.steps ?? []"
+              caption="正在办理中…"
+            />
             <p
-              v-else-if="msg.role === 'assistant' && streaming"
+              v-else-if="msg.role === 'assistant' && isLiveMessage(msg.id)"
               class="plain muted"
             >
               {{ isDecompose ? '正在调度任务分解专家…' : '正在结合台账梳理…' }}
@@ -200,6 +228,18 @@ const backToTeam = () => {
             </span>
             <span>{{ targetTask?.title }} · 负责人 {{ targetTask?.owner || '待分配' }}</span>
           </div>
+
+          <form class="composer" @submit.prevent="askFollowUp">
+            <textarea
+              :value="draft"
+              rows="2"
+              :disabled="streaming"
+              placeholder="继续追问，例如：这几个任务项先做哪个？需要谁配合？"
+              @keydown.enter.exact.prevent="askFollowUp"
+              @input="draft = ($event.target as HTMLTextAreaElement).value"
+            />
+            <button type="submit" :disabled="streaming || !draft.trim()">发送</button>
+          </form>
         </footer>
       </section>
     </div>
@@ -423,6 +463,7 @@ const backToTeam = () => {
 .messages {
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -432,7 +473,7 @@ const backToTeam = () => {
 }
 
 .bubble {
-  max-width: 94%;
+  max-width: 92%;
   padding: 12px 14px;
   border: 1px solid rgba(20, 40, 58, 0.08);
   border-radius: 14px;
@@ -443,6 +484,7 @@ const backToTeam = () => {
 .bubble[data-role='assistant'] {
   align-self: stretch;
   max-width: 100%;
+  color: #14304a;
   background: rgba(255, 255, 255, 0.94);
 }
 
@@ -486,14 +528,53 @@ const backToTeam = () => {
 
 .dock {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 18px 14px;
   border-top: 1px solid rgba(20, 40, 58, 0.08);
   background: rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
+}
+
+/* 底部输入框：与 /personal/task 一致 */
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.composer textarea {
+  resize: none;
+  border-radius: 12px;
+  border: 1px solid rgba(20, 40, 58, 0.12);
+  background: rgba(255, 255, 255, 0.84);
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--color-ink);
+  line-height: 1.5;
+}
+
+.composer textarea:disabled {
+  opacity: 0.6;
+}
+
+.composer button[type='submit'] {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  background: linear-gradient(160deg, #1f8ea8, #176f84);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.composer button[type='submit']:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .result {
@@ -528,5 +609,11 @@ const backToTeam = () => {
   border-color: rgba(47, 125, 90, 0.3);
   background: rgba(47, 125, 90, 0.1);
   color: var(--color-success);
+}
+
+@media (max-width: 720px) {
+  .composer {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
