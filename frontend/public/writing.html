@@ -216,8 +216,18 @@
       cursor: pointer; color: inherit; text-align: left;
     }
     .toggle-left, .toggle-right { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-    .pulse { width: 8px; height: 8px; border-radius: 50%; background: rgba(20, 40, 58, 0.25); flex-shrink: 0; }
-    .pulse.live { background: var(--color-accent); box-shadow: 0 0 0 0 rgba(46, 196, 214, 0.45); animation: live-pulse 1.4s ease-out infinite; }
+    .toggle-left { align-items: flex-start; }
+    .cur-run { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .cur-head { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+    .cur-desc { font-size: 0.76rem; line-height: 1.5; color: var(--color-ink-muted); }
+    .spin-ring {
+      position: relative; width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid rgba(46, 196, 214, 0.25); border-top-color: var(--color-accent);
+      animation: spin-ring 0.8s linear infinite;
+    }
+    .process[data-done='1'] .spin-ring { border: 2px solid rgba(26, 122, 92, 0.45); animation: none; display: grid; place-items: center; }
+    .process[data-done='1'] .spin-ring::after { content: '✓'; font-size: 0.62rem; font-weight: 700; color: #1a7a5c; line-height: 1; }
+    @keyframes spin-ring { to { transform: rotate(360deg); } }
     .toggle-left strong { font-size: 0.88rem; color: #14304a; }
     .toggle-left em {
       font-style: normal; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em;
@@ -471,121 +481,6 @@
     @media (max-width: 1280px) {
       .work-grid.split { grid-template-columns: minmax(400px, 0.85fr) minmax(0, 1.15fr); }
     }
-
-    /* ===================== PDF 导出打印区域 ===================== */
-    #printArea {
-      display: none;
-    }
-    #printArea.printing {
-      display: block;
-    }
-
-    @media print {
-      /* 隐藏所有非打印内容 */
-      body > *:not(#printArea) {
-        display: none !important;
-      }
-      body {
-        background: #fff !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      /* 打印区域样式 */
-      #printArea {
-        display: block !important;
-        position: static !important;
-        width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      #printArea .print-page {
-        font-family: '仿宋', FangSong, '仿宋_GB2312', STFangsong, serif;
-        font-size: 16pt;
-        line-height: 28pt;
-        color: #000;
-        padding: 140px 100px 130px 106px;
-      }
-      #printArea .print-page .org-name {
-        font-family: '华文中宋', SimSun, serif;
-        font-size: 26pt;
-        color: #e00000;
-        letter-spacing: 0.15em;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 10px;
-      }
-      #printArea .print-page .doc-type {
-        font-family: '方正小标宋', '华文中宋', SimSun, serif;
-        font-size: 22pt;
-        text-align: center;
-        letter-spacing: 0.1em;
-        margin-bottom: 8px;
-      }
-      #printArea .print-page .red-line {
-        height: 2px;
-        background: #e00000;
-        margin: 8px 0 20px;
-      }
-      #printArea .print-page .doc-number {
-        font-size: 16pt;
-        text-align: center;
-        margin-bottom: 24px;
-      }
-      #printArea .print-page .doc-title {
-        font-family: '方正小标宋', '华文中宋', SimSun, serif;
-        font-size: 22pt;
-        font-weight: bold;
-        text-align: center;
-        line-height: 36pt;
-        margin-bottom: 20px;
-      }
-      #printArea .print-page .recipient {
-        font-size: 16pt;
-        margin-bottom: 12px;
-      }
-      #printArea .print-page h4 {
-        font-family: '黑体', SimHei, sans-serif;
-        font-size: 16pt;
-        font-weight: bold;
-        text-indent: 2em;
-        line-height: 28pt;
-        margin: 12px 0 4px 0;
-      }
-      #printArea .print-page p {
-        text-indent: 2em;
-        text-align: justify;
-        line-height: 28pt;
-        margin: 0;
-      }
-      #printArea .print-page .closing {
-        text-indent: 2em;
-        line-height: 28pt;
-        margin-top: 20px;
-      }
-      #printArea .print-page .signature {
-        text-align: right;
-        margin-top: 40px;
-        font-size: 16pt;
-        line-height: 28pt;
-      }
-      #printArea .print-page .signature p {
-        margin: 0;
-        text-indent: 0;
-      }
-      #printArea .print-page .footer-line {
-        margin-top: 40px;
-        border-top: 1px solid #000;
-        padding-top: 4px;
-        font-size: 10pt;
-        color: #333;
-        display: flex;
-        justify-content: space-between;
-      }
-      @page {
-        size: A4;
-        margin: 0;
-      }
-    }
   </style>
 </head>
 <body>
@@ -795,7 +690,6 @@
     const headStatus = $('headStatus'), docHint = $('docHint'), docBody = $('docBody');
 
     const CHIP_MAIN = '当前任务已完成，请生成一份总结报告';
-    const CHIP_AGAIN = '重新生成总结报告';
     const state = { running: false, done: false };
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -888,12 +782,18 @@
       bubble.querySelector('.plain').innerHTML = '收到指示。本次报告由<span class="hl">材料收集专家</span>从各组收集过程素材，再交<span class="hl">材料整编专家</span>完成素材分类、提纲生成、正文撰写与内容审核，协同过程如下：';
       const root = document.createElement('div');
       root.className = 'process';
-      root.dataset.open = '1';
+      root.dataset.open = '0';
       root.dataset.done = '0';
       root.innerHTML = `
         <button type="button" class="process-toggle">
-          <span class="toggle-left"><span class="pulse live"></span><strong>智枢 · 多专家协同过程</strong><em class="phase">准备中</em></span>
-          <span class="toggle-right"><span class="count">0/${STEP_DEFS.length}</span><span class="chevron">收起</span></span>
+          <span class="toggle-left">
+            <span class="spin-ring" aria-hidden="true"></span>
+            <span class="cur-run">
+              <span class="cur-head"><strong class="phase-name">智枢 · 多专家协同</strong><em class="phase">准备中</em></span>
+              <span class="cur-desc">正在调度专家团，准备开始任务…</span>
+            </span>
+          </span>
+          <span class="toggle-right"><span class="count">0/${STEP_DEFS.length}</span><span class="chevron">展开</span></span>
         </button>
         <p class="collapsed-hint" hidden></p>
         <div class="process-body"><ol class="experts"></ol></div>`;
@@ -927,10 +827,11 @@
       const bodyEl = root.querySelector('.process-body');
       const hintEl = root.querySelector('.collapsed-hint');
       const applyOpen = () => {
-        const open = manualOpen === null ? root.dataset.done !== '1' : manualOpen;
+        // 生成过程中默认收起，仅以加载圈体现当前运转的专家名与环节；可手动展开查看细节
+        const open = manualOpen !== null && manualOpen;
         root.dataset.open = open ? '1' : '0';
         bodyEl.style.display = open ? '' : 'none';
-        hintEl.hidden = open;
+        hintEl.hidden = open || !hintEl.textContent.trim();
         toggleEl.querySelector('.chevron').textContent = open ? '收起' : '展开';
       };
       toggleEl.addEventListener('click', () => { manualOpen = root.dataset.open !== '1'; applyOpen(); });
@@ -938,15 +839,27 @@
       bubble.insertBefore(root, bubble.querySelector('.plain').nextSibling);
       proc = {
         root, steps, applyOpen,
-        phaseEl: root.querySelector('.phase'),
+        phaseNameEl: root.querySelector('.phase-name'),
+        phaseStageEl: root.querySelector('.phase'),
+        stepDescEl: root.querySelector('.cur-desc'),
         countEl: root.querySelector('.count'),
-        pulseEl: root.querySelector('.pulse'),
         hintEl,
       };
+      applyOpen();
       scrollChat();
     }
 
-    function setPhase(text) { if (proc) proc.phaseEl.textContent = text; }
+    function setPhase(text) {
+      if (!proc) return;
+      const parts = text.split(' · ');
+      proc.phaseNameEl.textContent = parts[0];
+      proc.phaseStageEl.textContent = parts[1] || '';
+      proc.phaseStageEl.style.display = parts[1] ? '' : 'none';
+      // 同步展示当前步骤的一句话说明
+      const def = STEP_DEFS.find(d => d.name === text);
+      proc.stepDescEl.textContent = def ? def.desc : '';
+      proc.stepDescEl.style.display = def ? '' : 'none';
+    }
 
     function setStepStatus(i, status) {
       const s = proc.steps[i];
@@ -955,7 +868,7 @@
       if (status === 'running') {
         s.detail.hidden = false;
         s.chevron.textContent = '▾';
-        s.li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        if (s.li.offsetParent !== null) s.li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
       if (status === 'done') {
         // 任务完成后自动收起该专家的工作内容
@@ -969,8 +882,10 @@
 
     function finishProcessCard(summary) {
       proc.root.dataset.done = '1';
-      proc.pulseEl.classList.remove('live');
-      proc.phaseEl.textContent = '协同完成';
+      proc.phaseNameEl.textContent = '智枢 · 多专家协同';
+      proc.phaseStageEl.textContent = '协同完成';
+      proc.phaseStageEl.style.display = '';
+      proc.stepDescEl.style.display = 'none';
       proc.hintEl.textContent = summary;
       proc.applyOpen();
     }
@@ -1030,7 +945,7 @@
     // ===================== 协同阶段动画（中间产物在对话内过程卡中展示） =====================
     async function animateStage0Collect() {
       // 材料收集专家：依次从各组收集过程材料
-      setPhase('材料收集专家 · 各组收集');
+      setPhase('材料收集专家 · 各组材料收集');
       setStepStatus(0, 'running');
       const detail = proc.steps[0].detail;
       await sleep(750);
@@ -1265,7 +1180,7 @@
         const archived = saveToArchive();
         finishProcessCard(`${m.title || '总结报告'} · ${materials.length} 份素材（${LEADER_ORDER.length} 个组）· ${outlineData.filter(o => o.level === 1).length} 个章节 · ${verifyItems.length} 项内容审核全部通过${archived ? ' · 已存入档案盒' : ''}`);
         state.done = true;
-        headStatus.textContent = '总结报告已生成并存入档案馆对应档案盒，右侧可导出 PDF 或前往档案馆。';
+        headStatus.textContent = '总结报告已生成并存入档案馆对应档案盒，右侧可预览正文或导出 PDF。';
         await sleep(320);
         const card = xzSay(
           `领导，本次<span class="hl">总结报告</span>已生成：材料收集专家从 <span class="hl">${LEADER_ORDER.length}</span> 个组收集 <span class="hl">${materials.length}</span> 份素材，材料整编专家完成素材分类、提纲生成、正文撰写与内容审核，${verifyItems.length} 处数据引用全部通过，正文已在右侧展示。`,
@@ -1277,9 +1192,20 @@
           <div class="rc-title">${m.title || '总结报告'}</div>
           <div class="rc-meta">材料收集专家 收集 · 材料整编专家 整编 · ${materials.length} 份素材 / ${LEADER_ORDER.length} 个组 · 全文 ${m.totalWords || totalChars} 字 · ${verifyItems.length} 项审核通过</div>
           <div class="rc-actions">
+            <button type="button" data-act="view">查看正文</button>
+            <button type="button" class="gold" data-act="submit">报送厅长</button>
             <button type="button" class="library" data-act="library">前往档案馆</button>
           </div>`;
         card.appendChild(rc);
+        rc.querySelector('[data-act="view"]').addEventListener('click', focusDoc);
+        const submitBtn = rc.querySelector('[data-act="submit"]');
+        submitBtn.addEventListener('click', () => {
+          if (submitBtn.disabled) return;
+          submitBtn.disabled = true;
+          submitBtn.textContent = '✓ 已报送厅长';
+          xzSay('报告已报送厅长，任务完成。');
+          scrollChat();
+        });
         rc.querySelector('[data-act="library"]').addEventListener('click', () => {
           if (window.top !== window.self) { window.top.location.href = '/library'; return; }
           window.location.href = '/library';
@@ -1294,9 +1220,8 @@
 
     // ===================== 快捷指令 / 运行态 UI =====================
     function renderShortcuts() {
-      const chips = state.done
-        ? []
-        : [{ text: CHIP_MAIN, gold: true, hint: true }];
+      // 生成完成后不再展示“重新生成总结报告 / 查看正文 / 导出 PDF”快捷按钮
+      const chips = state.done ? [] : [{ text: CHIP_MAIN, gold: true, hint: true }];
       shortcutsEl.innerHTML = '';
       chips.forEach(c => {
         const btn = document.createElement('button');
@@ -1319,7 +1244,7 @@
       $('selMode').disabled = running;
       headStatus.textContent = running
         ? '智枢正在生成总结报告，请稍候…'
-        : (state.done ? '报告已生成并沉淀至档案馆，可导出 PDF 或前往档案馆。' : '点击指令或直接输入，智枢即刻开始生成总结报告。');
+        : (state.done ? '报告已生成并沉淀至档案馆，可预览正文、导出 PDF 或前往档案馆。' : '点击指令或直接输入，智枢即刻开始生成总结报告。');
       renderShortcuts();
     }
 
@@ -1342,6 +1267,7 @@
       }
       if (/导出|下载|pdf|PDF/.test(text)) {
         if (state.done) {
+          await xzThinkThen('正在打开打印导出窗口，可在系统对话框中选择<span class="hl">“另存为 PDF”</span>。', 400);
           exportPdfViaPrint();
         } else {
           await xzThinkThen('报告尚未生成。点击指令「当前任务已完成，请生成一份总结报告」即可开始。', 400);
@@ -1367,53 +1293,125 @@
       await xzThinkThen('这个问题智枢先记下了。当前工作台专注总结报告生成——点击下方指令即可一键开始。', 600);
     }
 
-    // ===================== PDF 导出（纯 CSS 打印方案） =====================
-    function exportPdfViaPrint() {
+    // ===================== PDF 导出（直接下载） =====================
+    async function exportPdfViaPrint() {
       const m = metaData;
-      const printArea = document.getElementById('printArea');
-      if (!printArea) {
-        console.error('打印区域未找到');
-        return;
+      const fileName = `${m.title || '总结报告'}.pdf`;
+      
+      xzThinkThen('正在生成 PDF 文件，请稍候…', 300);
+
+      try {
+        // 动态加载 jsPDF 和 html2canvas
+        if (!window.jspdf) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+        if (!window.html2canvas) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        // 创建临时容器渲染 HTML
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;'; // A4 width at 96dpi
+        container.innerHTML = `<div style="padding:140px 100px 130px 106px;font-family:'仿宋',FangSong,'仿宋_GB2312',serif;font-size:16pt;line-height:28pt;color:#000;">
+          <div style="font-family:'华文中宋',SimSun,serif;font-size:26pt;color:#e00000;letter-spacing:0.15em;font-weight:bold;text-align:center;margin-bottom:10px;">${m.orgName||''}</div>
+          <div style="font-family:'方正小标宋','华文中宋',SimSun,serif;font-size:22pt;text-align:center;letter-spacing:0.1em;margin-bottom:8px;">${m.docType||''}</div>
+          <div style="height:2px;background:#e00000;margin:8px 0 20px;"></div>
+          <div style="font-size:16pt;text-align:center;margin-bottom:24px;">${m.docNumber||''}</div>
+          <div style="font-family:'方正小标宋','华文中宋',SimSun,serif;font-size:22pt;font-weight:bold;text-align:center;line-height:36pt;margin-bottom:20px;">${m.title||''}</div>
+          <div style="font-size:16pt;margin-bottom:12px;">${m.recipient||''}：</div>
+          ${finalParagraphs.map(p=>`<h4 style="font-family:'黑体',SimHei,sans-serif;font-size:16pt;font-weight:bold;text-indent:2em;line-height:28pt;margin:12px 0 4px 0;">${p.heading.replace(/<[^>]*>/g,'')}</h4><p style="text-indent:2em;text-align:justify;line-height:28pt;margin:0;">${p.body}</p>`).join('')}
+          <p style="text-indent:2em;line-height:28pt;margin-top:20px;">特此报告。</p>
+          <div style="text-align:right;margin-top:40px;font-size:16pt;line-height:28pt;"><p style="margin:0;text-indent:0;">${m.signatureOrg||''}</p><p style="margin:0;text-indent:0;">${m.signatureDate||''}</p></div>
+          <div style="margin-top:40px;border-top:1px solid #000;padding-top:4px;font-size:10pt;color:#333;display:flex;justify-content:space-between;"><span>${m.footerLeft||''}</span><span>${m.footerRight||''}</span></div>
+        </div>`;
+        document.body.appendChild(container);
+
+        // 使用 html2canvas 转换为 canvas
+        const canvas = await window.html2canvas(container.firstChild, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+
+        // 移除临时容器
+        document.body.removeChild(container);
+
+        // 创建 PDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdfWidth = 210; // A4 width in mm
+        const pdfHeight = 297; // A4 height in mm
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        // 如果内容超过一页，需要分页
+        let position = 0;
+        let heightLeft = imgHeight;
+
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+          position = -pdfHeight + (imgHeight - heightLeft - pdfHeight);
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pdfHeight;
+        }
+
+        // 直接下载 PDF
+        pdf.save(fileName);
+        xzThinkThen(`已下载 <span class="hl">${fileName}</span>`, 400);
+
+      } catch (err) {
+        console.error('PDF 生成失败:', err);
+        xzThinkThen('PDF 生成失败，正在使用备用方案…', 400);
+        
+        // 回退方案：使用浏览器打印对话框
+        const bodyHTML = `
+          <div style="font-family:'华文中宋',SimSun,serif;font-size:26pt;color:#e00000;letter-spacing:0.15em;font-weight:bold;text-align:center;margin-bottom:0.3cm;">${m.orgName||''}</div>
+          <div style="font-family:'方正小标宋','华文中宋',SimSun,serif;font-size:22pt;text-align:center;letter-spacing:0.1em;margin-bottom:0.1cm;">${m.docType||''}</div>
+          <div style="height:2px;background:#e00000;margin:0.2cm 0 0.5cm;"></div>
+          <div style="font-size:16pt;text-align:center;margin-bottom:0.6cm;">${m.docNumber||''}</div>
+          <div style="font-family:'方正小标宋','华文中宋',SimSun,serif;font-size:22pt;font-weight:bold;text-align:center;line-height:36pt;margin-bottom:0.5cm;">${m.title||''}</div>
+          <div style="font-size:16pt;margin-bottom:0.3cm;">${m.recipient||''}：</div>
+          ${finalParagraphs.map(p=>`<h4 style="font-family:'黑体',SimHei,sans-serif;font-size:16pt;font-weight:bold;text-indent:2em;line-height:28pt;margin:0.3cm 0 0.1cm 0;">${p.heading.replace(/<[^>]*>/g,'')}</h4><p style="text-indent:2em;text-align:justify;line-height:28pt;margin:0;">${p.body}</p>`).join('')}
+          <p style="text-indent:2em;line-height:28pt;margin-top:0.5cm;">特此报告。</p>
+          <div style="text-align:right;margin-top:1cm;font-size:16pt;line-height:28pt;"><p style="margin:0;text-indent:0;">${m.signatureOrg||''}</p><p style="margin:0;text-indent:0;">${m.signatureDate||''}</p></div>
+          <div style="margin-top:1cm;border-top:1px solid #000;padding-top:0.1cm;font-size:10pt;color:#333;display:flex;justify-content:space-between;"><span>${m.footerLeft||''}</span><span>${m.footerRight||''}</span></div>`;
+
+        const printWin = window.open('', '_blank', 'width=800,height=900');
+        if (!printWin) { alert('请允许弹出窗口以导出 PDF'); return; }
+        printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${m.title||'文档'}</title>
+          <style>
+            @page { size: A4; margin: 3.7cm 2.6cm 3.5cm 2.8cm; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: '仿宋', FangSong, '仿宋_GB2312', serif; font-size: 16pt; line-height: 28pt; color: #000; }
+            .data-highlight { font-family: '黑体', SimHei, sans-serif; font-weight: bold; }
+          </style></head><body>${bodyHTML}</body></html>`);
+        printWin.document.close();
+        printWin.onload = () => {
+          setTimeout(() => { 
+            printWin.focus(); 
+            printWin.print(); 
+            printWin.close(); 
+          }, 500);
+        };
       }
-
-      // 构建公文 HTML
-      const docHtml = `
-        <div class="print-page">
-          <div class="org-name">${m.orgName || ''}</div>
-          <div class="doc-type">${m.docType || ''}</div>
-          <div class="red-line"></div>
-          <div class="doc-number">${m.docNumber || ''}</div>
-          <div class="doc-title">${m.title || ''}</div>
-          <div class="recipient">${m.recipient || ''}：</div>
-          ${finalParagraphs.map(p => `
-            <h4>${p.heading.replace(/<[^>]*>/g, '')}</h4>
-            <p>${p.body}</p>
-          `).join('')}
-          <p class="closing">特此报告。</p>
-          <div class="signature">
-            <p>${m.signatureOrg || ''}</p>
-            <p>${m.signatureDate || ''}</p>
-          </div>
-          <div class="footer-line">
-            <span>${m.footerLeft || ''}</span>
-            <span>${m.footerRight || ''}</span>
-          </div>
-        </div>
-      `;
-
-      // 填充打印区域
-      printArea.innerHTML = docHtml;
-      printArea.classList.add('printing');
-
-      // 延迟调用打印，确保 DOM 更新完成
-      setTimeout(() => {
-        window.print();
-        // 打印完成后清理
-        setTimeout(() => {
-          printArea.innerHTML = '';
-          printArea.classList.remove('printing');
-        }, 500);
-      }, 100);
     }
 
     // ===================== 事件绑定 =====================
@@ -1446,7 +1444,5 @@
     }
     init();
   </script>
-  <!-- PDF 导出打印区域 -->
-  <div id="printArea"></div>
 </body>
 </html>
