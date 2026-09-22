@@ -68,7 +68,7 @@ const startFreeTask = () => {
       </template>
 
       <template v-else>
-        <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 各工作组任务与成员进展">
+        <WorkbenchHeader compact brand="高总，您好" tagline="专项任务 · 各组任务进展与工作组成果">
           <template #actions>
             <RouterLink class="library-link" to="/library">
               <span class="library-mark" aria-hidden="true" />
@@ -105,6 +105,8 @@ const startFreeTask = () => {
 <style scoped>
 .workbench {
   position: relative;
+  height: 100vh;
+  max-height: 100vh;
   min-height: 100vh;
   overflow: hidden;
   background:
@@ -228,6 +230,17 @@ const startFreeTask = () => {
   max-width: 1440px;
 }
 
+/* 工作台首页：固定一屏，滚动交给「专项任务」内部 */
+.shell.wide:not(.task) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100vh;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: clamp(16px, 2.4vw, 26px) clamp(16px, 2.6vw, 30px) clamp(12px, 1.8vw, 18px);
+}
+
 .shell.task {
   display: flex;
   flex-direction: column;
@@ -248,13 +261,14 @@ const startFreeTask = () => {
   background: transparent;
 }
 
-/* 四块内容下方的输入框 */
+/* 四块内容下方的输入框（固定在工作台底部，不参与专项任务内部滚动） */
 .home-dock {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: end;
-  margin-top: 18px;
+  margin-top: 14px;
+  flex-shrink: 0;
   padding: 14px 16px;
   border-radius: calc(var(--radius-lg) + 2px);
   background:

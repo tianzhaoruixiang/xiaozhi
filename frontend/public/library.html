@@ -16,7 +16,11 @@
     }
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
-    body{font-family:var(--font-body);color:var(--ink);background:radial-gradient(1200px 620px at 6% -10%,rgba(46,196,214,0.2),transparent 58%),radial-gradient(920px 540px at 96% 0%,rgba(201,168,108,0.14),transparent 50%),radial-gradient(780px 420px at 48% 110%,rgba(26,122,146,0.14),transparent 55%),linear-gradient(168deg,#c5d8e6 0%,#e7f0f6 42%,#eef4f8 78%,#e9eef3 100%);background-attachment:fixed;overflow:hidden}
+    body{font-family:var(--font-body);color:var(--ink);background:radial-gradient(1200px 620px at 6% -10%,rgba(46,196,214,0.2),transparent 58%),radial-gradient(920px 540px at 96% 0%,rgba(201,168,108,0.14),transparent 50%),radial-gradient(780px 420px at 48% 110%,rgba(26,122,146,0.14),transparent 55%),linear-gradient(168deg,#c5d8e6 0%,#e7f0f6 42%,#eef4f8 78%,#e9eef3 100%);background-attachment:fixed;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(26,122,146,.35) transparent}
+    body::-webkit-scrollbar{width:8px}
+    body::-webkit-scrollbar-track{background:transparent}
+    body::-webkit-scrollbar-thumb{background:rgba(26,122,146,.3);border-radius:4px}
+    body::-webkit-scrollbar-thumb:hover{background:rgba(26,122,146,.52)}
 
     .lib-header{position:fixed;top:0;left:0;right:0;height:3.5rem;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:linear-gradient(160deg,rgba(255,255,255,.78),rgba(240,248,252,.52));backdrop-filter:blur(18px) saturate(1.2);border-bottom:1px solid rgba(255,255,255,.72);box-shadow:0 22px 56px rgba(6,20,31,.14);z-index:50}
     .header-left{display:flex;align-items:center;gap:.75rem}
@@ -33,11 +37,14 @@
     .nav-btn:disabled{opacity:.4;cursor:not-allowed;color:#8fa3b8;border-color:rgba(20,40,58,.08);background:transparent;box-shadow:none}
     .nav-btn svg{width:14px;height:14px}
 
-    .view{position:fixed;top:3.5rem;bottom:2.4rem;left:0;right:0;overflow-y:auto;transition:opacity .45s ease,transform .45s ease}
-    .view.hidden{opacity:0;pointer-events:none;transform:scale(.97)}
+    .view{display:none;padding:3.5rem 0 2.4rem}
+    .view.hidden{display:none!important}
+    .view:not(.hidden){display:block;animation:viewIn .45s ease}
+    #viewPages:not(.hidden){display:flex}
+    @keyframes viewIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 
     /* ============ 第一层：书架 + 书本（三行两列网格） ============ */
-    #viewShelf{padding:64px 2rem 24px;overflow-y:auto}
+    #viewShelf{padding:140px 2rem 24px}
     /* 书架容器（2列 × 3行网格） */
     .shelf-unit{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:26px 30px;padding:0;position:relative}
     /* 书架格（每格一个类别） */
@@ -48,9 +55,11 @@
     .category-title{position:absolute;left:0;top:0;color:#001e2b;font-family:var(--font-display);font-size:.95rem;font-weight:600;letter-spacing:.02em;padding:.35rem .85rem .35rem 1.05rem;background:rgba(255,255,255,.95);border-bottom:2px solid rgba(0,30,43,.1);border-radius:8px 0 8px 0;z-index:10;white-space:nowrap;box-shadow:0 1px 4px rgba(0,30,43,.06)}
     .category-title::before{content:'';position:absolute;left:7px;top:50%;transform:translateY(-50%);width:5px;height:5px;border-radius:50%;background:#00ed64;box-shadow:0 0 6px rgba(0,237,100,.5)}
     /* 书本容器 */
-    .boxes-container{display:flex;align-items:flex-end;justify-content:center;gap:4px;padding:36px 10px 20px;flex:1;overflow-x:clip;overflow-y:visible;flex-wrap:nowrap}
+    .boxes-container{display:flex;align-items:flex-end;justify-content:center;gap:4px;padding:36px 10px 20px;flex:1;overflow:visible;flex-wrap:nowrap}
     /* 单本书（统一规格，模拟真实档案盒尺寸） */
     .archive-box{position:relative;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:290px;width:78px}
+    .box-badge-new{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:40px;height:40px;border-radius:50%;background:linear-gradient(160deg,#ff5a5a,#d92b2b);color:#fff;font-family:var(--font-display);font-size:1.12rem;font-weight:700;display:grid;place-items:center;border:2px solid rgba(255,255,255,.92);box-shadow:0 4px 12px rgba(217,43,43,.5),inset 0 1px 0 rgba(255,255,255,.4);z-index:30;letter-spacing:.02em}
+    .archive-box:hover .box-badge-new{transform:translateX(-50%) translateY(16px)}
     .archive-box:hover{transform:translateY(-16px);z-index:20}
     .archive-box:hover .book-spine{box-shadow:0 0 0 1px rgba(0,30,43,.08),0 4px 8px rgba(0,30,43,.08),0 16px 32px rgba(0,30,43,.16)}
     .archive-box:hover .folder-tooltip{opacity:1;transform:translateX(-50%) translateY(-10px)}
@@ -277,6 +286,60 @@
     .lib-footer{position:fixed;bottom:0;left:0;right:0;height:2.4rem;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(240,248,252,.5));backdrop-filter:blur(18px) saturate(1.2);border-top:1px solid rgba(255,255,255,.72);font-size:.72rem;color:#5a7084;z-index:50}
     .footer-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#2f7d5a;box-shadow:0 0 6px rgba(47,125,90,.5);margin-right:.5rem;animation:breathe 2s infinite}
     @keyframes breathe{0%,100%{opacity:1}50%{opacity:.4}}
+    /* ============ 第二层：档案盒内材料列表（按类别分组） ============ */
+    .material-view{width:100%;margin:0 auto;padding:8px 24px 64px}
+    .mv-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;padding:18px 24px;background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.7);border-radius:14px;box-shadow:0 2px 12px rgba(6,20,31,.06)}
+    .mv-head-l{display:flex;align-items:center;gap:14px}
+    .mv-head-icon{width:46px;height:46px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(160deg,var(--signal),#3a7bd5);color:#fff;box-shadow:0 6px 16px rgba(46,196,214,.32);flex-shrink:0}
+    .mv-head-icon svg{width:24px;height:24px}
+    .mv-head h2{font-family:var(--font-display);font-size:1.25rem;font-weight:600;color:var(--ink);margin-bottom:3px}
+    .mv-head .mv-sub{font-size:.78rem;color:var(--muted)}
+    /* 每行一个类别 · 顶部简化小标题 · 下方材料横向列表 */
+    .mv-cat{margin-bottom:24px}
+    .mv-cat-title{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:.92rem;font-weight:600;color:var(--ink);margin-bottom:12px}
+    .mv-cat-title::before{content:'';width:4px;height:15px;border-radius:2px;background:var(--cat-color,var(--signal))}
+    .mv-cat-title .mv-cat-count{font-family:var(--font-mono);font-size:.66rem;color:var(--muted);background:rgba(20,40,58,.06);padding:1px 8px;border-radius:999px;font-weight:500}
+    .mv-row{display:flex;flex-wrap:wrap;gap:16px}
+    /* 材料卡片：原有纸质档案页样式 · 竖向4:3(高:宽) · 名称+修改时间 · 无右下折角 */
+    .mv-card{position:relative;width:240px;height:320px;background:linear-gradient(172deg,#fefcf7,#f5efe2);border:1px solid rgba(0,0,0,.07);border-radius:4px;color:#2c2418;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.14);transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s;overflow:hidden;display:flex;flex-direction:column;padding:22px 16px 20px 36px}
+    .mv-card::before{content:'';position:absolute;top:0;left:34px;width:1px;height:100%;background:rgba(200,60,60,.18)}
+    .mv-card:hover{transform:translateY(-6px);box-shadow:0 16px 34px rgba(0,0,0,.24)}
+    .mv-holes{position:absolute;left:12px;top:0;bottom:0;width:14px;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center}
+    .mv-holes i{width:7px;height:7px;border-radius:50%;background:#0c1526;box-shadow:inset 0 1px 2px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.7)}
+    .mv-stamp{position:absolute;top:11px;right:13px;font-size:.55rem;color:rgba(180,50,50,.6);border:1.2px solid rgba(180,50,50,.4);padding:1px 5px;border-radius:3px;transform:rotate(-8deg);letter-spacing:.1em;z-index:1}
+    .mv-card-title{font-family:var(--font-display);font-size:1.5rem;font-weight:700;color:#1a1510;line-height:1.5;text-align:center;margin:auto 0;display:-webkit-box;-webkit-line-clamp:4;line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+    .mv-card-footer{border-top:1px dashed rgba(0,0,0,.16);padding-top:9px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+    .mv-card-info{display:flex;align-items:center;justify-content:left;line-height:1.45}
+    .mv-card-label{width: 62px;font-family:var(--font-mono);font-size:.75rem;color:rgba(0,0,0,.58);letter-spacing:.03em;flex-shrink:0}
+    .mv-card-name{font-family:var(--font-mono);font-size:.75rem;font-weight:400;color:#1a1510}
+    .mv-card-name.mv-approver{color:#a83232}
+    .mv-card-time{font-family:var(--font-mono);font-size:.75rem;color:rgba(0,0,0,.58)}
+
+    /* ============ 材料详情弹窗 ============ */
+    .modal-overlay{position:fixed;inset:0;background:rgba(6,20,31,.55);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s ease;padding:2rem}
+    .modal-overlay.active{opacity:1;pointer-events:auto}
+    .modal-content{position:relative;background:linear-gradient(172deg,#fefcf7,#f5efe2);border-radius:6px;width:100%;max-width:760px;height: 90vh;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.42);transform:scale(.92) translateY(12px);transition:transform .35s cubic-bezier(.2,.8,.2,1);border:1px solid rgba(0,0,0,.09)}
+    .modal-overlay.active .modal-content{transform:scale(1) translateY(0)}
+    .modal-content::before{content:'';position:absolute;top:0;left:56px;width:1px;height:100%;background:rgba(200,60,60,.18);z-index:2;pointer-events:none}
+    .modal-holes{position:absolute;left:21px;top:0;bottom:0;width:20px;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;z-index:2;pointer-events:none}
+    .modal-holes i{width:11px;height:11px;border-radius:50%;background:#0c1526;box-shadow:inset 0 1px 2px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.7)}
+    .modal-header{position:relative;padding:22px 88px 16px 72px;border-bottom:2px solid #c0392b;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-shrink:0;background:transparent}
+    .doc-issuer{font-family:'STFangsong','FangSong','FangSong_GB2312',仿宋,serif;font-size:1.06rem;font-weight:700;color:#c0392b;letter-spacing:.1em;line-height:1.4}
+    .modal-header .modal-meta{font-size:.74rem;color:rgba(0,0,0,.45);margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .modal-header .modal-cat{color:rgba(180,50,50,.78);background:rgba(180,50,50,.08);padding:1px 9px;border-radius:999px;font-weight:500}
+    .modal-header .ms-stamp{position:absolute;top:20px;right:64px;font-family:var(--font-display);font-size:.6rem;color:rgba(180,50,50,.6);border:1.4px solid rgba(180,50,50,.4);padding:2px 7px;border-radius:3px;transform:rotate(-8deg);letter-spacing:.12em}
+    .modal-close{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#1a1510;cursor:pointer;display:grid;place-items:center;font-size:1.3rem;line-height:1;transition:all .2s;flex-shrink:0}
+    .modal-close:hover{background:rgba(180,50,50,.14);color:#a84848;transform:rotate(90deg)}
+    .modal-body{flex:1;overflow-y:auto;padding:16px 44px 40px 72px}
+    .doc-redline{height:2.5px;background:#c0392b;margin:0 0 16px}
+    .doc-title{font-family:'SimHei','STHeiti','Microsoft YaHei',黑体,sans-serif;font-size:1.24rem;font-weight:700;color:#1a1510;text-align:center;line-height:1.5;margin:4px 0 22px}
+    .doc-body{display:flex;flex-direction:column;gap:2px}
+    .modal-body .ms-line{font-family:'STFangsong','FangSong','FangSong_GB2312',仿宋,serif;font-size:1rem;line-height:2.05;color:#2c2418;text-indent:2em;text-align:justify;padding:2px 0}
+    .modal-body .ms-line.ms-h1{font-family:'SimHei',黑体,sans-serif;font-weight:700}
+    .modal-body .ms-line.ms-h2{font-family:'KaiTi','STKaiti','Kaiti_SC',楷体,serif;font-weight:600}
+    .modal-body .ms-line.ms-h3{font-weight:700}
+    .doc-sign{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-top:30px;padding-right:1em;font-family:'STFangsong','FangSong',仿宋,serif;font-size:.98rem;color:#2c2418;line-height:1.8}
+
     @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
   </style>
 </head>
@@ -296,6 +359,22 @@
   <div class="view" id="viewShelf"></div>
   <div class="view hidden" id="viewFilebox"></div>
   <div class="view hidden" id="viewPages"></div>
+
+  <!-- 材料详情弹窗 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+      <div class="modal-holes"><i></i><i></i><i></i><i></i></div>
+      <div class="modal-header">
+        <div>
+          <div class="doc-issuer">会议安保指挥部文件</div>
+          <div class="modal-meta" id="modalMeta"></div>
+        </div>
+        <span class="ms-stamp">归 档</span>
+        <button class="modal-close" id="modalClose" aria-label="关闭">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
 
   <footer class="lib-footer">
     <span><span class="footer-dot"></span>系统运行中</span>
@@ -331,6 +410,22 @@
     ];
     const DATA = [
       { name:'活动安保类', color:'var(--cyan)', intro:'涵盖会议安保方案、动员纪要、评审决议、现场部署与应急预案等全过程归档材料', folders:[
+        { name:'大型会议保障动员会', date:'2026-09-15', info:'方案计划、会议纪要、人员情况、数据统计等 14 页', pages:[
+          { title:'方案草案 v1.4', lines:['一、总则：为确保大型会议安全有序召开，特制定本安保方案。','二、组织架构：成立安保指挥部，下设 X/Y/Z/E/F/G 六个作战组。','三、人员部署：核心区域每50米设一岗点，外围巡逻线覆盖半径2公里。','四、通信保障：双链路加密通信，备用卫星电话 4 部。','五、应急准备：各应急分队24小时待命，装备装车率保持100%。','六、实施要求：本方案自印发之日起施行，由指挥部办公室负责解释。']},
+          { title:'会议纪要', lines:['会议时间：2026年9月15日 09:00—11:30','会议地点：指挥中心三楼会议室','主持人：张主任','参会人员：指挥部6位核心负责人及特邀专家','一、听取方案组关于总体安保方案 v1.4 的汇报。','二、审议并通过总体安保方案 v1.4。','三、采纳4条优化建议，明确各组职责分工。','四、议定9月20日前完成全部部署，每日17:00例会通报进展。']},
+          { title:'发言摘要', lines:['张主任：强调“预防为主、快速响应”，要求各组9月20日前完成部署。','李组长：建议夜间巡查由每2小时调整为每1小时一次。','王专家：建议引入AI舆情预警系统，提前识别风险。','赵副组长：汇报人员政审进度，预计9月16日全部完成。','陈主任：建议增设备用指挥链路，确保通信万无一失。']},
+          { title:'建议采纳清单', lines:['✓ 采纳：增加夜间巡查频次（李组长）','✓ 采纳：引入AI舆情预警（王专家）','✓ 修改后采纳：外围封控提前至会前48小时','✓ 采纳：建立跨组即时通报机制','○ 稍后处理：增设临时医疗点','○ 转办：无人机反制装备列入下年度采购预算']},
+          { title:'签到记录', lines:['张XX 主任   09:00 ✓','李XX 组长   09:02 ✓','王XX 专家   09:00 ✓','赵XX 副组长 09:05 ✓','陈XX 主任   08:58 ✓','刘XX 记录员 08:50 ✓','孙XX 联络员 09:03 ✓','应到7人，实到7人，全部签到。']},
+          { title:'决议文书', lines:['经全体参会人员审议，形成以下决议：','一、原则通过总体安保方案 v1.4，由方案组9月16日前完成修订。','二、各作战组立即启动准备，9月18日前完成人员到位。','三、建立每日例会制度，会议期间每日17:00汇报进展。','四、建立跨组即时通报机制，重大情况第一时间上报指挥部。','五、本决议自通过之日起执行。']},
+          { title:'部署实施方案', lines:['一、实施目标：按总体方案 v1.4 要求，9月18日前完成全部部署。','二、阶段划分：准备期（9.16—9.17）、部署期（9.18—9.19）、验收期（9.20）。','三、责任分工：六个作战组按职责分片包干，每日上报进度。','四、保障措施：装备、通信、食宿三线保障同步到位。','五、督导检查：指挥部办公室每日巡查，发现问题当日整改。','六、奖惩机制：完成任务表现突出的组和个人予以通报表扬。']},
+          { title:'倒排工期计划', lines:['9月15日：完成动员部署，各组领受任务。','9月16日：人员政审与背景核查全部完成。','9月17日：岗点布设图定稿，装备发放到位。','9月18日：全员上岗，全要素合成演练。','9月19日：查漏补缺，接受指挥部验收。','9月20日：进入全要素备勤状态，静待大会开幕。']},
+          { title:'专题协调会纪要', lines:['会议时间：2026年9月16日 15:00—16:20','会议地点：指挥部一号会议室','会议议题：交通管控与外围封控方案衔接','一、确认封控启动时间为会前24小时。','二、新增2条备用进场路线，缓解主通道压力。','三、交通公告提前48小时向社会发布。','四、安排交通组与外围组联合演练一次。']},
+          { title:'动员会预备会纪要', lines:['会议时间：2026年9月14日 10:00—11:00','会议地点：指挥中心二楼会议室','会议议题：动员会议程与材料审定','一、议定动员会议程共5项。','二、确认主席台就座人员名单。','三、安保演示科目由4个缩减为2个。','四、审定动员讲话稿及表态发言稿。']},
+          { title:'人员花名册', lines:['指挥部：张主任等 5 人','X组（内场）：32 人','Y组（外场）：45 人','Z组（应急）：28 人','E组（通信）：16 人','F组（后勤）：24 人','G组（交通）：38 人','合计：188 人','政审情况：全部通过，合格率 100%']},
+          { title:'岗前培训记录', lines:['培训时间：2026年9月16日 全天','培训地点：指挥中心多功能厅','培训内容：岗位职责、应急处置、礼仪规范','参训人员：188 人全员到齐','授课人：张主任、王专家','考核方式：理论测试 + 实操抽考','考核结果：理论测试平均 94.6 分，全员通过']},
+          { title:'物资储备台账', lines:['对讲机：240 部（含备用 40 部）','防暴器材：按岗配齐 100%','医疗物资：急救箱 26 个、AED 8 台','雨衣：200 件；手电：220 支','反光背心：200 件；警戒带：120 卷','储备状态：全部在库，检验合格']},
+          { title:'每日执勤数据统计', lines:['9月17日：出勤 188 人，到岗率 100%','9月18日：处置咨询 63 起，移交 2 起','9月19日：重点区域巡查 24 轮次','累计处置事件：14 起（均为轻微）','累计服务群众：1,200 余人次','好人好事：归还失物 23 件']}
+        ]},
         { name:'安保评审会', date:'2026-09-10', info:'评审标准、评分记录与评审结论 3 页', pages:[
           { title:'评审标准文件', lines:['评审维度：','1. 方案完整性（25分）','2. 人员配置合理性（20分）','3. 应急响应能力（25分）','4. 技术支撑水平（15分）','5. 预算可控性（15分）','总分100分，80分以上为合格。']},
           { title:'评分记录表', lines:['方案完整性：23/25','人员配置合理性：18/20','应急响应能力：22/25','技术支撑水平：14/15','预算可控性：13/15','总分：90/100  结论：通过']},
@@ -465,16 +560,17 @@
     let state = { level:0, boxIdx:-1, folderIdx:-1 };
 
     let tF=0,tP=0; DATA.forEach(b=>b.folders.forEach(f=>{tF++;tP+=f.pages.length}));
-    document.getElementById('footStat').textContent = `共 ${DATA.length} 箱 · ${tF} 盒 · ${tP} 页档案`;
+    document.getElementById('footStat').textContent = `共 ${DATA.length} 箱 · ${tF} 盒 · ${tP} 份材料`;
 
     function showView(level){
       Object.values(views).forEach(v=>v.classList.add('hidden'));
       [views.shelf,views.filebox,views.pages][level].classList.remove('hidden');
       state.level=level; renderBreadcrumb();
+      window.scrollTo(0,0);
     }
     function renderBreadcrumb(){
       let h=`<span class="bc-item ${state.level===0?'active':''}" onclick="navTo(0)">档案架</span>`;
-      if(state.level>=2) {
+      if(state.level>=1 && state.boxIdx>=0 && state.folderIdx>=0) {
         const cat=DATA[state.boxIdx];
         const folder=cat.folders[state.folderIdx];
         h+=`<span class="bc-sep">›</span><span class="bc-item">${cat.name}</span>`;
@@ -499,7 +595,8 @@
                   const fc=FOLDER_COLORS[colorIdx];
                   return `
                   <div class="archive-box" style="--folder-color:${fc};--folder-color-dark:${adjustColor(fc,-25)}" onclick="openFolder(${catIdx},${folderIdx})">
-                    <div class="folder-tooltip"><strong>${folder.name}</strong><small>${folder.date} · ${folder.pages.length} 页</small></div>
+                    ${folder.name==='大型会议保障动员会'?'<div class="box-badge-new">新</div>':''}
+                    <div class="folder-tooltip"><strong>${folder.name}</strong><small>${folder.date} · ${folder.pages.length} 份材料</small></div>
                     <div class="book-spine">
                       <div class="book-title-band"><div class="folder-label-text">${folder.name}</div></div>
                       <div class="book-line"></div>
@@ -513,12 +610,131 @@
         </div>`;
     }
     function adjustColor(hex,percent){const num=parseInt(hex.replace('#',''),16);const r=Math.max(0,Math.min(255,(num>>16)+percent));const g=Math.max(0,Math.min(255,((num>>8)&0x00FF)+percent));const b=Math.max(0,Math.min(255,(num&0x0000FF)+percent));return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');}
-    function openFolder(catIdx,folderIdx){
+    /* ===== 材料分类规则（档案盒内材料按业务类别分组） ===== */
+    const MATERIAL_CATEGORIES = [
+      { name:'突发事件类', color:'#e84a6a', kw:['应急','处置','演练','故障','告警','突发','排爆','封控','响应','预案','风险','事件'] },
+      { name:'人物情况类', color:'#8455c9', kw:['人员','签到','审核','职责','承诺','发言','参会','志愿者','岗','人事','签署'] },
+      { name:'方案计划类', color:'#2e9e63', kw:['方案','计划','部署','筹备','分工','安排','草案','需求','规划','目标'] },
+      { name:'会议纪要类', color:'#2e6fd0', kw:['纪要','会议','决议','评审','会签','动员','结论'] },
+      { name:'数据统计类', color:'#d99a2b', kw:['数据','统计','报表','清单','台账','指标','周报','监测','分析','评估','预算','结算','采购','比价','储备'] },
+      { name:'制度规范类', color:'#1a7a92', kw:['规定','条例','法规','标准','规范','口径','保密','案例','适用','分级','条文'] },
+      { name:'技术研发类', color:'#7c5bad', kw:['架构','算法','模型','系统','平台','接口','版本','迭代','训练','语料','设备','运维','技术'] },
+      { name:'宣传舆情类', color:'#4a9de8', kw:['宣传','舆情','新闻','媒体','素材','发布','风采','通稿'] },
+    ];
+    function categorizeMaterial(page){
+      const text = page.title + ' ' + (page.lines||[]).join(' ');
+      let best=null, bestScore=0;
+      MATERIAL_CATEGORIES.forEach(c=>{
+        let sc=0;
+        c.kw.forEach(k=>{ if(page.title.includes(k)) sc+=3; else if(text.includes(k)) sc+=1; });
+        if(sc>bestScore){ bestScore=sc; best=c; }
+      });
+      return best || { name:'其他材料', color:'#5a7084' };
+    }
+
+    /* ===== 第二层：点击档案盒 → 每行一类材料（顶部简题 + 下方列表） ===== */
+    const EDITOR_BY_CAT={'方案计划类':'张主任','会议纪要类':'刘记录员','人物情况类':'王专家','数据统计类':'李组长','突发事件类':'赵副组长','制度规范类':'陈主任','技术研发类':'王专家','宣传舆情类':'李组长','其他材料':'指挥部办公室'};
+    const APPROVER_BY_CAT={'方案计划类':'陈主任','会议纪要类':'张主任','人物情况类':'赵副组长','数据统计类':'陈主任','突发事件类':'张主任','制度规范类':'张主任','技术研发类':'陈主任','宣传舆情类':'赵副组长','其他材料':'指挥部'};
+    function genEditor(catName){ return EDITOR_BY_CAT[catName]||'指挥部办公室'; }
+    function genApprover(catName){ return APPROVER_BY_CAT[catName]||'指挥部'; }
+    function genUploadTime(date, pi){
+      const t=pi*17+5;
+      const hh=String(8+Math.floor(t/60)).padStart(2,'0');
+      const mm=String(t%60).padStart(2,'0');
+      return `${date} ${hh}:${mm}`;
+    }
+    function genModTime(date, pi){
+      const t=pi*26+788;
+      const hh=String(Math.floor(t/60)).padStart(2,'0');
+      const mm=String(t%60).padStart(2,'0');
+      return `${date} ${hh}:${mm}`;
+    }
+    function genApprovalTime(date, pi){
+      const t=pi*11+1050;
+      const hh=String(Math.floor(t/60)).padStart(2,'0');
+      const mm=String(t%60).padStart(2,'0');
+      return `${date} ${hh}:${mm}`;
+    }
+    function openFolder(catIdx,folderIdx,rec=true){
       state.boxIdx=catIdx;
       state.folderIdx=folderIdx;
-      pageIdx=0;
-      renderPagesView(catIdx, folderIdx);
+      renderMaterialView(catIdx, folderIdx, rec);
     }
+    function renderMaterialView(catIdx, folderIdx, rec=true){
+      const cat=DATA[catIdx], folder=cat.folders[folderIdx];
+      const groups={};
+      folder.pages.forEach((p,pi)=>{
+        const c=categorizeMaterial(p);
+        if(!groups[c.name]) groups[c.name]={color:c.color,items:[]};
+        groups[c.name].items.push({title:p.title,lines:p.lines,pi,cat:c.name,editor:genEditor(c.name),uploadTime:genUploadTime(folder.date,pi),modTime:genModTime(folder.date,pi),approver:genApprover(c.name),approvalTime:genApprovalTime(folder.date,pi)});
+      });
+      const groupArr=Object.keys(groups).map(name=>({name,color:groups[name].color,items:groups[name].items}));
+      views.filebox.innerHTML=`
+        <div class="material-view">
+          <div class="mv-head">
+            <div class="mv-head-l">
+              <div class="mv-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div>
+                <h2>${folder.name}</h2>
+                <div class="mv-sub">${cat.name} · ${folder.date} · 共 ${folder.pages.length} 份材料</div>
+              </div>
+            </div>
+            <button class="back-btn" onclick="navTo(0)">← 返回档案架</button>
+          </div>
+          ${groupArr.map(g=>`
+            <div class="mv-cat" style="--cat-color:${g.color}">
+              <div class="mv-cat-title">${g.name}<span class="mv-cat-count">${g.items.length} 份</span></div>
+              <div class="mv-row">
+                ${g.items.map(m=>`
+                  <div class="mv-card" onclick="openMaterial(${catIdx},${folderIdx},${m.pi})">
+                    <div class="mv-holes"><i></i><i></i><i></i></div>
+                    <div class="mv-stamp">归档</div>
+                    <div class="mv-card-title">${m.title}</div>
+                    <div class="mv-card-footer">
+                      <div class="mv-card-info"><span class="mv-card-label">撰稿人：</span><span class="mv-card-name">${m.editor}</span></div>
+                      <div class="mv-card-info"><span class="mv-card-label">撰稿时间：</span><span class="mv-card-time">${m.modTime}</span></div>
+                      <div class="mv-card-info"><span class="mv-card-label">上传时间：</span><span class="mv-card-time">${m.uploadTime}</span></div>
+                      <div class="mv-card-info"><span class="mv-card-label">审批人：</span><span class="mv-card-name">${m.approver}</span></div>
+                      <div class="mv-card-info"><span class="mv-card-label">审批时间：</span><span class="mv-card-time">${m.approvalTime}</span></div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+      showView(1);
+      if(rec)recordHist();
+    }
+
+    /* ===== 第三层：点击材料 → 弹窗展示详细内容 ===== */
+    function fmtCnDate(d){
+      const [y,m,dd]=d.split('-');
+      return `${y}年${Number(m)}月${Number(dd)}日`;
+    }
+    function renderDocLine(l){
+      let cls='';
+      if(/^[一二三四五六七八九十]+、/.test(l)) cls=' ms-h1';
+      else if(/^（[一二三四五六七八九十]+）/.test(l)) cls=' ms-h2';
+      else if(/^\d{1,2}[、.]/.test(l)) cls=' ms-h3';
+      return `<div class="ms-line${cls}">${l}</div>`;
+    }
+    function openMaterial(catIdx, folderIdx, pi){
+      const cat=DATA[catIdx], folder=cat.folders[folderIdx], page=folder.pages[pi];
+      const c=categorizeMaterial(page);
+      const [y,m,d]=folder.date.split('-');
+      document.getElementById('modalMeta').innerHTML=`<span class="modal-cat">${c.name}</span><span>${folder.name}</span><span>·</span><span>安保〔${y}〕${Number(m)}${Number(d)}号</span>`;
+      document.getElementById('modalBody').innerHTML=`
+        <div class="doc-redline"></div>
+        <h3 class="doc-title">${page.title}</h3>
+        <div class="doc-body">${page.lines.map(renderDocLine).join('')}</div>
+        <div class="doc-sign"><span>会议安保指挥部</span><span>${fmtCnDate(folder.date)}</span></div>`;
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+    function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
+    document.getElementById('modalClose').addEventListener('click',closeModal);
+    document.getElementById('modalOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeModal(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeModal(); });
     function renderPagesView(catIdx, folderIdx, rec=true){
       const box=DATA[catIdx];
       const folder=box.folders[folderIdx];
@@ -755,7 +971,7 @@
     }
     function applyHist(st){
       if(st.level===0)navTo(0,false);
-      else if(st.level===1)openFileboxes(st.boxIdx,false);
+      else if(st.level===1)openFolder(st.boxIdx,st.folderIdx,false);
       else openPages(st.folderIdx,false);
     }
     function goBack(){ if(histPos>0){histPos--;applyHist(hist[histPos]);updateNavBtns();} }
@@ -795,7 +1011,7 @@
       const strong=hits.filter(h=>h.sc>=5);
       if(isLoc&&strong.length){
         const h=strong[0];
-        return `📍 已定位：<span class="loc">${h.cat}</span> 档案箱 › <span class="loc">${h.folder}</span> 档案盒 › 第 ${h.pi+1} 页《<span class="loc">${h.title}</span>》（${h.date}）<br><button class="qa-open" onclick="jumpTo(${h.bi},${h.fi})">打开该档案盒</button>`;
+        return `📍 已定位：<span class="loc">${h.cat}</span> 档案箱 › <span class="loc">${h.folder}</span> 档案盒 › 第 ${h.pi+1} 份《<span class="loc">${h.title}</span>》（${h.date}）<br><button class="qa-open" onclick="jumpTo(${h.bi},${h.fi},${h.pi})">打开该材料</button>`;
       }
       // 2) 内容问答：二元组对页正文打分
       const scored=INDEX.map(it=>{
@@ -817,10 +1033,10 @@
         html+=`▍<span class="loc">${h.cat} › ${h.folder}</span> 第 ${h.pi+1} 页《${h.title}》<br>`+(segs.length?segs.map(s=>`「${esc(s)}」`).join('<br>'):'详见原文页')+'<br>';
       });
       const t=scored[0];
-      html+=`<button class="qa-open" onclick="jumpTo(${t.bi},${t.fi})">打开原文查看</button>`;
+      html+=`<button class="qa-open" onclick="jumpTo(${t.bi},${t.fi},${t.pi})">打开原文查看</button>`;
       return html;
     }
-    function jumpTo(bi,fi){state.boxIdx=bi;openPages(fi,true);}
+    function jumpTo(bi,fi,pi){ openFolder(bi,fi); if(pi!=null&&pi>=0){ setTimeout(()=>openMaterial(bi,fi,pi),400); } }
 
     const fab=document.getElementById('robotFab'),panel=document.getElementById('chatPanel'),msgs=document.getElementById('chatMsgs'),inp=document.getElementById('chatInput');
     function addMsg(role,html){const d=document.createElement('div');d.className='msg '+role;d.innerHTML=html;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight}
@@ -857,6 +1073,13 @@
         });
       }catch(e){}
     })();
+
+    /* 大型会议保障动员会档案盒排在活动安保类最后一个（含 AI 生成档案盒之后） */
+    {
+      const boxes = DATA[0].folders;
+      const i = boxes.findIndex(f => f.name === '大型会议保障动员会');
+      if (i > -1) boxes.push(boxes.splice(i, 1)[0]);
+    }
 
     renderShelf();
     showView(0);
